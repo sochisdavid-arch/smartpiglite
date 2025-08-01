@@ -2,6 +2,8 @@
 "use client";
 
 import * as React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,10 +40,11 @@ import { Badge } from '@/components/ui/badge';
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
-interface LastEvent {
+interface Event {
     type: EventType | 'Ninguno';
     date: string;
     inseminationGroup?: string;
+    details?: string;
 }
 
 interface Pig {
@@ -54,17 +57,17 @@ interface Pig {
     purchaseValue?: number;
     age: number;
     status: StatusType;
-    lastEvent: LastEvent;
+    lastEvent: Event;
+    events: Event[];
 }
 
-
 const initialPigs: Pig[] = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' } },
-  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' } },
-  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' } },
-  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
-  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
-  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' }, events: [{ type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A.' }] },
+  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' }, events: [{ type: 'Celo no Servido', date: '2024-07-01', details: 'Baja condición corporal.' }] },
+  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' }, events: [{ type: 'Parto', date: '2024-05-20', details: '12 nacidos vivos.' }] },
+  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
+  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
+  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
 ];
 
 const pigBreeds = [
@@ -98,6 +101,7 @@ export default function GestationPage() {
     ...p,
     age: calculateAge(p.birthDate)
   })));
+  const router = useRouter();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
@@ -169,10 +173,11 @@ export default function GestationPage() {
       age: calculateAge(birthDateValue),
       status: 'Remplazo', 
       lastEvent: { type: 'Ninguno', date: '' },
+      events: [],
     };
 
     if (editingPig) {
-        setPigs(pigs.map(p => p.id === editingPig.id ? {...submittedAnimal, status: p.status, lastEvent: p.lastEvent } : p));
+        setPigs(pigs.map(p => p.id === editingPig.id ? {...submittedAnimal, status: p.status, lastEvent: p.lastEvent, events: p.events } : p));
     } else {
         setPigs(prevPigs => [...prevPigs, submittedAnimal]);
     }
@@ -461,116 +466,118 @@ export default function GestationPage() {
                 {/* Desktop Table View */}
                 <div className="hidden md:block">
                   <Table>
-                  <TableHeader>
-                      <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Raza</TableHead>
-                      <TableHead>Grupo Inseminación</TableHead>
-                      <TableHead>F. Parto Probable</TableHead>
-                      <TableHead className="text-right">Edad (sem.)</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {filteredPigs.map((pig) => (
-                      <TableRow key={pig.id}>
-                          <TableCell className="font-medium">{pig.id}</TableCell>
-                          <TableCell>
-                              <div className="flex flex-col">
-                                  <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
-                                  <span className="text-xs text-muted-foreground mt-1">
-                                      {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}
-                                  </span>
-                              </div>
-                          </TableCell>
-                          <TableCell>{pig.breed}</TableCell>
-                          <TableCell>
-                              {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' && pig.lastEvent.inseminationGroup
-                                  ? pig.lastEvent.inseminationGroup
-                                  : 'N/A'
-                              }
-                          </TableCell>
-                          <TableCell>
-                              {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
-                                  ? calculateProbableFarrowingDate(pig.lastEvent.date)
-                                  : 'N/A'
-                              }
-                          </TableCell>
-                          <TableCell className="text-right">{pig.age}</TableCell>
-                          <TableCell className="text-right">
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Abrir menú</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                          </TableCell>
-                      </TableRow>
-                      ))}
-                  </TableBody>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Raza</TableHead>
+                        <TableHead>Grupo Inseminación</TableHead>
+                        <TableHead>F. Parto Probable</TableHead>
+                        <TableHead className="text-right">Edad (sem.)</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredPigs.map((pig) => (
+                        <TableRow key={pig.id} onClick={() => router.push(`/gestation/${pig.id}`)} className="cursor-pointer">
+                            <TableCell className="font-medium">{pig.id}</TableCell>
+                            <TableCell>
+                                <div className="flex flex-col">
+                                    <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
+                                    <span className="text-xs text-muted-foreground mt-1">
+                                        {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}
+                                    </span>
+                                </div>
+                            </TableCell>
+                            <TableCell>{pig.breed}</TableCell>
+                            <TableCell>
+                                {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' && pig.lastEvent.inseminationGroup
+                                    ? pig.lastEvent.inseminationGroup
+                                    : 'N/A'
+                                }
+                            </TableCell>
+                            <TableCell>
+                                {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
+                                    ? calculateProbableFarrowingDate(pig.lastEvent.date)
+                                    : 'N/A'
+                                }
+                            </TableCell>
+                            <TableCell className="text-right">{pig.age}</TableCell>
+                            <TableCell className="text-right">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Abrir menú</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                  <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
                   </Table>
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="grid grid-cols-1 gap-4 md:hidden">
                   {filteredPigs.map((pig) => (
-                    <Card key={pig.id} className="cursor-pointer hover:bg-accent/50">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle>{pig.id}</CardTitle>
-                            <CardDescription>{pig.breed}</CardDescription>
+                    <Link href={`/gestation/${pig.id}`} key={pig.id} className="block">
+                      <Card className="hover:bg-accent/50">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle>{pig.id}</CardTitle>
+                              <CardDescription>{pig.breed}</CardDescription>
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                  <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="grid gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Estado</span>
-                          <Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Último Evento</span>
-                          <span>{pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Grupo Insem.</span>
-                          <span>{pig.status === 'Gestante' && pig.lastEvent.inseminationGroup ? pig.lastEvent.inseminationGroup : 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">F. Parto Prob.</span>
-                          <span>{pig.status === 'Gestante' ? calculateProbableFarrowingDate(pig.lastEvent.date) : 'N/A'}</span>
-                        </div>
-                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Edad</span>
-                          <span>{pig.age} sem.</span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardHeader>
+                        <CardContent className="grid gap-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Estado</span>
+                            <Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Último Evento</span>
+                            <span>{pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Grupo Insem.</span>
+                            <span>{pig.status === 'Gestante' && pig.lastEvent.inseminationGroup ? pig.lastEvent.inseminationGroup : 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">F. Parto Prob.</span>
+                            <span>{pig.status === 'Gestante' ? calculateProbableFarrowingDate(pig.lastEvent.date) : 'N/A'}</span>
+                          </div>
+                           <div className="flex justify-between">
+                            <span className="text-muted-foreground">Edad</span>
+                            <span>{pig.age} sem.</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
-            </CardContent>
+              </CardContent>
             </Card>
         </div>
         
@@ -591,5 +598,5 @@ export default function GestationPage() {
         </AlertDialog>
       </div>
     </AppLayout>
-  )
+  );
 }
