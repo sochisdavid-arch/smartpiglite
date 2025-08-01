@@ -29,6 +29,7 @@ import {
   Boxes,
   Users,
   Landmark,
+  Stethoscope,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/finance', label: 'Finanzas', icon: Landmark },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
+    { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
   ];
 
   return (
