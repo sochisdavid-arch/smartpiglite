@@ -89,6 +89,16 @@ const calculateAge = (birthDate: string) => {
     return differenceInWeeks(new Date(), date);
 }
 
+const calculateProbableFarrowingDate = (inseminationDate: string) => {
+    if (inseminationDate) {
+        const date = parseISO(inseminationDate);
+        if (isValid(date)) {
+            return format(addDays(date, 114), 'dd/MM/yyyy');
+        }
+    }
+    return 'N/A';
+};
+
 export default function GestationPage() {
   const [pigs, setPigs] = React.useState<Pig[]>(initialPigs.map(p => ({
     ...p,
@@ -457,7 +467,7 @@ export default function GestationPage() {
                             <div id="animal-details" className="grid gap-4 py-4 print:text-black">
                                 <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
                                     <div className="flex items-start justify-between">
-                                        <div className="flex-grow space-y-2">
+                                        <div className="space-y-2">
                                             <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
@@ -573,9 +583,8 @@ export default function GestationPage() {
                     <TableHead>ID</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Raza</TableHead>
-                    <TableHead>Género</TableHead>
+                    <TableHead>F. Parto Probable</TableHead>
                     <TableHead className="text-right">Edad (sem.)</TableHead>
-                    <TableHead className="text-right">Peso (kg)</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -592,9 +601,13 @@ export default function GestationPage() {
                             </div>
                         </TableCell>
                         <TableCell>{pig.breed}</TableCell>
-                        <TableCell>{pig.gender}</TableCell>
+                        <TableCell>
+                            {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
+                                ? calculateProbableFarrowingDate(pig.lastEvent.date)
+                                : 'N/A'
+                            }
+                        </TableCell>
                         <TableCell className="text-right">{pig.age}</TableCell>
-                        <TableCell className="text-right">{pig.weight}</TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -630,7 +643,7 @@ export default function GestationPage() {
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteConfirm}>Continuar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -639,5 +652,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
