@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Calendar as CalendarIcon, Syringe, X } from 'lucide-react';
+import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Calendar as CalendarIcon, Syringe, X, Bell, Stethoscope, BookOpen } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -47,6 +47,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Combobox } from '@/components/Combobox';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface Pig {
     id: string;
@@ -96,6 +97,32 @@ const calculateAge = (birthDate: string) => {
     return differenceInWeeks(new Date(), date);
 }
 
+// Interfaces for new tabs
+interface Abortion {
+  id: string;
+  sowId: string;
+  abortionDate: string;
+  cause: string;
+  observations?: string;
+}
+
+interface Movement {
+    id: string;
+    pigId: string;
+    origin: string;
+    destination: string;
+    movementDate: string;
+    reason: string;
+}
+
+interface Treatment {
+    id: string;
+    pigId: string;
+    treatmentDate: string;
+    product: string;
+    dose: string;
+    reason: string;
+}
 
 export default function GestationPage() {
   const [pigs, setPigs] = React.useState<Pig[]>(initialPigs.map(p => ({
@@ -125,6 +152,12 @@ export default function GestationPage() {
   
   // States for Diagnosis tab
   const [diagSowId, setDiagSowId] = React.useState('');
+
+  // States for new tabs
+  const [abortions, setAbortions] = React.useState<Abortion[]>([]);
+  const [movements, setMovements] = React.useState<Movement[]>([]);
+  const [treatments, setTreatments] = React.useState<Treatment[]>([]);
+  const [historyPigId, setHistoryPigId] = React.useState('');
 
 
   React.useEffect(() => {
@@ -259,7 +292,54 @@ export default function GestationPage() {
 
     (event.target as HTMLFormElement).reset();
     setSelectedSowId('');
-};
+  };
+
+  const handleAbortionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const newAbortion: Abortion = {
+          id: `AB-${Date.now()}`,
+          sowId: formData.get('sowId') as string,
+          abortionDate: formData.get('abortionDate') as string,
+          cause: formData.get('cause') as string,
+          observations: formData.get('observations') as string,
+      };
+      setAbortions(prev => [newAbortion, ...prev]);
+      toast({ title: "Aborto Registrado", description: `Se ha registrado un aborto para la cerda ${newAbortion.sowId}.` });
+      (event.target as HTMLFormElement).reset();
+  };
+
+  const handleMovementSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const newMovement: Movement = {
+          id: `MOV-${Date.now()}`,
+          pigId: formData.get('pigId') as string,
+          origin: formData.get('origin') as string,
+          destination: formData.get('destination') as string,
+          movementDate: formData.get('movementDate') as string,
+          reason: formData.get('reason') as string,
+      };
+      setMovements(prev => [newMovement, ...prev]);
+      toast({ title: "Movimiento Registrado", description: `Movimiento del animal ${newMovement.pigId} registrado.` });
+      (event.target as HTMLFormElement).reset();
+  };
+
+  const handleTreatmentSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const newTreatment: Treatment = {
+          id: `TRT-${Date.now()}`,
+          pigId: formData.get('pigId') as string,
+          treatmentDate: formData.get('treatmentDate') as string,
+          product: formData.get('product') as string,
+          dose: formData.get('dose') as string,
+          reason: formData.get('reason') as string,
+      };
+      setTreatments(prev => [newTreatment, ...prev]);
+      toast({ title: "Tratamiento Registrado", description: `Tratamiento para el animal ${newTreatment.pigId} registrado.` });
+      (event.target as HTMLFormElement).reset();
+  };
 
 
   return (
@@ -723,6 +803,260 @@ export default function GestationPage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="abortions" className="mt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Registro de Abortos</CardTitle>
+                        <CardDescription>Registre cualquier evento de aborto para análisis futuro.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleAbortionSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="abortion-sowId">Cerda (ID)</Label>
+                                <Combobox name="sowId" options={sowOptions} placeholder="Buscar cerda..."/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="abortionDate">Fecha del Aborto</Label>
+                                <Input id="abortionDate" name="abortionDate" type="date" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cause">Causa Probable</Label>
+                                <Input id="cause" name="cause" placeholder="Ej. Estrés por calor, enfermedad" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="abortion-observations">Observaciones</Label>
+                                <Textarea id="abortion-observations" name="observations" placeholder="Detalles adicionales..."/>
+                            </div>
+                            <Button type="submit" className="w-full">Registrar Aborto</Button>
+                        </form>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Historial de Abortos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-72">
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Cerda</TableHead><TableHead>Fecha</TableHead><TableHead>Causa</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {abortions.length > 0 ? abortions.map(a => (
+                                        <TableRow key={a.id}><TableCell>{a.sowId}</TableCell><TableCell>{a.abortionDate}</TableCell><TableCell>{a.cause}</TableCell></TableRow>
+                                    )) : <TableRow><TableCell colSpan={3} className="h-24 text-center">No hay abortos registrados.</TableCell></TableRow>}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="movements" className="mt-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Registro de Movimientos de Animales</CardTitle>
+                    <CardDescription>Registre los cambios de ubicación o grupo de los animales.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleMovementSubmit} className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                           <div className="space-y-2">
+                                <Label htmlFor="movement-pigId">Animal (ID)</Label>
+                                <Combobox name="pigId" options={pigIdOptions} placeholder="Buscar animal..." />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="movementDate">Fecha de Movimiento</Label>
+                                <Input id="movementDate" name="movementDate" type="date" required />
+                            </div>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="origin">Grupo/Ubicación Origen</Label>
+                                <Input id="origin" name="origin" placeholder="Ej. Corral A-01" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="destination">Grupo/Ubicación Destino</Label>
+                                <Input id="destination" name="destination" placeholder="Ej. Corral B-05" required />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reason">Razón del Movimiento</Label>
+                            <Input id="reason" name="reason" placeholder="Ej. Agrupación por peso" required />
+                        </div>
+                        <Button type="submit">Registrar Movimiento</Button>
+                    </form>
+                    <Separator className="my-6" />
+                    <h3 className="text-lg font-semibold mb-2">Historial de Movimientos Recientes</h3>
+                    <ScrollArea className="h-60">
+                        <Table>
+                            <TableHeader><TableRow><TableHead>ID Animal</TableHead><TableHead>Origen</TableHead><TableHead>Destino</TableHead><TableHead>Fecha</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {movements.length > 0 ? movements.map(m => (
+                                    <TableRow key={m.id}><TableCell>{m.pigId}</TableCell><TableCell>{m.origin}</TableCell><TableCell>{m.destination}</TableCell><TableCell>{m.movementDate}</TableCell></TableRow>
+                                )) : <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay movimientos registrados.</TableCell></TableRow>}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="feeding" className="mt-6">
+              <Card>
+                <CardHeader>
+                    <CardTitle>Plan de Alimentación en Gestación</CardTitle>
+                    <CardDescription>Asigne y ajuste planes de alimentación específicos para cerdas gestantes.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <form className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold">Registrar/Actualizar Plan</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="feeding-sowId">Cerda</Label>
+                                <Combobox options={sowOptions} placeholder="Seleccionar cerda"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Etapa Gestacional</Label>
+                                <Select name="gestationStage">
+                                    <SelectTrigger><SelectValue placeholder="Seleccionar etapa" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="early">Temprana (0-30 días)</SelectItem>
+                                        <SelectItem value="mid">Media (31-85 días)</SelectItem>
+                                        <SelectItem value="late">Tardía (86+ días)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="feedType">Tipo de Alimento</Label>
+                                <Input id="feedType" name="feedType" placeholder="Ej. Gestación Fase 1" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="dailyQuantity">Cantidad Diaria (kg)</Label>
+                                <Input id="dailyQuantity" name="dailyQuantity" type="number" step="0.1" placeholder="Ej. 2.5" />
+                            </div>
+                        </div>
+                        <Button>Guardar Plan</Button>
+                    </form>
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">Planes Actuales</h3>
+                        <Alert>
+                          <Stethoscope className="h-4 w-4" />
+                          <AlertTitle>Funcionalidad en desarrollo</AlertTitle>
+                          <AlertDescription>La visualización de los planes de alimentación estará disponible próximamente.</AlertDescription>
+                        </Alert>
+                    </div>
+                </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="alerts" className="mt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Alertas y Notificaciones</CardTitle>
+                    <CardDescription>Configure y revise alertas para fechas importantes del ciclo de gestación.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Alert>
+                            <Bell className="h-4 w-4" />
+                            <AlertTitle>Próximo Parto: PIG-001</AlertTitle>
+                            <AlertDescription>Fecha estimada: 25 de Agosto, 2024 (en 3 días)</AlertDescription>
+                        </Alert>
+                         <Alert>
+                            <Bell className="h-4 w-4" />
+                            <AlertTitle>Diagnóstico de Preñez: PIG-003</AlertTitle>
+                            <AlertDescription>Revisar en 5 días.</AlertDescription>
+                        </Alert>
+                         <Alert variant="destructive">
+                            <Bell className="h-4 w-4" />
+                            <AlertTitle>Servicio Atrasado: PIG-005</AlertTitle>
+                            <AlertDescription>Pasaron 10 días desde el destete.</AlertDescription>
+                        </Alert>
+                    </div>
+                     <p className="text-sm text-muted-foreground">Esta es una vista previa. La configuración de alertas personalizadas estará disponible en futuras actualizaciones.</p>
+                </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="treatments" className="mt-6">
+              <Card>
+                <CardHeader>
+                    <CardTitle>Registro de Tratamientos</CardTitle>
+                    <CardDescription>Mantenga un registro de todos los tratamientos médicos aplicados.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <form onSubmit={handleTreatmentSubmit} className="space-y-4 mb-6 p-4 border rounded-lg">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="treatment-pigId">Animal (ID)</Label>
+                                <Combobox name="pigId" options={pigIdOptions} placeholder="Buscar animal..." />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="treatmentDate">Fecha de Tratamiento</Label>
+                                <Input id="treatmentDate" name="treatmentDate" type="date" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="product">Producto Utilizado</Label>
+                                <Input id="product" name="product" placeholder="Ej. Ivermectina" required />
+                            </div>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="dose">Dosis</Label>
+                                <Input id="dose" name="dose" placeholder="Ej. 2 ml" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="treatment-reason">Razón del Tratamiento</Label>
+                                <Input id="treatment-reason" name="reason" placeholder="Ej. Desparasitación" required />
+                            </div>
+                        </div>
+                        <Button type="submit">Registrar Tratamiento</Button>
+                    </form>
+                    <h3 className="text-lg font-semibold mb-2">Historial de Tratamientos</h3>
+                    <ScrollArea className="h-60">
+                        <Table>
+                            <TableHeader><TableRow><TableHead>ID Animal</TableHead><TableHead>Fecha</TableHead><TableHead>Producto</TableHead><TableHead>Razón</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                               {treatments.length > 0 ? treatments.map(t => (
+                                    <TableRow key={t.id}><TableCell>{t.pigId}</TableCell><TableCell>{t.treatmentDate}</TableCell><TableCell>{t.product}</TableCell><TableCell>{t.reason}</TableCell></TableRow>
+                                )) : <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay tratamientos registrados.</TableCell></TableRow>}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Historial Reproductivo Individual</CardTitle>
+                    <CardDescription>Consulte el ciclo reproductivo completo de una cerda específica.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex items-end gap-2">
+                      <div className="flex-grow space-y-2">
+                         <Label htmlFor="history-sow-id">Seleccione una Cerda</Label>
+                        <Combobox
+                            options={sowOptions}
+                            value={historyPigId}
+                            onChange={setHistoryPigId}
+                            placeholder="Buscar cerda..."
+                            noResultsText="No se encontraron cerdas."
+                        />
+                      </div>
+                      <Button><Search className="h-4 w-4"/></Button>
+                    </div>
+                     <Alert>
+                      <BookOpen className="h-4 w-4" />
+                      <AlertTitle>Historial para: {historyPigId || "..."}</AlertTitle>
+                      <AlertDescription>La visualización detallada del historial está en desarrollo.</AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+          </TabsContent>
+          
           <TabsContent value="reports" className="mt-6">
             <Card>
                 <CardHeader className="flex-row items-center justify-between">
@@ -762,14 +1096,6 @@ export default function GestationPage() {
                 </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Placeholder for other tabs */}
-          <TabsContent value="abortions" className="mt-6 text-center text-muted-foreground p-8"><p>Manejo de Abortos - Próximamente</p></TabsContent>
-          <TabsContent value="movements" className="mt-6 text-center text-muted-foreground p-8"><p>Cambios de Grupo o Ubicación - Próximamente</p></TabsContent>
-          <TabsContent value="feeding" className="mt-6 text-center text-muted-foreground p-8"><p>Alimentación en Gestación - Próximamente</p></TabsContent>
-          <TabsContent value="alerts" className="mt-6 text-center text-muted-foreground p-8"><p>Alertas Automáticas y Programación - Próximamente</p></TabsContent>
-          <TabsContent value="treatments" className="mt-6 text-center text-muted-foreground p-8"><p>Registro de Tratamientos - Próximamente</p></TabsContent>
-          <TabsContent value="history" className="mt-6 text-center text-muted-foreground p-8"><p>Historial Reproductivo Individual - Próximamente</p></TabsContent>
 
         </Tabs>
         
