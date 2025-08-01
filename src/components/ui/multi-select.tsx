@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,13 +11,13 @@ import {
   CommandItem,
   CommandList,
   CommandInput,
+  CommandEmpty,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Button } from "./button";
-import { Check } from "lucide-react";
 
-type Option = {
+export type Option = {
   value: string;
   label: string;
 };
@@ -40,10 +40,14 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  const handleUnselect = (value: string) => {
-    onChange(selected.filter((s) => s !== value));
+  const handleSelect = (value: string) => {
+    onChange(
+      selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value]
+    );
   };
-
+  
   const selectedOptions = selected.map(value => options.find(o => o.value === value)).filter(Boolean) as Option[];
 
   return (
@@ -65,7 +69,7 @@ export function MultiSelect({
                             className="mr-1"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleUnselect(option.value);
+                                handleSelect(option.value);
                             }}
                         >
                             {option.label}
@@ -82,6 +86,7 @@ export function MultiSelect({
             <Command>
               <CommandInput placeholder="Buscar..." />
               <CommandList>
+                <CommandEmpty>No se encontraron resultados.</CommandEmpty>
                 <CommandGroup>
                   {options.map((option) => {
                     const isSelected = selected.includes(option.value);
@@ -89,11 +94,7 @@ export function MultiSelect({
                       <CommandItem
                         key={option.value}
                         onSelect={() => {
-                          if (isSelected) {
-                            handleUnselect(option.value);
-                          } else {
-                            onChange([...selected, option.value]);
-                          }
+                          handleSelect(option.value);
                         }}
                       >
                         <div className={cn(

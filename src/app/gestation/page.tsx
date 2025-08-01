@@ -68,7 +68,7 @@ interface ConsumptionRecord {
     id: string;
     date: string;
     totalQuantity: number;
-    feedTypes: string[];
+    feedTypes: { value: string; label: string; }[];
     sowCount: number;
     averageConsumption: number;
 }
@@ -137,8 +137,8 @@ export default function GestationPage() {
   const [filterBreed, setFilterBreed] = React.useState('all');
   const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
 
-  const gestatingSowsCount = React.useMemo(() => {
-    return pigs.filter(p => p.status === 'Gestante').length;
+  const totalSowsForConsumption = React.useMemo(() => {
+    return pigs.filter(p => p.gender === 'Hembra' && ['Gestante', 'Vacia', 'Destetada', 'Remplazo'].includes(p.status)).length;
   }, [pigs]);
 
   React.useEffect(() => {
@@ -288,11 +288,11 @@ export default function GestationPage() {
 
         const averageConsumption = React.useMemo(() => {
             const numTotalQuantity = Number(totalQuantity);
-            if (numTotalQuantity > 0 && gestatingSowsCount > 0) {
-                return (numTotalQuantity / gestatingSowsCount).toFixed(2);
+            if (numTotalQuantity > 0 && totalSowsForConsumption > 0) {
+                return (numTotalQuantity / totalSowsForConsumption).toFixed(2);
             }
             return '0.00';
-        }, [totalQuantity, gestatingSowsCount]);
+        }, [totalQuantity, totalSowsForConsumption]);
 
 
         const handleSubmit = (e: React.FormEvent) => {
@@ -304,8 +304,8 @@ export default function GestationPage() {
                 id: new Date().toISOString(),
                 date: consumptionDate,
                 totalQuantity: Number(totalQuantity),
-                feedTypes: selectedFeeds.map(val => options.find(o => o.value === val)?.label || val),
-                sowCount: gestatingSowsCount,
+                feedTypes: selectedFeeds.map(val => feedOptions.find(o => o.value === val)).filter(Boolean) as { value: string; label: string; }[],
+                sowCount: totalSowsForConsumption,
                 averageConsumption: Number(averageConsumption),
             };
 
@@ -315,27 +315,25 @@ export default function GestationPage() {
             
             toast({
                 title: "¡Consumo de Lote Registrado!",
-                description: `${totalQuantity}kg de alimento registrado para ${gestatingSowsCount} cerdas en gestación.`,
+                description: `${totalQuantity}kg de alimento registrado para ${totalSowsForConsumption} hembras.`,
             });
             
             setIsConsumptionFormOpen(false);
         }
 
-        const options = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: f.name }));
-
         return (
              <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Registrar Consumo del Lote de Gestación</DialogTitle>
+                    <DialogTitle>Registrar Consumo del Lote de Reproductoras</DialogTitle>
                     <DialogDescription>
-                        Registre el consumo diario de alimento para todas las cerdas en gestación. El consumo se descontará del inventario.
+                        Registre el consumo diario de alimento para todas las hembras en gestación, vacías, destetadas y de reemplazo. El consumo se descontará del inventario.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4 py-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="space-y-1">
-                            <Label>Cerdas en Gestación</Label>
-                            <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{gestatingSowsCount}</div>
+                            <Label>Hembras en Lote</Label>
+                            <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{totalSowsForConsumption}</div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="consumptionDate">Fecha</Label>
@@ -373,7 +371,7 @@ export default function GestationPage() {
                                 <TableHead>Fecha</TableHead>
                                 <TableHead>Alimentos</TableHead>
                                 <TableHead className="text-right">Total (kg)</TableHead>
-                                <TableHead className="text-right">Cerdas</TableHead>
+                                <TableHead className="text-right">Hembras</TableHead>
                                 <TableHead className="text-right">Promedio (kg)</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -381,7 +379,7 @@ export default function GestationPage() {
                             {consumptionHistory.map(record => (
                                 <TableRow key={record.id}>
                                     <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
-                                    <TableCell>{record.feedTypes.join(', ')}</TableCell>
+                                    <TableCell>{record.feedTypes.map(f => f.label.split(' (')[0]).join(', ')}</TableCell>
                                     <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
                                     <TableCell className="text-right">{record.sowCount}</TableCell>
                                     <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
