@@ -231,7 +231,7 @@ export default function GestationPage() {
     }
     
     return (
-        <DialogContent className="sm:max-w-md flex flex-col">
+        <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
             <DialogHeader>
                 <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
                 <DialogDescription>
@@ -371,12 +371,11 @@ export default function GestationPage() {
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Gestión de Animales</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
-            <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
-            <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Escanear QR</Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Buscar</Button>
+            <Button variant="outline" className="w-full sm:w-auto"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
           </div>
         </div>
 
@@ -390,64 +389,62 @@ export default function GestationPage() {
             </div>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="sm:max-w-[425px] overflow-visible">
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                       <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
                       <DialogDescription>
                       {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
                       </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleAnimalFormSubmit}>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="id" className="text-right">ID</Label>
-                            <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
+                  <form onSubmit={handleAnimalFormSubmit} className="grid gap-4 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="id" className="sm:text-right">ID</Label>
+                        <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                      <Label htmlFor="breed" className="sm:text-right">Raza</Label>
+                      <Select name="breed" required defaultValue={editingPig?.breed}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Seleccionar raza/línea" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="gender" className="sm:text-right">Género</Label>
+                        <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Hembra" id="female" />
+                            <Label htmlFor="female">Hembra</Label>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="breed" className="text-right">Raza</Label>
-                          <Select name="breed" required defaultValue={editingPig?.breed}>
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Seleccionar raza/línea" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Macho" id="male" />
+                            <Label htmlFor="male">Macho</Label>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="gender" className="text-right">Género</Label>
-                            <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Hembra" id="female" />
-                                <Label htmlFor="female">Hembra</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Macho" id="male" />
-                                <Label htmlFor="male">Macho</Label>
-                            </div>
-                            </RadioGroup>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="birthDate" className="text-right">F. Nacimiento</Label>
-                            <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="arrivalDate" className="text-right">F. Llegada</Label>
-                            <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
-                            <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
-                            <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
-                        </div>
-                      </div>
-                      <DialogFooter>
+                        </RadioGroup>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="birthDate" className="sm:text-right">F. Nacimiento</Label>
+                        <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="arrivalDate" className="sm:text-right">F. Llegada</Label>
+                        <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="weight" className="sm:text-right">Peso (kg)</Label>
+                        <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                        <Label htmlFor="purchaseValue" className="sm:text-right">Valor Compra ($)</Label>
+                        <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
+                    </div>
+                    <DialogFooter>
                         <Button type="button" variant="ghost" onClick={closeFormDialog}>Cancelar</Button>
                         <Button type="submit">{editingPig ? 'Guardar Cambios' : 'Guardar Animal'}</Button>
-                      </DialogFooter>
+                    </DialogFooter>
                   </form>
                 </DialogContent>
             </Dialog>
@@ -457,8 +454,8 @@ export default function GestationPage() {
             </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="w-screen max-w-full h-screen" side="right">
-                    <SheetHeader className="flex-shrink-0">
+                <SheetContent className="w-full h-full sm:w-full sm:max-w-full p-0 flex flex-col" side="right">
+                    <SheetHeader className="flex-shrink-0 p-6 border-b">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
                         Información completa y detallada del animal seleccionado.
@@ -466,44 +463,44 @@ export default function GestationPage() {
                     </SheetHeader>
                     {selectedPig && (
                         <>
-                        <ScrollArea className="flex-grow pr-6 -mr-6">
-                            <div id="animal-details" className="grid gap-4 py-4 print:text-black">
+                        <ScrollArea className="flex-grow p-6">
+                            <div id="animal-details" className="grid gap-4 print:text-black">
                                 <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                         <div className="space-y-2">
                                             <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
                                                 <Badge variant={getStatusVariant(selectedPig.status)}>{selectedPig.status}</Badge>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                    <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent className="w-56">
-                                                        <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Celo")}>Celo</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Celo no Servido")}>Celo no Servido</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Inseminación")}>Inseminación</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Parto")}>Parto</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Aborto")}>Aborto</DropdownMenuItem>
-                                                        <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Tratamiento")}>Tratamiento</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Vacunación")}>Vacunación</DropdownMenuItem>
-                                                        <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Venta")}>Venta</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Descarte")}>Descarte</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => openEventDialog("Muerte")}>Muerte</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            <Image
+                                        <div className="flex items-center gap-4 flex-shrink-0">
+                                          <div className="flex items-center gap-2 flex-shrink-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-56">
+                                                    <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Celo")}>Celo</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Celo no Servido")}>Celo no Servido</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Inseminación")}>Inseminación</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Parto")}>Parto</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Aborto")}>Aborto</DropdownMenuItem>
+                                                    <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Tratamiento")}>Tratamiento</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Vacunación")}>Vacunación</DropdownMenuItem>
+                                                    <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Venta")}>Venta</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Descarte")}>Descarte</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openEventDialog("Muerte")}>Muerte</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                          <Image
                                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
                                                 alt={`QR Code for ${selectedPig.id}`}
                                                 width={100}
@@ -513,7 +510,7 @@ export default function GestationPage() {
                                         </div>
                                     </div>
                                     <Separator/>
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                         <div className="text-muted-foreground">Género</div>
                                         <div>{selectedPig.gender}</div>
 
@@ -543,7 +540,7 @@ export default function GestationPage() {
                                 </Card>
                             </div>
                         </ScrollArea>
-                        <div className="flex-shrink-0 pt-4 border-t">
+                        <div className="flex-shrink-0 p-6 border-t">
                             <Button onClick={handlePrint} className="w-full print:hidden">
                             <Printer className="mr-2 h-4 w-4" />
                             Imprimir Hoja de Vida
@@ -569,7 +566,7 @@ export default function GestationPage() {
                             <SelectValue placeholder="Filtrar por Raza" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">Todas las Razas</SelectItem>
+                            <SelectItem value="">Todas las Razas</SelectItem>
                             {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
                           </SelectContent>
                       </Select>
@@ -580,65 +577,120 @@ export default function GestationPage() {
                   </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Raza</TableHead>
-                    <TableHead>Grupo Inseminación</TableHead>
-                    <TableHead>F. Parto Probable</TableHead>
-                    <TableHead className="text-right">Edad (sem.)</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredPigs.map((pig) => (
-                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
-                        <TableCell className="font-medium">{pig.id}</TableCell>
-                        <TableCell>
-                            <div className="flex flex-col">
-                                <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
-                                <span className="text-xs text-muted-foreground mt-1">
-                                    {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${pig.lastEvent.date}` : 'Sin eventos'}
-                                </span>
-                            </div>
-                        </TableCell>
-                        <TableCell>{pig.breed}</TableCell>
-                        <TableCell>
-                            {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' && pig.lastEvent.inseminationGroup
-                                ? pig.lastEvent.inseminationGroup
-                                : 'N/A'
-                            }
-                        </TableCell>
-                        <TableCell>
-                            {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
-                                ? calculateProbableFarrowingDate(pig.lastEvent.date)
-                                : 'N/A'
-                            }
-                        </TableCell>
-                        <TableCell className="text-right">{pig.age}</TableCell>
-                        <TableCell className="text-right">
-                        <DropdownMenu>
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <Table>
+                  <TableHeader>
+                      <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Raza</TableHead>
+                      <TableHead>Grupo Inseminación</TableHead>
+                      <TableHead>F. Parto Probable</TableHead>
+                      <TableHead className="text-right">Edad (sem.)</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {filteredPigs.map((pig) => (
+                      <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
+                          <TableCell className="font-medium">{pig.id}</TableCell>
+                          <TableCell>
+                              <div className="flex flex-col">
+                                  <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
+                                  <span className="text-xs text-muted-foreground mt-1">
+                                      {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}
+                                  </span>
+                              </div>
+                          </TableCell>
+                          <TableCell>{pig.breed}</TableCell>
+                          <TableCell>
+                              {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' && pig.lastEvent.inseminationGroup
+                                  ? pig.lastEvent.inseminationGroup
+                                  : 'N/A'
+                              }
+                          </TableCell>
+                          <TableCell>
+                              {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
+                                  ? calculateProbableFarrowingDate(pig.lastEvent.date)
+                                  : 'N/A'
+                              }
+                          </TableCell>
+                          <TableCell className="text-right">{pig.age}</TableCell>
+                          <TableCell className="text-right">
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Abrir menú</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                          </TableCell>
+                      </TableRow>
+                      ))}
+                  </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                  {filteredPigs.map((pig) => (
+                    <Card key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle>{pig.id}</CardTitle>
+                            <CardDescription>{pig.breed}</CardDescription>
+                          </div>
+                          <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Abrir menú</span>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                              <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
                             </DropdownMenuContent>
-                        </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
+                          </DropdownMenu>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="grid gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Estado</span>
+                          <Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Último Evento</span>
+                          <span>{pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Grupo Insem.</span>
+                          <span>{pig.status === 'Gestante' && pig.lastEvent.inseminationGroup ? pig.lastEvent.inseminationGroup : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">F. Parto Prob.</span>
+                          <span>{pig.status === 'Gestante' ? calculateProbableFarrowingDate(pig.lastEvent.date) : 'N/A'}</span>
+                        </div>
+                         <div className="flex justify-between">
+                          <span className="text-muted-foreground">Edad</span>
+                          <span>{pig.age} sem.</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
             </CardContent>
             </Card>
         </div>
@@ -660,5 +712,5 @@ export default function GestationPage() {
         </AlertDialog>
       </div>
     </AppLayout>
-  );
+  )
 }

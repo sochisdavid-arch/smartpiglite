@@ -17,11 +17,11 @@ export default function FinancePage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión Financiera</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
-                        <Button variant="default"><Download className="mr-2 h-4 w-4" /> Exportar Resumen</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
+                        <Button variant="default" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" /> Exportar</Button>
                     </div>
                 </div>
 

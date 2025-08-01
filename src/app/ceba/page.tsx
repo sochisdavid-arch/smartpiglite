@@ -17,12 +17,11 @@ export default function CebaPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Ceba / Engorde</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
-                        <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Escanear Lote</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
+                        <Button variant="outline" className="w-full sm:w-auto"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
                     </div>
                 </div>
 
@@ -84,7 +83,7 @@ export default function CebaPage() {
                                             <Input id="assignedPen" placeholder="Ej. Ceba 3, Corral C1-C4" required />
                                         </div>
                                     </div>
-                                    <Button type="submit"><LogIn className="mr-2 h-4 w-4" /> Registrar Ingreso</Button>
+                                    <Button type="submit" className="w-full sm:w-auto"><LogIn className="mr-2 h-4 w-4" /> Registrar Ingreso</Button>
                                 </form>
                             </CardContent>
                         </Card>

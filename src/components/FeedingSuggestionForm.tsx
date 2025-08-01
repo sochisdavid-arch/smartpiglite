@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -200,7 +201,7 @@ export function FeedingSuggestionForm() {
                 <div className="flex flex-col items-center gap-4 text-center text-muted-foreground p-8">
                     <Lightbulb className="h-12 w-12" />
                     <h3 className="text-xl font-semibold">Esperando Datos</h3>
-                    <p>Completa el formulario de la izquierda para recibir una sugerencia de alimentación para tu cerdo impulsada por IA.</p>
+                    <p>Completa el formulario para recibir una sugerencia de alimentación para tu cerdo impulsada por IA.</p>
                 </div>
             </Card>
         )}

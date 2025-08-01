@@ -34,17 +34,16 @@ export default function PreceboPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Precebo</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
-                        <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Escanear QR</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
+                        <Button variant="outline" className="w-full sm:w-auto"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
                     </div>
                 </div>
 
                 <Tabs defaultValue="entry" className="w-full">
-                    <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11">
                         <TabsTrigger value="entry">Ingreso</TabsTrigger>
                         <TabsTrigger value="batch_config">Config. Lote</TabsTrigger>
                         <TabsTrigger value="health_monitoring">Sanidad</TabsTrigger>
@@ -100,7 +99,7 @@ export default function PreceboPage() {
                                             <Input id="responsible" placeholder="Nombre del operario" />
                                         </div>
                                     </div>
-                                    <Button type="submit">Registrar Ingreso</Button>
+                                    <Button type="submit" className="w-full sm:w-auto">Registrar Ingreso</Button>
                                 </form>
                             </CardContent>
                         </Card>
@@ -163,7 +162,7 @@ export default function PreceboPage() {
                                 <CardDescription>Registre las condiciones ambientales de la sala o corral.</CardDescription>
                             </CardHeader>
                              <CardContent className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                                     <Card>
                                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                             <CardTitle className="text-sm font-medium">Temperatura</CardTitle>

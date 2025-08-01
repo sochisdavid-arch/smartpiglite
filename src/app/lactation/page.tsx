@@ -54,17 +54,16 @@ export default function LactationPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Lactancia</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
-                        <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
-                        <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Escanear QR</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
+                        <Button variant="outline" className="w-full sm:w-auto"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
                     </div>
                 </div>
 
                 <Tabs defaultValue="assignment" className="w-full">
-                    <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10">
                         <TabsTrigger value="assignment">Asignación</TabsTrigger>
                         <TabsTrigger value="farrowing">Parto</TabsTrigger>
                         <TabsTrigger value="litter">Camada</TabsTrigger>
@@ -116,7 +115,7 @@ export default function LactationPage() {
                                         <Label htmlFor="pre-farrow-obs">Observaciones Previas al Parto</Label>
                                         <Textarea id="pre-farrow-obs" name="observations" placeholder="Cualquier observación relevante..."/>
                                     </div>
-                                    <Button type="submit">Registrar Asignación</Button>
+                                    <Button type="submit" className="w-full sm:w-auto">Registrar Asignación</Button>
                                 </form>
                             </CardContent>
                         </Card>

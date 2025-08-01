@@ -17,11 +17,11 @@ export default function PersonnelPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Personal</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda de Empleado</Button>
-                        <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" /> Añadir Empleado</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Buscar</Button>
+                        <Button variant="outline" className="w-full sm:w-auto"><UserPlus className="mr-2 h-4 w-4" /> Añadir</Button>
                     </div>
                 </div>
 
@@ -92,9 +92,9 @@ export default function PersonnelPage() {
                                             <Input id="photo" type="file" />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                         <Button type="submit"><UserPlus className="mr-2 h-4 w-4" /> Guardar Empleado</Button>
-                                         <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Generar QR de Identificación</Button>
+                                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                                         <Button type="submit" className="w-full sm:w-auto"><UserPlus className="mr-2 h-4 w-4" /> Guardar Empleado</Button>
+                                         <Button variant="outline" className="w-full sm:w-auto"><QrCode className="mr-2 h-4 w-4" /> Generar QR</Button>
                                     </div>
                                 </form>
                             </CardContent>

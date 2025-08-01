@@ -1,3 +1,4 @@
+
 "use client"
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ export default function DashboardPage() {
     <AppLayout>
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {kpiData.map((kpi, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

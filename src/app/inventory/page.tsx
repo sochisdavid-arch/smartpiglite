@@ -16,11 +16,11 @@ export default function InventoryPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Inventario</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda de Producto</Button>
-                        <Button variant="outline"><QrCode className="mr-2 h-4 w-4" /> Escanear Código</Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
+                        <Button variant="outline" className="w-full sm:w-auto"><QrCode className="mr-2 h-4 w-4" /> Escanear</Button>
                     </div>
                 </div>
 

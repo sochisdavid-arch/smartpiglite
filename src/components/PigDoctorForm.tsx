@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -271,7 +272,7 @@ export function PigDoctorForm() {
                 <div className="flex flex-col items-center gap-4 text-center text-muted-foreground p-8">
                     <FlaskConical className="h-12 w-12" />
                     <h3 className="text-xl font-semibold">Esperando Datos del Caso</h3>
-                    <p>Completa el formulario de la izquierda para que PigDoctor AI pueda analizar el caso y generar un diagnóstico presuntivo.</p>
+                    <p>Completa el formulario para que PigDoctor AI pueda analizar el caso y generar un diagnóstico presuntivo.</p>
                 </div>
             </Card>
         )}
