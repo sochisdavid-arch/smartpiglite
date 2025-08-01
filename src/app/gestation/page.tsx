@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar as CalendarIcon, Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal } from 'lucide-react';
+import { Calendar as CalendarIcon, Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, FileText } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -20,8 +20,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +45,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
 
 interface Pig {
     id: string;
@@ -85,6 +93,9 @@ export default function GestationPage() {
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
+  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
+  const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
+
 
   const [birthDate, setBirthDate] = React.useState<Date | undefined>();
   const [arrivalDate, setArrivalDate] = React.useState<Date | undefined>();
@@ -111,6 +122,11 @@ export default function GestationPage() {
   const openDeleteDialog = (pig: Pig) => {
       setPigToDelete(pig);
       setIsDeleteDialogOpen(true);
+  };
+
+  const openDetailsSheet = (pig: Pig) => {
+    setSelectedPig(pig);
+    setIsDetailsSheetOpen(true);
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -295,6 +311,63 @@ export default function GestationPage() {
                     </DialogContent>
                 </Dialog>
 
+                <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
+                    <SheetContent className="sm:max-w-xl w-full">
+                        <SheetHeader>
+                        <SheetTitle>Hoja de Vida del Animal</SheetTitle>
+                        <SheetDescription>
+                            Información completa y detallada del animal seleccionado.
+                        </SheetDescription>
+                        </SheetHeader>
+                        {selectedPig && (
+                            <div className="grid gap-4 py-4">
+                                <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
+                                        <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                    </div>
+                                    <Separator/>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div className="text-muted-foreground">Género</div>
+                                        <div>{selectedPig.gender}</div>
+
+                                        <div className="text-muted-foreground">Fecha de Nacimiento</div>
+                                        <div>{format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy')}</div>
+                                        
+                                        <div className="text-muted-foreground">Fecha de Llegada</div>
+                                        <div>{format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy')}</div>
+                                        
+                                        <div className="text-muted-foreground">Edad Actual</div>
+                                        <div>{selectedPig.age} semanas</div>
+                                        
+                                        <div className="text-muted-foreground">Peso Actual</div>
+                                        <div>{selectedPig.weight} kg</div>
+
+                                        <div className="text-muted-foreground">Valor de Compra</div>
+                                        <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Historial Reproductivo</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-center text-muted-foreground">
+                                        <p>Próximamente...</p>
+                                    </CardContent>
+                                </Card>
+                                 <Card>
+                                    <CardHeader>
+                                        <CardTitle>Historial de Tratamientos</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-center text-muted-foreground">
+                                        <p>Próximamente...</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </SheetContent>
+                </Sheet>
+
 
                 <Card>
                 <CardHeader>
@@ -351,7 +424,7 @@ export default function GestationPage() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                   <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                  <DropdownMenuItem disabled>Ver Detalles</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
                                 </DropdownMenuContent>
