@@ -139,8 +139,8 @@ export default function GestationPage() {
           <TabsContent value="diagnosis" className="mt-6">
              <Card>
               <CardHeader>
-                <CardTitle>Palpación y Diagnóstico de Preñez</CardTitle>
-                <CardDescription>Registre los resultados de palpaciones o ecografías.</CardDescription>
+                <CardTitle>Diagnóstico de Preñez</CardTitle>
+                <CardDescription>Registre los resultados de ecografías u otros métodos de diagnóstico.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                  <div className="grid gap-4 md:grid-cols-2">
@@ -159,8 +159,8 @@ export default function GestationPage() {
                       <Select>
                         <SelectTrigger><SelectValue placeholder="Seleccione método" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="palpation">Palpación Manual</SelectItem>
                           <SelectItem value="ultrasound">Ecografía</SelectItem>
+                          <SelectItem value="other">Otro</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
