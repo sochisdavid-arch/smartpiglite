@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -14,6 +15,7 @@ import {
   OAuthProvider,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
@@ -29,6 +31,11 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
+      if (error instanceof FirebaseError && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+        // User closed the popup, do nothing.
+        console.log("Sign-in popup closed by user.");
+        return;
+      }
       console.error("Error during Google sign-in:", error);
       toast({
         variant: "destructive",
@@ -44,6 +51,11 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
+      if (error instanceof FirebaseError && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+        // User closed the popup, do nothing.
+        console.log("Sign-in popup closed by user.");
+        return;
+      }
       console.error("Error during Microsoft sign-in:", error);
        toast({
         variant: "destructive",
