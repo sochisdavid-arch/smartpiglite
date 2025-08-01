@@ -37,7 +37,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { MultiSelect } from '@/components/ui/multi-select';
 import { Separator } from '@/components/ui/separator';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
@@ -68,7 +67,7 @@ interface ConsumptionRecord {
     id: string;
     date: string;
     totalQuantity: number;
-    feedTypes: { value: string; label: string; }[];
+    feedType: { value: string; label: string; };
     sowCount: number;
     averageConsumption: number;
 }
@@ -282,7 +281,7 @@ export default function GestationPage() {
   };
 
    const ConsumptionForm = () => {
-        const [selectedFeeds, setSelectedFeeds] = React.useState<string[]>([]);
+        const [selectedFeed, setSelectedFeed] = React.useState<string>();
         const [totalQuantity, setTotalQuantity] = React.useState<number | string>('');
         const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
 
@@ -300,11 +299,24 @@ export default function GestationPage() {
             const formData = new FormData(e.target as HTMLFormElement);
             const consumptionDate = formData.get('consumptionDate') as string;
             
+            if (!selectedFeed) {
+                toast({
+                    variant: "destructive",
+                    title: "Campo requerido",
+                    description: "Por favor, seleccione un tipo de alimento.",
+                });
+                return;
+            }
+
+            const foundFeed = feedOptions.find(o => o.value === selectedFeed);
+
+            if (!foundFeed) return;
+
             const newRecord: ConsumptionRecord = {
                 id: new Date().toISOString(),
                 date: consumptionDate,
                 totalQuantity: Number(totalQuantity),
-                feedTypes: selectedFeeds.map(val => feedOptions.find(o => o.value === val)).filter(Boolean) as { value: string; label: string; }[],
+                feedType: foundFeed,
                 sowCount: totalSowsForConsumption,
                 averageConsumption: Number(averageConsumption),
             };
@@ -315,7 +327,7 @@ export default function GestationPage() {
             
             toast({
                 title: "¡Consumo de Lote Registrado!",
-                description: `${totalQuantity}kg de alimento registrado para ${totalSowsForConsumption} hembras.`,
+                description: `${totalQuantity}kg de ${foundFeed.label.split(' (')[0]} registrado para ${totalSowsForConsumption} hembras.`,
             });
             
             setIsConsumptionFormOpen(false);
@@ -349,14 +361,19 @@ export default function GestationPage() {
                         </div>
                      </div>
                       <div className="space-y-2">
-                        <Label htmlFor="feedType">Tipo(s) de Alimento</Label>
-                         <MultiSelect
-                            options={feedOptions}
-                            selected={selectedFeeds}
-                            onChange={setSelectedFeeds}
-                            className="w-full"
-                            placeholder="Seleccione uno o más alimentos..."
-                        />
+                        <Label htmlFor="feedType">Tipo de Alimento</Label>
+                        <Select onValueChange={setSelectedFeed} value={selectedFeed}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Seleccione un alimento..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {feedOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </form>
 
@@ -369,7 +386,7 @@ export default function GestationPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Fecha</TableHead>
-                                <TableHead>Alimentos</TableHead>
+                                <TableHead>Alimento</TableHead>
                                 <TableHead className="text-right">Total (kg)</TableHead>
                                 <TableHead className="text-right">Hembras</TableHead>
                                 <TableHead className="text-right">Promedio (kg)</TableHead>
@@ -379,7 +396,7 @@ export default function GestationPage() {
                             {consumptionHistory.map(record => (
                                 <TableRow key={record.id}>
                                     <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
-                                    <TableCell>{record.feedTypes.map(f => f.label.split(' (')[0]).join(', ')}</TableCell>
+                                    <TableCell>{record.feedType.label.split(' (')[0]}</TableCell>
                                     <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
                                     <TableCell className="text-right">{record.sowCount}</TableCell>
                                     <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
