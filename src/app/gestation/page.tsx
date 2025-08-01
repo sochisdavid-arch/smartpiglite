@@ -261,7 +261,7 @@ export default function GestationPage() {
             </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="sm:max-w-xl w-full flex flex-col">
+                <SheetContent className="sm:max-w-3xl w-full flex flex-col">
                     <SheetHeader className="flex-shrink-0">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
@@ -274,17 +274,42 @@ export default function GestationPage() {
                             <div id="animal-details" className="grid gap-4 py-4 print:text-black">
                                 <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
                                     <div className="flex items-start justify-between">
-                                        <div>
+                                        <div className="flex-grow space-y-2">
                                             <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
                                             <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
                                         </div>
-                                        <Image
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
-                                            alt={`QR Code for ${selectedPig.id}`}
-                                            width={100}
-                                            height={100}
-                                            className="rounded-md"
-                                        />
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-56">
+                                                <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>Celo</DropdownMenuItem>
+                                                <DropdownMenuItem>Celo no Servido</DropdownMenuItem>
+                                                <DropdownMenuItem>Inseminación</DropdownMenuItem>
+                                                <DropdownMenuItem>Parto</DropdownMenuItem>
+                                                <DropdownMenuItem>Aborto</DropdownMenuItem>
+                                                <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>Tratamiento</DropdownMenuItem>
+                                                <DropdownMenuItem>Vacunación</DropdownMenuItem>
+                                                <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>Venta</DropdownMenuItem>
+                                                <DropdownMenuItem>Descarte</DropdownMenuItem>
+                                                <DropdownMenuItem>Muerte</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <Image
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
+                                                alt={`QR Code for ${selectedPig.id}`}
+                                                width={100}
+                                                height={100}
+                                                className="rounded-md"
+                                            />
+                                        </div>
                                     </div>
                                     <Separator/>
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -307,32 +332,6 @@ export default function GestationPage() {
                                         <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
                                     </div>
                                 </div>
-                                <div className="p-4 border rounded-lg bg-background space-y-4">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button className="w-full"><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56">
-                                      <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem>Celo</DropdownMenuItem>
-                                      <DropdownMenuItem>Celo no Servido</DropdownMenuItem>
-                                      <DropdownMenuItem>Inseminación</DropdownMenuItem>
-                                      <DropdownMenuItem>Parto</DropdownMenuItem>
-                                      <DropdownMenuItem>Aborto</DropdownMenuItem>
-                                      <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem>Tratamiento</DropdownMenuItem>
-                                      <DropdownMenuItem>Vacunación</DropdownMenuItem>
-                                       <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem>Venta</DropdownMenuItem>
-                                      <DropdownMenuItem>Descarte</DropdownMenuItem>
-                                      <DropdownMenuItem>Muerte</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Historial de Eventos</CardTitle>
