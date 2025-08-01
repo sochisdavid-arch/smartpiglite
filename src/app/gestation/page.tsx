@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Calendar as CalendarIcon, Syringe } from 'lucide-react';
+import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Calendar as CalendarIcon, Syringe, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -72,7 +72,7 @@ interface Service {
 }
 
 const initialPigs: Pig[] = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Macho', purchaseValue: 150, age: 0 },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0 },
   { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0 },
   { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0 },
   { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0 },
@@ -82,7 +82,7 @@ const initialPigs: Pig[] = [
 
 const pigBreeds = [
   // Razas Puras
-  "Duroc", "Yorkshire (Large White)", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
+  "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
   // Líneas Genéticas Comerciales
   "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   // Otras
@@ -111,12 +111,40 @@ export default function GestationPage() {
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
+
+  // States for Service tab
   const [selectedSowId, setSelectedSowId] = React.useState('');
+  
+  // States for filters
+  const [filterId, setFilterId] = React.useState('');
+  const [filterBreed, setFilterBreed] = React.useState('');
+  const [filteredPigs, setFilteredPigs] = React.useState(pigs);
+
+  // States for Tracking tab
+  const [trackingSowId, setTrackingSowId] = React.useState('');
+  
+  // States for Diagnosis tab
+  const [diagSowId, setDiagSowId] = React.useState('');
+
+
+  React.useEffect(() => {
+    let tempPigs = pigs;
+    if (filterId) {
+      tempPigs = tempPigs.filter(p => p.id === filterId);
+    }
+    if (filterBreed) {
+      tempPigs = tempPigs.filter(p => p.breed === filterBreed);
+    }
+    setFilteredPigs(tempPigs);
+  }, [filterId, filterBreed, pigs]);
+
 
   const sowOptions = pigs
     .filter(pig => pig.gender === 'Hembra')
     .map(pig => ({ value: pig.id, label: pig.id }));
-
+    
+  const pigIdOptions = pigs.map(pig => ({ value: pig.id, label: pig.id }));
+  const breedOptions = pigBreeds.map(breed => ({ value: breed, label: breed }));
 
   const openAddDialog = () => {
     setEditingPig(null);
@@ -146,6 +174,11 @@ export default function GestationPage() {
   const handlePrint = () => {
     window.print();
   };
+  
+  const clearFilters = () => {
+    setFilterId('');
+    setFilterBreed('');
+  }
 
   const handleAnimalFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -281,20 +314,21 @@ export default function GestationPage() {
                               <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="breed" className="text-right">Raza</Label>
-                              <Select name="breed" required defaultValue={editingPig?.breed}>
-                                  <SelectTrigger className="col-span-3">
-                                      <SelectValue placeholder="Seleccionar raza/línea" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                      <ScrollArea className="h-48">
-                                          {pigBreeds.map(breed => (
-                                              <SelectItem key={breed} value={breed}>{breed}</SelectItem>
-                                          ))}
-                                      </ScrollArea>
-                                  </SelectContent>
-                              </Select>
-                          </div>
+                            <Label htmlFor="breed" className="text-right">Raza</Label>
+                            <div className="col-span-3">
+                                <Combobox
+                                    options={breedOptions}
+                                    value={editingPig?.breed || ''}
+                                    onChange={(value) => {
+                                        const event = { target: { name: 'breed', value } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                                        // This is a workaround to make it compatible with the form handler
+                                    }}
+                                    placeholder="Seleccionar raza/línea"
+                                    noResultsText="No se encontraron razas."
+                                />
+                                <input type="hidden" name="breed" value={editingPig?.breed || ''}/>
+                            </div>
+                        </div>
                           <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="gender" className="text-right">Género</Label>
                               <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
@@ -309,11 +343,11 @@ export default function GestationPage() {
                               </RadioGroup>
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
+                              <Label htmlFor="birthDate" className="text-right">F. Nacimiento</Label>
                               <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
+                              <Label htmlFor="arrivalDate" className="text-right">F. Llegada</Label>
                               <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
@@ -411,24 +445,30 @@ export default function GestationPage() {
 
 
                 <Card>
-                <CardHeader>
-                    <CardTitle>Filtros</CardTitle>
-                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    <Input placeholder="Buscar por ID..." />
-                    <Select>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Filtrar por Raza" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pigBreeds.map(breed => (
-                            <SelectItem key={breed} value={breed.toLowerCase()}>{breed}</SelectItem>
-                          ))}
-                        </SelectContent>
-                    </Select>
-                    <Button>Aplicar Filtros</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
+                  <CardHeader>
+                      <CardTitle>Filtros</CardTitle>
+                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                          <Combobox
+                              options={pigIdOptions}
+                              value={filterId}
+                              onChange={setFilterId}
+                              placeholder="Buscar por ID..."
+                              noResultsText="No se encontraron animales."
+                          />
+                          <Combobox
+                              options={breedOptions}
+                              value={filterBreed}
+                              onChange={setFilterBreed}
+                              placeholder="Filtrar por Raza"
+                              noResultsText="No se encontraron razas."
+                          />
+                          <Button variant="outline" onClick={clearFilters}>
+                            <X className="mr-2 h-4 w-4" />
+                            Limpiar Filtros
+                          </Button>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
                     <Table>
                     <TableHeader>
                         <TableRow>
@@ -444,7 +484,7 @@ export default function GestationPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {pigs.map((pig) => (
+                        {filteredPigs.map((pig) => (
                         <TableRow key={pig.id}>
                             <TableCell className="font-medium">{pig.id}</TableCell>
                             <TableCell>{pig.breed}</TableCell>
@@ -597,7 +637,13 @@ export default function GestationPage() {
                 <div className="flex items-end gap-2">
                   <div className="flex-grow space-y-2">
                      <Label htmlFor="tracking-sow-id">Selección de Cerda</Label>
-                    <Input id="tracking-sow-id" placeholder="Buscar cerda gestante..." />
+                    <Combobox
+                        options={sowOptions}
+                        value={trackingSowId}
+                        onChange={setTrackingSowId}
+                        placeholder="Buscar cerda gestante..."
+                        noResultsText="No se encontraron cerdas."
+                    />
                   </div>
                   <Button><Search className="h-4 w-4"/></Button>
                 </div>
@@ -636,7 +682,13 @@ export default function GestationPage() {
                  <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="diag-sow-id">Cerda</Label>
-                      <Input id="diag-sow-id" placeholder="ID de la cerda"/>
+                      <Combobox
+                          options={sowOptions}
+                          value={diagSowId}
+                          onChange={setDiagSowId}
+                          placeholder="ID de la cerda"
+                          noResultsText="No se encontraron cerdas."
+                      />
                     </div>
                      <div className="space-y-2">
                       <Label htmlFor="diag-date">Fecha de Diagnóstico</Label>
