@@ -119,7 +119,7 @@ export default function GestationPage() {
 
   // States for filters
   const [filterId, setFilterId] = React.useState('');
-  const [filterBreed, setFilterBreed] = React.useState('');
+  const [filterBreed, setFilterBreed] = React.useState('all');
   const [filteredPigs, setFilteredPigs] = React.useState(pigs);
 
   React.useEffect(() => {
@@ -127,7 +127,7 @@ export default function GestationPage() {
     if (filterId) {
       tempPigs = tempPigs.filter(p => p.id.toLowerCase().includes(filterId.toLowerCase()));
     }
-    if (filterBreed) {
+    if (filterBreed && filterBreed !== 'all') {
       tempPigs = tempPigs.filter(p => p.breed === filterBreed);
     }
     setFilteredPigs(tempPigs);
@@ -170,7 +170,7 @@ export default function GestationPage() {
   
   const clearFilters = () => {
     setFilterId('');
-    setFilterBreed('');
+    setFilterBreed('all');
   }
 
   const handleAnimalFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -454,7 +454,7 @@ export default function GestationPage() {
             </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="w-full h-full sm:w-full sm:max-w-full p-0 flex flex-col" side="right">
+                <SheetContent className="w-full h-full p-0 flex flex-col" side="right">
                     <SheetHeader className="flex-shrink-0 p-6 border-b">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
@@ -566,7 +566,7 @@ export default function GestationPage() {
                             <SelectValue placeholder="Filtrar por Raza" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Todas las Razas</SelectItem>
+                            <SelectItem value="all">Todas las Razas</SelectItem>
                             {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
                           </SelectContent>
                       </Select>
