@@ -532,7 +532,7 @@ export default function GestationPage() {
                                 <SelectValue placeholder="Filtrar por Raza" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Todas las Razas</SelectItem>
+                                <SelectItem value="all">Todas las Razas</SelectItem>
                                 {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
                               </SelectContent>
                           </Select>
@@ -1145,3 +1145,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
