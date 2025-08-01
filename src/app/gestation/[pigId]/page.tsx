@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { MultiSelect } from '@/components/ui/multi-select';
 
 
 // Mock data - in a real app, this would come from an API
@@ -131,7 +130,6 @@ export default function PigHistoryPage() {
     const [pig, setPig] = React.useState<Pig | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
-    const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -146,69 +144,6 @@ export default function PigHistoryPage() {
         setSelectedEventType(eventType);
         setIsEventFormOpen(true);
     };
-
-    const ConsumptionForm = () => {
-        const [selectedFeeds, setSelectedFeeds] = React.useState<string[]>([]);
-        const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
-
-        const handleSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            const consumptionDate = formData.get('consumptionDate') as string;
-            const quantity = formData.get('quantity') as string;
-
-            console.log('Registrando consumo:', {
-                pigId: pig?.id,
-                date: consumptionDate,
-                feeds: selectedFeeds,
-                quantity: quantity
-            });
-            // Here you would typically make an API call to save the data
-            // and update the inventory.
-            
-            toast({
-                title: "¡Consumo Registrado!",
-                description: `${quantity}kg de alimento registrado para ${pig?.id}.`,
-            });
-            
-            setIsConsumptionFormOpen(false);
-        }
-
-        return (
-             <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Registrar Consumo de Alimento</DialogTitle>
-                    <DialogDescription>
-                        Registre el consumo diario de alimento para esta cerda.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="consumptionDate">Fecha</Label>
-                        <Input id="consumptionDate" name="consumptionDate" type="date" required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="feedType">Tipo de Alimento</Label>
-                         <MultiSelect
-                            options={feedOptions}
-                            selected={selectedFeeds}
-                            onChange={setSelectedFeeds}
-                            className="w-full"
-                            placeholder="Seleccione uno o más alimentos..."
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="quantity">Cantidad Consumida (kg)</Label>
-                        <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 2.5" required />
-                    </div>
-                </form>
-                <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit" form="consumption-form">Guardar Consumo</Button>
-                </DialogFooter>
-            </DialogContent>
-        )
-    }
 
     const EventForm = () => {
         if (!selectedEventType) return null;
@@ -278,7 +213,7 @@ export default function PigHistoryPage() {
         }
         
         return (
-            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+            <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
                     <DialogDescription>
@@ -474,10 +409,6 @@ export default function PigHistoryPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida: {pig.id}</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
-                            <Wheat className="mr-2 h-4 w-4" />
-                            Registrar Consumo
-                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button>
@@ -512,7 +443,7 @@ export default function PigHistoryPage() {
                         </div>
                         <div className="space-y-1">
                             <Label>Estado Actual</Label>
-                            <p><Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge></p>
+                            <div><Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge></div>
                         </div>
                          <div className="space-y-1">
                             <Label>F. Parto Probable</Label>
@@ -559,9 +490,6 @@ export default function PigHistoryPage() {
             </div>
             <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
                 <EventForm />
-            </Dialog>
-            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
-                <ConsumptionForm />
             </Dialog>
         </AppLayout>
     );

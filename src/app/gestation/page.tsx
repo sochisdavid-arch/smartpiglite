@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, PlusCircle, MoreHorizontal, X } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -37,6 +37,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -80,6 +81,18 @@ const pigBreeds = [
   "Otro"
 ];
 
+const mockInventory = [
+    { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
+    { id: 'MED-02', name: 'Amoxicilina 15%', category: 'medicamento', stock: 12 },
+    { id: 'MED-03', name: 'Ivermectina 1%', category: 'medicamento', stock: 8 },
+    { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
+    { id: 'VAC-02', name: 'Vacuna Mycoplasma', category: 'vacuna', stock: 100 },
+    { id: 'VAC-03', name: 'Vacuna Parvovirus/Leptospira', category: 'vacuna', stock: 25 },
+    { id: 'FEED-01', name: 'Alimento Gestación 1', category: 'alimento', stock: 500 },
+    { id: 'FEED-02', name: 'Alimento Gestación 2', category: 'alimento', stock: 800 },
+    { id: 'FEED-03', name: 'Alimento Lactancia', category: 'alimento', stock: 650 },
+];
+
 const calculateAge = (birthDate: string) => {
     if (!birthDate) return 0;
     const date = parseISO(birthDate);
@@ -103,6 +116,7 @@ export default function GestationPage() {
   const { toast } = useToast();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
@@ -111,6 +125,10 @@ export default function GestationPage() {
   const [filterId, setFilterId] = React.useState('');
   const [filterBreed, setFilterBreed] = React.useState('all');
   const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
+
+  const gestatingSowsCount = React.useMemo(() => {
+    return pigs.filter(p => p.status === 'Gestante').length;
+  }, [pigs]);
 
   React.useEffect(() => {
     // In a real app, this would be an API call. Here we use localStorage.
@@ -247,6 +265,75 @@ export default function GestationPage() {
     }
   };
 
+   const ConsumptionForm = () => {
+        const [selectedFeeds, setSelectedFeeds] = React.useState<string[]>([]);
+        const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
+
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            const consumptionDate = formData.get('consumptionDate') as string;
+            const quantity = formData.get('quantity') as string;
+
+            console.log('Registrando consumo de lote:', {
+                date: consumptionDate,
+                feeds: selectedFeeds,
+                totalQuantity: quantity,
+                numberOfSows: gestatingSowsCount
+            });
+            // Here you would typically make an API call to save the data
+            // and update the inventory for each feed type.
+            
+            toast({
+                title: "¡Consumo de Lote Registrado!",
+                description: `${quantity}kg de alimento registrado para ${gestatingSowsCount} cerdas en gestación.`,
+            });
+            
+            setIsConsumptionFormOpen(false);
+        }
+
+        return (
+             <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Registrar Consumo del Lote de Gestación</DialogTitle>
+                    <DialogDescription>
+                        Registre el consumo diario de alimento para todas las cerdas en gestación. El consumo se descontará del inventario.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4 py-4">
+                     <div className="space-y-1">
+                        <Label>Cerdas en Gestación</Label>
+                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
+                            {gestatingSowsCount}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="consumptionDate">Fecha</Label>
+                        <Input id="consumptionDate" name="consumptionDate" type="date" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="feedType">Tipo de Alimento</Label>
+                         <MultiSelect
+                            options={feedOptions}
+                            selected={selectedFeeds}
+                            onChange={setSelectedFeeds}
+                            className="w-full"
+                            placeholder="Seleccione uno o más alimentos..."
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="quantity">Cantidad Total Consumida (kg)</Label>
+                        <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required />
+                    </div>
+                </form>
+                <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" form="consumption-form">Guardar Consumo</Button>
+                </DialogFooter>
+            </DialogContent>
+        )
+    }
+
 
   return (
     <AppLayout>
@@ -260,12 +347,18 @@ export default function GestationPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
-                <Button onClick={openAddDialog}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Añadir Animal
-                </Button>
+                <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
+                        <Wheat className="mr-2 h-4 w-4" />
+                        Registrar Consumo de Lote
+                    </Button>
+                    <Button onClick={openAddDialog}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Añadir Animal
+                    </Button>
+                </div>
             </div>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -327,6 +420,9 @@ export default function GestationPage() {
                     </DialogFooter>
                   </form>
                 </DialogContent>
+            </Dialog>
+            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
+                <ConsumptionForm />
             </Dialog>
 
             <Card>
@@ -491,5 +587,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
