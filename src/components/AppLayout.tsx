@@ -26,6 +26,7 @@ import {
   Baby,
   GanttChartSquare,
   Beef,
+  Boxes,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/lactation', label: 'Lactancia', icon: Baby },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
     { href: '/ceba', label: 'Ceba', icon: Beef },
+    { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
