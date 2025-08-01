@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Button } from "./button";
+import { Check } from "lucide-react";
 
 type Option = {
   value: string;
@@ -93,14 +94,13 @@ export function MultiSelect({
                           } else {
                             onChange([...selected, option.value]);
                           }
-                          setOpen(true);
                         }}
                       >
                         <div className={cn(
                           "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
                           isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"
                         )}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <Check className="h-4 w-4" />
                         </div>
                         {option.label}
                       </CommandItem>
