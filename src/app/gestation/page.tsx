@@ -67,7 +67,7 @@ interface ConsumptionRecord {
     id: string;
     date: string;
     totalQuantity: number;
-    feedType: { value: string; label: string; };
+    feedType: string;
     sowCount: number;
     averageConsumption: number;
 }
@@ -280,7 +280,7 @@ export default function GestationPage() {
         const [selectedFeed, setSelectedFeed] = React.useState<string>();
         const [totalQuantity, setTotalQuantity] = React.useState<number | string>('');
         const [sowCount, setSowCount] = React.useState<number | string>('');
-        const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
+        const feedOptions = mockInventory.filter(p => p.category === 'alimento');
 
         const averageConsumption = React.useMemo(() => {
             const numTotalQuantity = Number(totalQuantity);
@@ -294,8 +294,6 @@ export default function GestationPage() {
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            const consumptionDate = formData.get('consumptionDate') as string;
             
             if (!selectedFeed) {
                 toast({
@@ -306,15 +304,14 @@ export default function GestationPage() {
                 return;
             }
 
-            const foundFeed = feedOptions.find(o => o.value === selectedFeed);
-
+            const foundFeed = feedOptions.find(o => o.id === selectedFeed);
             if (!foundFeed) return;
 
             const newRecord: ConsumptionRecord = {
                 id: new Date().toISOString(),
-                date: consumptionDate,
+                date: (document.getElementById('consumptionDate') as HTMLInputElement).value,
                 totalQuantity: Number(totalQuantity),
-                feedType: foundFeed,
+                feedType: foundFeed.name,
                 sowCount: Number(sowCount),
                 averageConsumption: Number(averageConsumption),
             };
@@ -325,7 +322,7 @@ export default function GestationPage() {
             
             toast({
                 title: "¡Consumo de Lote Registrado!",
-                description: `${totalQuantity}kg de ${foundFeed.label.split(' (')[0]} registrado para ${sowCount} hembras.`,
+                description: `${totalQuantity}kg de ${foundFeed.name} registrado para ${sowCount} hembras.`,
             });
             
             setIsConsumptionFormOpen(false);
@@ -339,7 +336,7 @@ export default function GestationPage() {
                         Registre el consumo diario de alimento para un grupo de hembras. El consumo se descontará del inventario.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="pr-6 -mr-6">
+                <ScrollArea className="pr-6 -mr-6 max-h-[60vh]">
                 <div className="space-y-4 py-4 pr-6">
                     <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -361,19 +358,19 @@ export default function GestationPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="feedType">Tipo de Alimento</Label>
-                            <Select onValueChange={setSelectedFeed} value={selectedFeed}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione un alimento..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {feedOptions.map(option => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                             <Label htmlFor="feedType">Tipo de Alimento</Label>
+                             <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
+                                 <SelectTrigger>
+                                     <SelectValue placeholder="Seleccione un alimento..." />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                     {feedOptions.map(option => (
+                                         <SelectItem key={option.id} value={option.id}>
+                                             {option.name} (Stock: {option.stock}kg)
+                                         </SelectItem>
+                                     ))}
+                                 </SelectContent>
+                             </Select>
                         </div>
                     </form>
 
@@ -395,7 +392,7 @@ export default function GestationPage() {
                                 {consumptionHistory.map(record => (
                                     <TableRow key={record.id}>
                                         <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
-                                        <TableCell>{record.feedType.label.split(' (')[0]}</TableCell>
+                                        <TableCell>{record.feedType}</TableCell>
                                         <TableCell>{record.sowCount}</TableCell>
                                         <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
                                         <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
@@ -673,3 +670,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
