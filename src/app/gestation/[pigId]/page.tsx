@@ -158,8 +158,8 @@ export default function PigHistoryPage() {
                         Complete la información para el evento.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-                    <ScrollArea className="flex-grow pr-6 -mr-6">
+                <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4">
+                    <ScrollArea className="h-full pr-6 -mr-6">
                         <div className="grid gap-4 py-4 pr-6">
                             {/* Common fields */}
                             <div className="space-y-2">
@@ -267,7 +267,7 @@ export default function PigHistoryPage() {
                             </div>
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
+                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-auto">
                         <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
                         <Button type="submit">Guardar Evento</Button>
                     </DialogFooter>
@@ -382,5 +382,3 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
-
-    
