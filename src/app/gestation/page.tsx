@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { differenceInWeeks, parseISO, format, isValid } from 'date-fns';
+import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -189,6 +189,17 @@ export default function GestationPage() {
 
   const EventForm = () => {
     if (!selectedEventType) return null;
+    const [inseminationDate, setInseminationDate] = React.useState<string>('');
+    const probableFarrowingDate = React.useMemo(() => {
+        if (inseminationDate) {
+            const date = parseISO(inseminationDate);
+            if (isValid(date)) {
+                return format(addDays(date, 114), 'dd/MM/yyyy');
+            }
+        }
+        return '---';
+    }, [inseminationDate]);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -210,7 +221,12 @@ export default function GestationPage() {
                     {/* Common fields */}
                     <div className="space-y-2">
                         <Label htmlFor="eventDate">Fecha del Evento</Label>
-                        <Input id="eventDate" type="date" required />
+                        <Input 
+                            id="eventDate" 
+                            type="date" 
+                            required 
+                            onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
+                        />
                     </div>
 
                     {/* Specific fields */}
@@ -232,9 +248,23 @@ export default function GestationPage() {
                                 <Label htmlFor="maleId">Macho / Lote de Semen</Label>
                                 <Input id="maleId" placeholder="ID del macho o código del semen" required />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
+                                <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
+                                <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                            </div>
                              <div className="space-y-2">
                                 <Label htmlFor="inseminator">Inseminador</Label>
                                 <Input id="inseminator" placeholder="Nombre del operario" required />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Fecha Probable de Parto</Label>
+                                <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
+                                    {probableFarrowingDate}
+                                </div>
                             </div>
                         </>
                     )}
