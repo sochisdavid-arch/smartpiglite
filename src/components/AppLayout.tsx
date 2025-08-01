@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
-  PiggyBank,
   UtensilsCrossed,
   Settings,
   LogOut,
@@ -41,7 +40,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const menuItems = [
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
-    { href: '/pigs', label: 'Cerdos', icon: PiggyBank },
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
