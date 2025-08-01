@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { differenceInWeeks, parseISO } from 'date-fns';
+import { differenceInWeeks, parseISO, format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const initialPigs = [
   { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, status: 'Gestación' },
@@ -55,22 +58,29 @@ export default function PigsPage() {
     age: differenceInWeeks(new Date(), parseISO(p.birthDate))
   })));
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [birthDate, setBirthDate] = React.useState<Date | undefined>();
+  const [arrivalDate, setArrivalDate] = React.useState<Date | undefined>();
 
   const handleAddAnimal = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const birthDate = formData.get('birthDate') as string;
+    const birthDateValue = birthDate ? format(birthDate, 'yyyy-MM-dd') : '';
+    const arrivalDateValue = arrivalDate ? format(arrivalDate, 'yyyy-MM-dd') : '';
+    
     const newAnimal = {
       id: formData.get('id') as string,
       breed: formData.get('breed') as string,
-      birthDate: birthDate,
-      arrivalDate: formData.get('arrivalDate') as string,
+      birthDate: birthDateValue,
+      arrivalDate: arrivalDateValue,
       weight: parseInt(formData.get('weight') as string),
       status: formData.get('status') as string,
-      age: differenceInWeeks(new Date(), parseISO(birthDate))
+      age: differenceInWeeks(new Date(), parseISO(birthDateValue))
     };
     setPigs(prevPigs => [...prevPigs, newAnimal]);
     setIsDialogOpen(false);
+    setBirthDate(undefined);
+    setArrivalDate(undefined);
+    (event.target as HTMLFormElement).reset();
   };
 
   return (
@@ -115,11 +125,53 @@ export default function PigsPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
-                    <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "col-span-3 justify-start text-left font-normal",
+                            !birthDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {birthDate ? format(birthDate, "PPP") : <span>Seleccionar fecha</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={birthDate}
+                          onSelect={setBirthDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
-                    <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required />
+                    <Popover>
+                       <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "col-span-3 justify-start text-left font-normal",
+                            !arrivalDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {arrivalDate ? format(arrivalDate, "PPP") : <span>Seleccionar fecha</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={arrivalDate}
+                          onSelect={setArrivalDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
