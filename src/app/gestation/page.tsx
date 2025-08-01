@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X } from 'lucide-react';
+import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X, CalendarPlus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -307,17 +307,35 @@ export default function GestationPage() {
                                         <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
                                     </div>
                                 </div>
+                                <div className="p-4 border rounded-lg bg-background space-y-4">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button className="w-full"><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56">
+                                      <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem>Celo</DropdownMenuItem>
+                                      <DropdownMenuItem>Celo no Servido</DropdownMenuItem>
+                                      <DropdownMenuItem>Inseminación</DropdownMenuItem>
+                                      <DropdownMenuItem>Parto</DropdownMenuItem>
+                                      <DropdownMenuItem>Aborto</DropdownMenuItem>
+                                      <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem>Tratamiento</DropdownMenuItem>
+                                      <DropdownMenuItem>Vacunación</DropdownMenuItem>
+                                       <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem>Venta</DropdownMenuItem>
+                                      <DropdownMenuItem>Descarte</DropdownMenuItem>
+                                      <DropdownMenuItem>Muerte</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Historial Reproductivo</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground">
-                                        <p>Próximamente...</p>
-                                    </CardContent>
-                                </Card>
-                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Historial de Tratamientos</CardTitle>
+                                        <CardTitle>Historial de Eventos</CardTitle>
                                     </CardHeader>
                                     <CardContent className="text-center text-muted-foreground">
                                         <p>Próximamente...</p>
@@ -378,7 +396,7 @@ export default function GestationPage() {
                 </TableHeader>
                 <TableBody>
                     {filteredPigs.map((pig) => (
-                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/20">
+                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
                         <TableCell className="font-medium">{pig.id}</TableCell>
                         <TableCell>{pig.breed}</TableCell>
                         <TableCell>{pig.gender}</TableCell>
@@ -431,5 +449,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
