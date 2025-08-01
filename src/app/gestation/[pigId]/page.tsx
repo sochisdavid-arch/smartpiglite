@@ -327,10 +327,10 @@ export default function PigHistoryPage() {
                                     <Label htmlFor="reason">Causa / Motivo</Label>
                                     <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
                                 </div>
-                                {selectedEventType === 'Venta' && (
+                                {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
                                 <div className="space-y-2">
                                         <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
-                                        <Input id="saleValue" type="number" step="0.01" />
+                                        <Input id="saleValue" type="number" step="0.01" placeholder="Opcional" />
                                     </div>
                                 )}
                             </>
