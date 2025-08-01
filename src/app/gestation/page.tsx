@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer } from 'lucide-react';
+import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Calendar as CalendarIcon, Syringe } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -40,9 +40,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { differenceInWeeks, parseISO, format, isValid } from 'date-fns';
+import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface Pig {
     id: string;
@@ -53,6 +58,18 @@ interface Pig {
     gender: string;
     purchaseValue?: number;
     age: number;
+}
+
+interface Service {
+  id: string;
+  sowId: string;
+  serviceDate: string;
+  serviceType: string;
+  semenDose?: string;
+  technician?: string;
+  heatDetectionMethod?: string;
+  observations?: string;
+  estimatedFarrowingDate: string;
 }
 
 const initialPigs: Pig[] = [
@@ -86,6 +103,8 @@ export default function GestationPage() {
     ...p,
     age: calculateAge(p.birthDate)
   })));
+  const [services, setServices] = React.useState<Service[]>([]);
+  const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
@@ -123,7 +142,7 @@ export default function GestationPage() {
     window.print();
   };
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAnimalFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const birthDateValue = formData.get('birthDate') as string;
@@ -156,6 +175,53 @@ export default function GestationPage() {
     setIsDeleteDialogOpen(false);
     setPigToDelete(null);
   };
+
+  const handleServiceFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const sowId = formData.get('sowId') as string;
+    const serviceDate = formData.get('serviceDate') as string;
+
+    const sowExists = pigs.some(pig => pig.id === sowId && pig.gender === 'Hembra');
+    if (!sowExists) {
+        toast({
+            variant: "destructive",
+            title: "Error de Registro",
+            description: `La cerda con ID "${sowId}" no existe o no es hembra.`,
+        });
+        return;
+    }
+
+    if (!serviceDate || !isValid(parseISO(serviceDate))) {
+      toast({
+            variant: "destructive",
+            title: "Error de Registro",
+            description: "Por favor, introduce una fecha de servicio válida.",
+        });
+        return;
+    }
+
+    const newService: Service = {
+        id: `SRV-${Date.now()}`,
+        sowId,
+        serviceDate,
+        serviceType: formData.get('serviceType') as string,
+        semenDose: formData.get('semenDose') as string,
+        technician: formData.get('technician') as string,
+        heatDetectionMethod: formData.get('heatDetectionMethod') as string,
+        observations: formData.get('observations') as string,
+        estimatedFarrowingDate: format(addDays(parseISO(serviceDate), 114), 'yyyy-MM-dd'),
+    };
+
+    setServices(prevServices => [newService, ...prevServices]);
+
+    toast({
+        title: "Servicio Registrado",
+        description: `Se ha registrado el servicio para la cerda ${sowId}.`,
+    });
+
+    (event.target as HTMLFormElement).reset();
+};
 
 
   return (
@@ -203,7 +269,7 @@ export default function GestationPage() {
                           {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
                           </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={handleFormSubmit}>
+                      <form onSubmit={handleAnimalFormSubmit}>
                           <div className="grid gap-4 py-4">
                           <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="id" className="text-right">ID</Label>
@@ -410,64 +476,104 @@ export default function GestationPage() {
           </TabsContent>
 
           <TabsContent value="services" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Registro de Servicios e Inseminaciones</CardTitle>
-                <CardDescription>Registre los detalles de la inseminación o monta natural de la cerda.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="sow-id">Selección de Cerda (ID, tatuaje, QR)</Label>
-                    <Input id="sow-id" placeholder="Buscar cerda..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="service-date">Fecha del Servicio</Label>
-                    <Input id="service-date" type="date" />
-                  </div>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Tipo de Servicio</Label>
-                    <Select>
-                      <SelectTrigger><SelectValue placeholder="Seleccione un tipo" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="natural">Monta Natural</SelectItem>
-                        <SelectItem value="artificial">Inseminación Artificial</SelectItem>
-                        <SelectItem value="double">Doble Servicio</SelectItem>
-                        <SelectItem value="failed">Servicio Fallido</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                   <div className="space-y-2">
-                    <Label htmlFor="semen-dose">Dosis de Semen (Lote, Macho)</Label>
-                    <Input id="semen-dose" placeholder="Lote-123, Macho-A42" />
-                  </div>
-                </div>
-                 <div className="grid gap-4 md:grid-cols-2">
-                   <div className="space-y-2">
-                    <Label htmlFor="technician">Técnico</Label>
-                    <Input id="technician" placeholder="Nombre del técnico" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Método Detección de Celo</Label>
-                    <Select>
-                      <SelectTrigger><SelectValue placeholder="Seleccione un método" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="visual">Visual</SelectItem>
-                        <SelectItem value="boar_exposure">Exposición al Macho</SelectItem>
-                        <SelectItem value="automated">Automatizado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="observations">Observaciones Clínicas</Label>
-                  <Textarea id="observations" placeholder="Cualquier observación relevante..." />
-                </div>
-                <Button>Registrar Servicio</Button>
-              </CardContent>
-            </Card>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registro de Servicios</CardTitle>
+                  <CardDescription>Registre los detalles de la inseminación o monta natural de la cerda.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleServiceFormSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="sowId">Cerda (ID)</Label>
+                      <Input id="sowId" name="sowId" placeholder="Buscar cerda por ID..." required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceDate">Fecha del Servicio</Label>
+                      <Input id="serviceDate" name="serviceDate" type="date" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tipo de Servicio</Label>
+                      <Select name="serviceType" required>
+                        <SelectTrigger><SelectValue placeholder="Seleccione un tipo" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Monta Natural">Monta Natural</SelectItem>
+                          <SelectItem value="Inseminación Artificial">Inseminación Artificial</SelectItem>
+                          <SelectItem value="Doble Servicio">Doble Servicio</SelectItem>
+                          <SelectItem value="Servicio Fallido">Servicio Fallido</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="semenDose">Dosis de Semen (Lote, Macho)</Label>
+                      <Input id="semenDose" name="semenDose" placeholder="Lote-123, Macho-A42" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="technician">Técnico</Label>
+                      <Input id="technician" name="technician" placeholder="Nombre del técnico" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Método Detección de Celo</Label>
+                      <Select name="heatDetectionMethod">
+                        <SelectTrigger><SelectValue placeholder="Seleccione un método" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Visual">Visual</SelectItem>
+                          <SelectItem value="Exposición al Macho">Exposición al Macho</SelectItem>
+                          <SelectItem value="Automatizado">Automatizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="observations">Observaciones Clínicas</Label>
+                      <Textarea id="observations" name="observations" placeholder="Cualquier observación relevante..." />
+                    </div>
+                    <Button type="submit" className="w-full">
+                      <Syringe className="mr-2 h-4 w-4" />
+                      Registrar Servicio
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Servicios Registrados</CardTitle>
+                  <CardDescription>Lista de los últimos servicios de inseminación y montas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-96">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cerda</TableHead>
+                          <TableHead>F. Servicio</TableHead>
+                          <TableHead>F. Parto (Est.)</TableHead>
+                          <TableHead>Tipo</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {services.length > 0 ? (
+                          services.map((service) => (
+                            <TableRow key={service.id}>
+                              <TableCell className="font-medium">{service.sowId}</TableCell>
+                              <TableCell>{format(parseISO(service.serviceDate), 'dd/MM/yyyy')}</TableCell>
+                              <TableCell>{format(parseISO(service.estimatedFarrowingDate), 'dd/MM/yyyy')}</TableCell>
+                              <TableCell>{service.serviceType}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                              No hay servicios registrados.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-6">
