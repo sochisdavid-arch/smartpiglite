@@ -264,7 +264,7 @@ export default function GestationPage() {
                                 {birthDate ? format(birthDate, "PPP", { locale: es}) : <span>Seleccionar fecha</span>}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent className="w-auto p-0" align="center">
                                 <Calendar
                                 mode="single"
                                 selected={birthDate}
@@ -292,7 +292,7 @@ export default function GestationPage() {
                                 {arrivalDate ? format(arrivalDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent className="w-auto p-0" align="center">
                                 <Calendar
                                 mode="single"
                                 selected={arrivalDate}
