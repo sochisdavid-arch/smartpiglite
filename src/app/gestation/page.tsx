@@ -47,6 +47,12 @@ import { Badge } from '@/components/ui/badge';
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
+interface LastEvent {
+    type: EventType | 'Ninguno';
+    date: string;
+    inseminationGroup?: string;
+}
+
 interface Pig {
     id: string;
     breed: string;
@@ -57,15 +63,12 @@ interface Pig {
     purchaseValue?: number;
     age: number;
     status: StatusType;
-    lastEvent: {
-        type: EventType | 'Ninguno';
-        date: string;
-    };
+    lastEvent: LastEvent;
 }
 
 
 const initialPigs: Pig[] = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10' } },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' } },
   { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' } },
   { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' } },
   { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
@@ -583,6 +586,7 @@ export default function GestationPage() {
                     <TableHead>ID</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Raza</TableHead>
+                    <TableHead>Grupo Inseminación</TableHead>
                     <TableHead>F. Parto Probable</TableHead>
                     <TableHead className="text-right">Edad (sem.)</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
@@ -601,6 +605,12 @@ export default function GestationPage() {
                             </div>
                         </TableCell>
                         <TableCell>{pig.breed}</TableCell>
+                        <TableCell>
+                            {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' && pig.lastEvent.inseminationGroup
+                                ? pig.lastEvent.inseminationGroup
+                                : 'N/A'
+                            }
+                        </TableCell>
                         <TableCell>
                             {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
                                 ? calculateProbableFarrowingDate(pig.lastEvent.date)
@@ -652,3 +662,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
