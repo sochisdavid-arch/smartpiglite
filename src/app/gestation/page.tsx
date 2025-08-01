@@ -457,7 +457,7 @@ export default function GestationPage() {
             </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="w-full sm:max-w-none flex flex-col">
+                <SheetContent className="w-full sm:max-w-none md:w-3/4 lg:w-2/3 xl:w-1/2 flex flex-col">
                     <SheetHeader className="flex-shrink-0">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
@@ -662,3 +662,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
