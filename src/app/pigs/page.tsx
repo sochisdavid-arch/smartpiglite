@@ -22,14 +22,15 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { differenceInWeeks, parseISO } from 'date-fns';
 
 const initialPigs = [
-  { id: 'PIG-001', breed: 'Duroc', age: 12, weight: 85, status: 'Gestación' },
-  { id: 'PIG-002', breed: 'Yorkshire', age: 8, weight: 60, status: 'Lactancia' },
-  { id: 'PIG-003', breed: 'Landrace', age: 20, weight: 110, status: 'Engorde' },
-  { id: 'PIG-004', breed: 'Duroc', age: 5, weight: 25, status: 'Destetado' },
-  { id: 'PIG-005', breed: 'Yorkshire', age: 15, weight: 95, status: 'Gestación' },
-  { id: 'PIG-006', breed: 'Landrace', age: 22, weight: 115, status: 'Engorde' },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, status: 'Gestación' },
+  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, status: 'Lactancia' },
+  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, status: 'Engorde' },
+  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, status: 'Destetado' },
+  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, status: 'Gestación' },
+  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, status: 'Engorde' },
 ];
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'destructive' } = {
@@ -49,18 +50,24 @@ const pigBreeds = [
 ];
 
 export default function PigsPage() {
-  const [pigs, setPigs] = React.useState(initialPigs);
+  const [pigs, setPigs] = React.useState(initialPigs.map(p => ({
+    ...p,
+    age: differenceInWeeks(new Date(), parseISO(p.birthDate))
+  })));
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const handleAddAnimal = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const birthDate = formData.get('birthDate') as string;
     const newAnimal = {
       id: formData.get('id') as string,
       breed: formData.get('breed') as string,
-      age: parseInt(formData.get('age') as string),
+      birthDate: birthDate,
+      arrivalDate: formData.get('arrivalDate') as string,
       weight: parseInt(formData.get('weight') as string),
       status: formData.get('status') as string,
+      age: differenceInWeeks(new Date(), parseISO(birthDate))
     };
     setPigs(prevPigs => [...prevPigs, newAnimal]);
     setIsDialogOpen(false);
@@ -107,8 +114,12 @@ export default function PigsPage() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="age" className="text-right">Edad (sem.)</Label>
-                    <Input id="age" name="age" type="number" className="col-span-3" required />
+                    <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
+                    <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
+                    <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
@@ -172,7 +183,9 @@ export default function PigsPage() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Raza</TableHead>
-                  <TableHead className="text-right">Edad (semanas)</TableHead>
+                  <TableHead>F. Nacimiento</TableHead>
+                  <TableHead>F. Llegada</TableHead>
+                  <TableHead className="text-right">Edad (sem.)</TableHead>
                   <TableHead className="text-right">Peso (kg)</TableHead>
                   <TableHead className="text-center">Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -183,6 +196,8 @@ export default function PigsPage() {
                   <TableRow key={pig.id}>
                     <TableCell className="font-medium">{pig.id}</TableCell>
                     <TableCell>{pig.breed}</TableCell>
+                    <TableCell>{pig.birthDate}</TableCell>
+                    <TableCell>{pig.arrivalDate}</TableCell>
                     <TableCell className="text-right">{pig.age}</TableCell>
                     <TableCell className="text-right">{pig.weight}</TableCell>
                     <TableCell className="text-center">
