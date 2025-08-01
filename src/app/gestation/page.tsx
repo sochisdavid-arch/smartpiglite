@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -44,10 +45,8 @@ import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Combobox } from '@/components/Combobox';
 
 interface Pig {
     id: string;
@@ -112,6 +111,12 @@ export default function GestationPage() {
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
+  const [selectedSowId, setSelectedSowId] = React.useState('');
+
+  const sowOptions = pigs
+    .filter(pig => pig.gender === 'Hembra')
+    .map(pig => ({ value: pig.id, label: pig.id }));
+
 
   const openAddDialog = () => {
     setEditingPig(null);
@@ -179,15 +184,14 @@ export default function GestationPage() {
   const handleServiceFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const sowId = formData.get('sowId') as string;
     const serviceDate = formData.get('serviceDate') as string;
 
-    const sowExists = pigs.some(pig => pig.id === sowId && pig.gender === 'Hembra');
+    const sowExists = pigs.some(pig => pig.id === selectedSowId && pig.gender === 'Hembra');
     if (!sowExists) {
         toast({
             variant: "destructive",
             title: "Error de Registro",
-            description: `La cerda con ID "${sowId}" no existe o no es hembra.`,
+            description: `La cerda con ID "${selectedSowId}" no existe o no es hembra.`,
         });
         return;
     }
@@ -203,7 +207,7 @@ export default function GestationPage() {
 
     const newService: Service = {
         id: `SRV-${Date.now()}`,
-        sowId,
+        sowId: selectedSowId,
         serviceDate,
         serviceType: formData.get('serviceType') as string,
         semenDose: formData.get('semenDose') as string,
@@ -217,10 +221,11 @@ export default function GestationPage() {
 
     toast({
         title: "Servicio Registrado",
-        description: `Se ha registrado el servicio para la cerda ${sowId}.`,
+        description: `Se ha registrado el servicio para la cerda ${selectedSowId}.`,
     });
 
     (event.target as HTMLFormElement).reset();
+    setSelectedSowId('');
 };
 
 
@@ -262,7 +267,7 @@ export default function GestationPage() {
                 </div>
 
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="sm:max-w-[425px] overflow-visible">
                       <DialogHeader>
                           <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
                           <DialogDescription>
@@ -486,7 +491,13 @@ export default function GestationPage() {
                   <form onSubmit={handleServiceFormSubmit} className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="sowId">Cerda (ID)</Label>
-                      <Input id="sowId" name="sowId" placeholder="Buscar cerda por ID..." required />
+                      <Combobox
+                          options={sowOptions}
+                          value={selectedSowId}
+                          onChange={setSelectedSowId}
+                          placeholder="Buscar cerda por ID..."
+                          noResultsText="No se encontraron cerdas."
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="serviceDate">Fecha del Servicio</Label>
