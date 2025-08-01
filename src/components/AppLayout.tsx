@@ -23,6 +23,7 @@ import {
   User,
   HeartPulse,
   Baby,
+  GanttChartSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +44,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/lactation', label: 'Lactancia', icon: Baby },
+    { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
