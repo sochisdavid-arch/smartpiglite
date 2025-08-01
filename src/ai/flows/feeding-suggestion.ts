@@ -13,24 +13,24 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const FeedingSuggestionInputSchema = z.object({
-  pigAge: z.number().describe('Age of the pig in weeks.'),
-  pigWeight: z.number().describe('Weight of the pig in kilograms.'),
-  pigBreed: z.string().describe('Breed of the pig.'),
-  currentFeed: z.string().describe('Current feed being given to the pig.'),
+  pigAge: z.number().describe('Edad del cerdo en semanas.'),
+  pigWeight: z.number().describe('Peso del cerdo en kilogramos.'),
+  pigBreed: z.string().describe('Raza del cerdo.'),
+  currentFeed: z.string().describe('Alimento actual que se le da al cerdo.'),
   environmentalConditions: z
     .string()
-    .describe('Description of the environmental conditions where the pig is kept.'),
+    .describe('Descripción de las condiciones ambientales donde se mantiene al cerdo.'),
 });
 export type FeedingSuggestionInput = z.infer<typeof FeedingSuggestionInputSchema>;
 
 const FeedingSuggestionOutputSchema = z.object({
-  suggestedFeedType: z.string().describe('Recommended feed type for the pig.'),
+  suggestedFeedType: z.string().describe('Tipo de alimento recomendado para el cerdo.'),
   suggestedFeedQuantity: z
     .string()
-    .describe('Recommended quantity of feed to give the pig per day.'),
+    .describe('Cantidad de alimento recomendada para dar al cerdo por día.'),
   additionalRecommendations: z
     .string()
-    .describe('Any additional recommendations for improving pig health and growth.'),
+    .describe('Cualquier recomendación adicional para mejorar la salud y el crecimiento del cerdo.'),
 });
 export type FeedingSuggestionOutput = z.infer<typeof FeedingSuggestionOutputSchema>;
 
@@ -42,20 +42,20 @@ const feedingSuggestionPrompt = ai.definePrompt({
   name: 'feedingSuggestionPrompt',
   input: {schema: FeedingSuggestionInputSchema},
   output: {schema: FeedingSuggestionOutputSchema},
-  prompt: `You are an expert in pig farming and nutrition. Based on the provided information, provide optimal feeding suggestions.
+  prompt: `Eres un experto en porcicultura y nutrición porcina. Basado en la información proporcionada, ofrece sugerencias de alimentación óptimas.
 
-Pig Age: {{pigAge}} weeks
-Pig Weight: {{pigWeight}} kg
-Pig Breed: {{pigBreed}}
-Current Feed: {{currentFeed}}
-Environmental Conditions: {{environmentalConditions}}
+Edad del Cerdo: {{pigAge}} semanas
+Peso del Cerdo: {{pigWeight}} kg
+Raza del Cerdo: {{pigBreed}}
+Alimento Actual: {{currentFeed}}
+Condiciones Ambientales: {{environmentalConditions}}
 
-Provide the following:
-- Suggested Feed Type: The most suitable feed type for this pig.
-- Suggested Feed Quantity: The recommended quantity of feed per day.
-- Additional Recommendations: Any other advice to improve growth, reduce waste, and prevent illnesses.
+Proporciona lo siguiente:
+- Tipo de Alimento Sugerido: El tipo de alimento más adecuado para este cerdo.
+- Cantidad de Alimento Sugerida: La cantidad recomendada de alimento por día.
+- Recomendaciones Adicionales: Cualquier otro consejo para mejorar el crecimiento, reducir el desperdicio y prevenir enfermedades.
 
-Ensure the suggestions are practical and actionable for the farmer.
+Asegúrate de que las sugerencias sean prácticas y accionables para el granjero.
 `,
 });
 

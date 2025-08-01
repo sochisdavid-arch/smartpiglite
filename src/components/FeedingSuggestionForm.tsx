@@ -24,11 +24,11 @@ import { useToast } from '@/hooks/use-toast';
 
 
 const formSchema = z.object({
-  pigAge: z.coerce.number().min(1, { message: "Age must be at least 1 week." }),
-  pigWeight: z.coerce.number().min(1, { message: "Weight must be a positive number." }),
-  pigBreed: z.string().min(2, { message: "Breed is required." }),
-  currentFeed: z.string().min(2, { message: "Current feed is required." }),
-  environmentalConditions: z.string().min(10, { message: "Please describe conditions (min 10 chars)." }),
+  pigAge: z.coerce.number().min(1, { message: "La edad debe ser de al menos 1 semana." }),
+  pigWeight: z.coerce.number().min(1, { message: "El peso debe ser un número positivo." }),
+  pigBreed: z.string().min(2, { message: "La raza es requerida." }),
+  currentFeed: z.string().min(2, { message: "El alimento actual es requerido." }),
+  environmentalConditions: z.string().min(10, { message: "Por favor describe las condiciones (mín. 10 caracteres)." }),
 });
 
 export function FeedingSuggestionForm() {
@@ -42,8 +42,8 @@ export function FeedingSuggestionForm() {
       pigAge: 8,
       pigWeight: 25,
       pigBreed: 'Duroc',
-      currentFeed: 'Starter pellets',
-      environmentalConditions: 'Indoor, temperature-controlled barn at 22°C.',
+      currentFeed: 'Pellets de inicio',
+      environmentalConditions: 'Interior, establo con temperatura controlada a 22°C.',
     },
   });
 
@@ -54,11 +54,11 @@ export function FeedingSuggestionForm() {
       const result = await getFeedingSuggestion(values);
       setSuggestion(result);
     } catch (error) {
-      console.error("Error getting feeding suggestion:", error);
+      console.error("Error al obtener la sugerencia de alimentación:", error);
       toast({
         variant: "destructive",
-        title: "Oh no! Something went wrong.",
-        description: "There was a problem with your request. Please try again.",
+        title: "¡Oh no! Algo salió mal.",
+        description: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo.",
       });
     } finally {
       setIsLoading(false);
@@ -69,7 +69,7 @@ export function FeedingSuggestionForm() {
     <div className="grid gap-8 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Pig Information</CardTitle>
+          <CardTitle>Información del Cerdo</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -80,9 +80,9 @@ export function FeedingSuggestionForm() {
                   name="pigAge"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age (weeks)</FormLabel>
+                      <FormLabel>Edad (semanas)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 8" {...field} />
+                        <Input type="number" placeholder="ej. 8" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -93,9 +93,9 @@ export function FeedingSuggestionForm() {
                   name="pigWeight"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Weight (kg)</FormLabel>
+                      <FormLabel>Peso (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 25" {...field} />
+                        <Input type="number" placeholder="ej. 25" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -107,9 +107,9 @@ export function FeedingSuggestionForm() {
                 name="pigBreed"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Breed</FormLabel>
+                    <FormLabel>Raza</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Duroc" {...field} />
+                      <Input placeholder="ej. Duroc" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,9 +120,9 @@ export function FeedingSuggestionForm() {
                 name="currentFeed"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Feed</FormLabel>
+                    <FormLabel>Alimento Actual</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Starter pellets" {...field} />
+                      <Input placeholder="ej. Pellets de inicio" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,15 +133,15 @@ export function FeedingSuggestionForm() {
                 name="environmentalConditions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Environmental Conditions</FormLabel>
+                    <FormLabel>Condiciones Ambientales</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe the pig's living conditions..."
+                        placeholder="Describe las condiciones de vida del cerdo..."
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Include temperature, housing type, etc.
+                      Incluye temperatura, tipo de alojamiento, etc.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -151,10 +151,10 @@ export function FeedingSuggestionForm() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Getting Suggestion...
+                    Obteniendo Sugerencia...
                   </>
                 ) : (
-                  'Get AI Suggestion'
+                  'Obtener Sugerencia de IA'
                 )}
               </Button>
             </form>
@@ -167,30 +167,30 @@ export function FeedingSuggestionForm() {
             <Card className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-4 text-center text-muted-foreground p-8">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <h3 className="text-xl font-semibold">Generating Suggestions</h3>
-                    <p>Our AI is analyzing the data to provide the best feeding plan for your pig. Please wait a moment.</p>
+                    <h3 className="text-xl font-semibold">Generando Sugerencias</h3>
+                    <p>Nuestra IA está analizando los datos para proporcionar el mejor plan de alimentación para tu cerdo. Por favor espera un momento.</p>
                 </div>
             </Card>
         )}
         {suggestion ? (
           <Card className="bg-secondary/50">
             <CardHeader>
-              <CardTitle>AI Recommendation</CardTitle>
+              <CardTitle>Recomendación de la IA</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <Alert>
                 <Wheat className="h-4 w-4" />
-                <AlertTitle>Suggested Feed Type</AlertTitle>
+                <AlertTitle>Tipo de Alimento Sugerido</AlertTitle>
                 <AlertDescription>{suggestion.suggestedFeedType}</AlertDescription>
               </Alert>
                <Alert>
                 <Pill className="h-4 w-4" />
-                <AlertTitle>Suggested Feed Quantity</AlertTitle>
+                <AlertTitle>Cantidad de Alimento Sugerida</AlertTitle>
                 <AlertDescription>{suggestion.suggestedFeedQuantity}</AlertDescription>
               </Alert>
               <Alert>
                 <Lightbulb className="h-4 w-4" />
-                <AlertTitle>Additional Recommendations</AlertTitle>
+                <AlertTitle>Recomendaciones Adicionales</AlertTitle>
                 <AlertDescription>{suggestion.additionalRecommendations}</AlertDescription>
               </Alert>
             </CardContent>
@@ -199,8 +199,8 @@ export function FeedingSuggestionForm() {
              <Card className="flex h-full items-center justify-center border-dashed">
                 <div className="flex flex-col items-center gap-4 text-center text-muted-foreground p-8">
                     <Lightbulb className="h-12 w-12" />
-                    <h3 className="text-xl font-semibold">Awaiting Input</h3>
-                    <p>Fill out the form on the left to receive an AI-powered feeding suggestion for your pig.</p>
+                    <h3 className="text-xl font-semibold">Esperando Datos</h3>
+                    <p>Completa el formulario de la izquierda para recibir una sugerencia de alimentación para tu cerdo impulsada por IA.</p>
                 </div>
             </Card>
         )}

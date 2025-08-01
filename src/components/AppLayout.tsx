@@ -39,9 +39,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const menuItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pigs', label: 'Pigs', icon: PiggyBank },
-    { href: '/feeding', label: 'Feeding AI', icon: UtensilsCrossed },
+    { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
+    { href: '/pigs', label: 'Cerdos', icon: PiggyBank },
+    { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
   return (
@@ -77,10 +77,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <div className="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-sidebar-accent">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src="https://placehold.co/100x100.png" alt="@user" />
-                      <AvatarFallback>U</AvatarFallback>
+                      <AvatarFallback>A</AvatarFallback>
                     </Avatar>
                      <div className="group-data-[collapsible=icon]:hidden flex flex-col">
-                        <span className="text-sm font-semibold text-sidebar-foreground">Farm Admin</span>
+                        <span className="text-sm font-semibold text-sidebar-foreground">Admin de la Granja</span>
                         <span className="text-xs text-muted-foreground">admin@smartpig.com</span>
                     </div>
                 </div>
@@ -88,18 +88,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Farm Admin</p>
+                    <p className="text-sm font-medium leading-none">Admin de la Granja</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       admin@smartpig.com
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profile</DropdownMenuItem>
-                <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Settings</DropdownMenuItem>
+                <DropdownMenuItem><User className="mr-2 h-4 w-4" />Perfil</DropdownMenuItem>
+                <DropdownMenuItem><Settings className="mr-2 h-4 w-4" />Configuración</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Log out</Link>
+                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Cerrar sesión</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

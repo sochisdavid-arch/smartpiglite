@@ -14,32 +14,32 @@ export default function LoginPage() {
             <Logo className="h-12 w-12" />
           </div>
           <CardTitle className="text-2xl font-bold">SmartPig Lite</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardDescription>Introduce tu correo electrónico para iniciar sesión en tu cuenta</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+              <Label htmlFor="email">Correo electrónico</Label>
+              <Input id="email" type="email" placeholder="m@ejemplo.com" required />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
               <Input id="password" type="password" required />
             </div>
             <Button type="submit" className="w-full" asChild>
-              <Link href="/dashboard">Login</Link>
+              <Link href="/dashboard">Iniciar sesión</Link>
             </Button>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">O continuar con</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -64,9 +64,9 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
+            ¿No tienes una cuenta?{' '}
             <Link href="#" className="underline">
-              Sign up
+              Regístrate
             </Link>
           </div>
         </CardContent>
