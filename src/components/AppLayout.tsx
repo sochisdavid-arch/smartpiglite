@@ -22,6 +22,7 @@ import {
   LogOut,
   User,
   HeartPulse,
+  Baby,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,6 +42,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
+    { href: '/lactation', label: 'Lactancia', icon: Baby },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
