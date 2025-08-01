@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { Separator } from '@/components/ui/separator';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -61,6 +62,15 @@ interface Pig {
     status: StatusType;
     lastEvent: Event;
     events: Event[];
+}
+
+interface ConsumptionRecord {
+    id: string;
+    date: string;
+    totalQuantity: number;
+    feedTypes: string[];
+    sowCount: number;
+    averageConsumption: number;
 }
 
 const initialPigs: Pig[] = [
@@ -120,7 +130,8 @@ export default function GestationPage() {
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
-  
+  const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
+
   // States for filters
   const [filterId, setFilterId] = React.useState('');
   const [filterBreed, setFilterBreed] = React.useState('all');
@@ -131,7 +142,7 @@ export default function GestationPage() {
   }, [pigs]);
 
   React.useEffect(() => {
-    // In a real app, this would be an API call. Here we use localStorage.
+    // Load pigs from localStorage
     const pigsFromStorage = localStorage.getItem('pigs');
     const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
     const processedPigs = allPigs.map((p: Pig) => ({
@@ -139,9 +150,14 @@ export default function GestationPage() {
       age: calculateAge(p.birthDate)
     }));
     setPigs(processedPigs);
-    // Persist initial data if it's not there
     if (!pigsFromStorage) {
         localStorage.setItem('pigs', JSON.stringify(initialPigs));
+    }
+
+    // Load consumption history from localStorage
+    const historyFromStorage = localStorage.getItem('consumptionHistory');
+    if (historyFromStorage) {
+        setConsumptionHistory(JSON.parse(historyFromStorage));
     }
   }, []);
 
@@ -267,33 +283,48 @@ export default function GestationPage() {
 
    const ConsumptionForm = () => {
         const [selectedFeeds, setSelectedFeeds] = React.useState<string[]>([]);
+        const [totalQuantity, setTotalQuantity] = React.useState<number | string>('');
         const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
+
+        const averageConsumption = React.useMemo(() => {
+            const numTotalQuantity = Number(totalQuantity);
+            if (numTotalQuantity > 0 && gestatingSowsCount > 0) {
+                return (numTotalQuantity / gestatingSowsCount).toFixed(2);
+            }
+            return '0.00';
+        }, [totalQuantity, gestatingSowsCount]);
+
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
             const consumptionDate = formData.get('consumptionDate') as string;
-            const quantity = formData.get('quantity') as string;
-
-            console.log('Registrando consumo de lote:', {
+            
+            const newRecord: ConsumptionRecord = {
+                id: new Date().toISOString(),
                 date: consumptionDate,
-                feeds: selectedFeeds,
-                totalQuantity: quantity,
-                numberOfSows: gestatingSowsCount
-            });
-            // Here you would typically make an API call to save the data
-            // and update the inventory for each feed type.
+                totalQuantity: Number(totalQuantity),
+                feedTypes: selectedFeeds.map(val => options.find(o => o.value === val)?.label || val),
+                sowCount: gestatingSowsCount,
+                averageConsumption: Number(averageConsumption),
+            };
+
+            const updatedHistory = [newRecord, ...consumptionHistory];
+            setConsumptionHistory(updatedHistory);
+            localStorage.setItem('consumptionHistory', JSON.stringify(updatedHistory));
             
             toast({
                 title: "¡Consumo de Lote Registrado!",
-                description: `${quantity}kg de alimento registrado para ${gestatingSowsCount} cerdas en gestación.`,
+                description: `${totalQuantity}kg de alimento registrado para ${gestatingSowsCount} cerdas en gestación.`,
             });
             
             setIsConsumptionFormOpen(false);
         }
 
+        const options = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: f.name }));
+
         return (
-             <DialogContent className="sm:max-w-md">
+             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Registrar Consumo del Lote de Gestación</DialogTitle>
                     <DialogDescription>
@@ -301,18 +332,26 @@ export default function GestationPage() {
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4 py-4">
-                     <div className="space-y-1">
-                        <Label>Cerdas en Gestación</Label>
-                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
-                            {gestatingSowsCount}
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-1">
+                            <Label>Cerdas en Gestación</Label>
+                            <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{gestatingSowsCount}</div>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="consumptionDate">Fecha</Label>
-                        <Input id="consumptionDate" name="consumptionDate" type="date" required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="feedType">Tipo de Alimento</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="consumptionDate">Fecha</Label>
+                            <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="quantity">Cantidad Total (kg)</Label>
+                            <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required value={totalQuantity} onChange={e => setTotalQuantity(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Promedio por Animal (kg)</Label>
+                            <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{averageConsumption}</div>
+                        </div>
+                     </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="feedType">Tipo(s) de Alimento</Label>
                          <MultiSelect
                             options={feedOptions}
                             selected={selectedFeeds}
@@ -321,11 +360,44 @@ export default function GestationPage() {
                             placeholder="Seleccione uno o más alimentos..."
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="quantity">Cantidad Total Consumida (kg)</Label>
-                        <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required />
-                    </div>
                 </form>
+
+                <Separator />
+
+                <div>
+                    <h3 className="text-lg font-medium mb-4">Historial de Consumos</h3>
+                    <ScrollArea className="h-64">
+                      <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Alimentos</TableHead>
+                                <TableHead className="text-right">Total (kg)</TableHead>
+                                <TableHead className="text-right">Cerdas</TableHead>
+                                <TableHead className="text-right">Promedio (kg)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {consumptionHistory.map(record => (
+                                <TableRow key={record.id}>
+                                    <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{record.feedTypes.join(', ')}</TableCell>
+                                    <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
+                                    <TableCell className="text-right">{record.sowCount}</TableCell>
+                                    <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                            {consumptionHistory.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                </div>
+
+
                 <DialogFooter>
                     <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
                     <Button type="submit" form="consumption-form">Guardar Consumo</Button>
@@ -587,3 +659,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
