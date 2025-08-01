@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar as CalendarIcon, Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, FileText, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
 import {
   AlertDialog,
@@ -127,6 +127,10 @@ export default function GestationPage() {
   const openDetailsSheet = (pig: Pig) => {
     setSelectedPig(pig);
     setIsDetailsSheetOpen(true);
+  };
+  
+  const handlePrint = () => {
+    window.print();
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -312,58 +316,77 @@ export default function GestationPage() {
                 </Dialog>
 
                 <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                    <SheetContent className="sm:max-w-xl w-full">
-                        <SheetHeader>
+                    <SheetContent className="sm:max-w-xl w-full flex flex-col">
+                        <SheetHeader className="flex-shrink-0">
                         <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                         <SheetDescription>
                             Información completa y detallada del animal seleccionado.
                         </SheetDescription>
                         </SheetHeader>
                         {selectedPig && (
-                            <div className="grid gap-4 py-4">
-                                <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
-                                        <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
-                                    </div>
-                                    <Separator/>
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                        <div className="text-muted-foreground">Género</div>
-                                        <div>{selectedPig.gender}</div>
+                            <>
+                            <ScrollArea className="flex-grow pr-6 -mr-6">
+                                <div id="animal-details" className="grid gap-4 py-4 print:text-black">
+                                    <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
+                                                <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                            </div>
+                                            <Image
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
+                                                alt={`QR Code for ${selectedPig.id}`}
+                                                width={100}
+                                                height={100}
+                                                className="rounded-md"
+                                            />
+                                        </div>
+                                        <Separator/>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                            <div className="text-muted-foreground">Género</div>
+                                            <div>{selectedPig.gender}</div>
 
-                                        <div className="text-muted-foreground">Fecha de Nacimiento</div>
-                                        <div>{format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy')}</div>
-                                        
-                                        <div className="text-muted-foreground">Fecha de Llegada</div>
-                                        <div>{format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy')}</div>
-                                        
-                                        <div className="text-muted-foreground">Edad Actual</div>
-                                        <div>{selectedPig.age} semanas</div>
-                                        
-                                        <div className="text-muted-foreground">Peso Actual</div>
-                                        <div>{selectedPig.weight} kg</div>
+                                            <div className="text-muted-foreground">Fecha de Nacimiento</div>
+                                            <div>{format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy')}</div>
+                                            
+                                            <div className="text-muted-foreground">Fecha de Llegada</div>
+                                            <div>{format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy')}</div>
+                                            
+                                            <div className="text-muted-foreground">Edad Actual</div>
+                                            <div>{selectedPig.age} semanas</div>
+                                            
+                                            <div className="text-muted-foreground">Peso Actual</div>
+                                            <div>{selectedPig.weight} kg</div>
 
-                                        <div className="text-muted-foreground">Valor de Compra</div>
-                                        <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
+                                            <div className="text-muted-foreground">Valor de Compra</div>
+                                            <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
+                                        </div>
                                     </div>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Historial Reproductivo</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="text-center text-muted-foreground">
+                                            <p>Próximamente...</p>
+                                        </CardContent>
+                                    </Card>
+                                     <Card>
+                                        <CardHeader>
+                                            <CardTitle>Historial de Tratamientos</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="text-center text-muted-foreground">
+                                            <p>Próximamente...</p>
+                                        </CardContent>
+                                    </Card>
                                 </div>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Historial Reproductivo</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground">
-                                        <p>Próximamente...</p>
-                                    </CardContent>
-                                </Card>
-                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Historial de Tratamientos</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground">
-                                        <p>Próximamente...</p>
-                                    </CardContent>
-                                </Card>
+                            </ScrollArea>
+                            <div className="flex-shrink-0 pt-4 border-t">
+                                <Button onClick={handlePrint} className="w-full print:hidden">
+                                <Printer className="mr-2 h-4 w-4" />
+                                Imprimir Hoja de Vida
+                                </Button>
                             </div>
+                            </>
                         )}
                     </SheetContent>
                 </Sheet>
@@ -654,3 +677,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
