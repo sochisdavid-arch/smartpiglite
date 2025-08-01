@@ -8,8 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker } from 'lucide-react';
+import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { DialogFooter } from '@/components/ui/dialog';
+
 
 // Mock data - in a real app, this would come from an API
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
@@ -99,12 +106,16 @@ const eventIcons: { [key in EventType]: React.ReactElement } = {
     "Muerte": <XCircle className="h-5 w-5" />,
 };
 
+const allEventTypes: EventType[] = ["Celo", "Celo no Servido", "Inseminación", "Parto", "Aborto", "Tratamiento", "Vacunación", "Venta", "Descarte", "Muerte"];
+
 export default function PigHistoryPage() {
     const router = useRouter();
     const params = useParams();
     const pigId = params.pigId as string;
     
     const [pig, setPig] = React.useState<Pig | null>(null);
+    const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
+    const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
 
     React.useEffect(() => {
         const foundPig = initialPigs.find(p => p.id === pigId);
@@ -112,6 +123,160 @@ export default function PigHistoryPage() {
             setPig({...foundPig, age: calculateAge(foundPig.birthDate)});
         }
     }, [pigId]);
+
+    const openEventDialog = (eventType: EventType) => {
+        setSelectedEventType(eventType);
+        setIsEventFormOpen(true);
+    };
+
+    const EventForm = () => {
+        if (!selectedEventType) return null;
+        const [inseminationDate, setInseminationDate] = React.useState<string>('');
+        const probableFarrowingDate = React.useMemo(() => {
+            if (inseminationDate) {
+                const date = parseISO(inseminationDate);
+                if (isValid(date)) {
+                    return format(addDays(date, 114), 'dd/MM/yyyy');
+                }
+            }
+            return '---';
+        }, [inseminationDate]);
+    
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            // Handle form submission logic here in the future
+            console.log(`Submitting ${selectedEventType} form for pig ${pigId}`);
+            // Here you would typically update the pig's event list
+            // For now, we just close the dialog
+            setIsEventFormOpen(false);
+        }
+        
+        return (
+            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
+                    <DialogDescription>
+                        Complete la información para el evento.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
+                    <ScrollArea className="flex-grow pr-6 -mr-6">
+                        <div className="grid gap-4 py-4 pr-6">
+                            {/* Common fields */}
+                            <div className="space-y-2">
+                                <Label htmlFor="eventDate">Fecha del Evento</Label>
+                                <Input 
+                                    id="eventDate" 
+                                    type="date" 
+                                    required 
+                                    onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
+                                />
+                            </div>
+    
+                            {/* Specific fields */}
+                            {selectedEventType === 'Celo' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="observations">Observaciones</Label>
+                                    <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
+                                </div>
+                            )}
+                            {selectedEventType === 'Celo no Servido' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="reason">Motivo</Label>
+                                    <Input id="reason" placeholder="Ej: Condición corporal baja"/>
+                                </div>
+                            )}
+                            {selectedEventType === 'Inseminación' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="maleId">Macho / Lote de Semen</Label>
+                                        <Input id="maleId" placeholder="ID del macho o código del semen" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
+                                        <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
+                                        <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="inseminator">Inseminador</Label>
+                                        <Input id="inseminator" placeholder="Nombre del operario" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Fecha Probable de Parto</Label>
+                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
+                                            {probableFarrowingDate}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {selectedEventType === 'Parto' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="totalBorn">Total Nacidos</Label>
+                                        <Input id="totalBorn" type="number" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="liveBorn">Nacidos Vivos</Label>
+                                        <Input id="liveBorn" type="number" required />
+                                    </div>
+                                </>
+                            )}
+                            {selectedEventType === 'Aborto' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="abortionReason">Causa probable</Label>
+                                    <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
+                                </div>
+                            )}
+                            {selectedEventType === 'Tratamiento' && (
+                                <>
+                                <div className="space-y-2">
+                                        <Label htmlFor="treatmentProduct">Producto</Label>
+                                        <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="treatmentReason">Motivo</Label>
+                                        <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                                    </div>
+                                </>
+                            )}
+                            {selectedEventType === 'Vacunación' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="vaccine">Vacuna</Label>
+                                    <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                                </div>
+                            )}
+                            {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reason">Causa / Motivo</Label>
+                                        <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                                    </div>
+                                    {selectedEventType === 'Venta' && (
+                                    <div className="space-y-2">
+                                            <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
+                                            <Input id="saleValue" type="number" step="0.01" />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            <div className="space-y-2">
+                                <Label htmlFor="eventNotes">Notas Adicionales</Label>
+                                <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                            </div>
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter className="flex-shrink-0 pt-4">
+                        <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
+                        <Button type="submit">Guardar Evento</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        )
+      }
+
 
     if (!pig) {
         return (
@@ -126,11 +291,29 @@ export default function PigHistoryPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" onClick={() => router.back()}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida: {pig.id}</h1>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Button variant="outline" size="icon" onClick={() => router.back()}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida: {pig.id}</h1>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Agregar Evento
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {allEventTypes.map(eventType => (
+                                <DropdownMenuItem key={eventType} onSelect={() => openEventDialog(eventType)}>
+                                    {eventType}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 <Card>
@@ -194,6 +377,11 @@ export default function PigHistoryPage() {
                     </CardContent>
                 </Card>
             </div>
+            <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+                <EventForm />
+            </Dialog>
         </AppLayout>
     );
 }
+
+    
