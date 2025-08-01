@@ -70,10 +70,16 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (error) {
       console.error("Error during email sign-in:", error);
+      let description = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          description = "Correo electrónico o contraseña incorrectos. Por favor, verifica tus credenciales.";
+        }
+      }
       toast({
         variant: "destructive",
         title: "Error de inicio de sesión",
-        description: "Correo electrónico o contraseña incorrectos. Por favor, verifica tus credenciales.",
+        description: description,
       });
     }
   };
