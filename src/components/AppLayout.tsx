@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -24,6 +25,7 @@ import {
   HeartPulse,
   Baby,
   GanttChartSquare,
+  Beef,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +47,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/lactation', label: 'Lactancia', icon: Baby },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
+    { href: '/ceba', label: 'Ceba', icon: Beef },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
