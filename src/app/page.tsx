@@ -31,9 +31,8 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
-      if (error instanceof FirebaseError && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-        // User closed the popup, do nothing.
-        console.log("Sign-in popup closed by user.");
+      if (error instanceof FirebaseError && ['auth/cancelled-popup-request', 'auth/popup-closed-by-user', 'auth/popup-blocked'].includes(error.code)) {
+        console.log("Sign-in popup action cancelled or blocked by user/browser.");
         return;
       }
       console.error("Error during Google sign-in:", error);
@@ -51,9 +50,8 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
-      if (error instanceof FirebaseError && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-        // User closed the popup, do nothing.
-        console.log("Sign-in popup closed by user.");
+      if (error instanceof FirebaseError && ['auth/cancelled-popup-request', 'auth/popup-closed-by-user', 'auth/popup-blocked'].includes(error.code)) {
+        console.log("Sign-in popup action cancelled or blocked by user/browser.");
         return;
       }
       console.error("Error during Microsoft sign-in:", error);
