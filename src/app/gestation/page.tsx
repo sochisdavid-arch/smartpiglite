@@ -180,7 +180,7 @@ export default function GestationPage() {
     <AppLayout>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Gestación</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Animales</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline"><Search className="mr-2 h-4 w-4" /> Búsqueda Avanzada</Button>
             <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
@@ -378,7 +378,7 @@ export default function GestationPage() {
                 </TableHeader>
                 <TableBody>
                     {filteredPigs.map((pig) => (
-                    <TableRow key={pig.id}>
+                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer">
                         <TableCell className="font-medium">{pig.id}</TableCell>
                         <TableCell>{pig.breed}</TableCell>
                         <TableCell>{pig.gender}</TableCell>
@@ -389,7 +389,7 @@ export default function GestationPage() {
                         <TableCell className="text-right">{pig.purchaseValue ? pig.purchaseValue.toFixed(2) : '-'}</TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" className="h-8 w-8 p-0">
                                 <span className="sr-only">Abrir menú</span>
                                 <MoreHorizontal className="h-4 w-4" />
@@ -427,10 +427,7 @@ export default function GestationPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-
       </div>
     </AppLayout>
   );
 }
-
-    
