@@ -165,15 +165,15 @@ export default function PigHistoryPage() {
         }
         
         return (
-            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
+            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
                     <DialogDescription>
                         Complete la información para el evento.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-                    <ScrollArea className="flex-grow pr-6 -mr-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full pr-6 -mr-6">
                         <div className="grid gap-4 py-4 pr-6">
                             {/* Common fields */}
                             <div className="space-y-2">
@@ -307,7 +307,7 @@ export default function PigHistoryPage() {
                             </div>
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-auto">
+                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
                         <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
                         <Button type="submit">Guardar Evento</Button>
                     </DialogFooter>
@@ -374,12 +374,12 @@ export default function PigHistoryPage() {
                         </div>
                          <div className="space-y-1">
                             <Label>F. Parto Probable</Label>
-                            <p className="font-semibold">
+                            <div className="font-semibold">
                                 {pig.status === 'Gestante' && pig.lastEvent.type === 'Inseminación' 
                                   ? calculateProbableFarrowingDate(pig.lastEvent.date)
                                   : 'N/A'
                                 }
-                            </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -422,5 +422,3 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
-
-    
