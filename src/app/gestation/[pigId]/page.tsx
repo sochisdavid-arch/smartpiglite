@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 // Mock data - in a real app, this would come from an API
@@ -62,6 +63,15 @@ const initialPigs: Pig[] = [
   },
   { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' }, events: [{ type: 'Celo no Servido', date: '2024-07-01', details: 'Baja condición corporal.' }] },
   { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' }, events: [{ type: 'Parto', date: '2024-05-20', details: '12 nacidos vivos.' }] },
+];
+
+const mockInventory = [
+    { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
+    { id: 'MED-02', name: 'Amoxicilina 15%', category: 'medicamento', stock: 12 },
+    { id: 'MED-03', name: 'Ivermectina 1%', category: 'medicamento', stock: 8 },
+    { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
+    { id: 'VAC-02', name: 'Vacuna Mycoplasma', category: 'vacuna', stock: 100 },
+    { id: 'VAC-03', name: 'Vacuna Parvovirus/Leptospira', category: 'vacuna', stock: 25 },
 ];
 
 const calculateAge = (birthDate: string) => {
@@ -273,7 +283,14 @@ export default function PigHistoryPage() {
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="treatmentProduct">Producto</Label>
-                                    <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                                     <Select name="treatmentProduct" required>
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar medicamento"/></SelectTrigger>
+                                        <SelectContent>
+                                            {mockInventory.filter(p => p.category === 'medicamento').map(item => (
+                                                <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="treatmentDose">Dosis (ml)</Label>
@@ -289,7 +306,14 @@ export default function PigHistoryPage() {
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="vaccine">Vacuna / Producto</Label>
-                                    <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                                     <Select name="vaccineProduct" required>
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar vacuna"/></SelectTrigger>
+                                        <SelectContent>
+                                            {mockInventory.filter(p => p.category === 'vacuna').map(item => (
+                                                <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="vaccineDose">Dosis (ml)</Label>
