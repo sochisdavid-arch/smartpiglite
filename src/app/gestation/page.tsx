@@ -41,6 +41,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInWeeks, parseISO, format, isValid } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Pig {
     id: string;
@@ -71,6 +72,9 @@ const pigBreeds = [
   "Otro"
 ];
 
+type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
+
+
 const calculateAge = (birthDate: string) => {
     if (!birthDate) return 0;
     const date = parseISO(birthDate);
@@ -90,6 +94,8 @@ export default function GestationPage() {
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
+  const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
+  const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
 
   // States for filters
   const [filterId, setFilterId] = React.useState('');
@@ -131,6 +137,11 @@ export default function GestationPage() {
   const openDetailsSheet = (pig: Pig) => {
     setSelectedPig(pig);
     setIsDetailsSheetOpen(true);
+  };
+
+  const openEventDialog = (eventType: EventType) => {
+    setSelectedEventType(eventType);
+    setIsEventFormOpen(true);
   };
   
   const handlePrint = () => {
@@ -175,6 +186,121 @@ export default function GestationPage() {
     setIsDeleteDialogOpen(false);
     setPigToDelete(null);
   };
+
+  const EventForm = () => {
+    if (!selectedEventType) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Handle form submission logic here in the future
+        console.log(`Submitting ${selectedEventType} form`);
+        setIsEventFormOpen(false);
+    }
+    
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
+                <DialogDescription>
+                    Complete la información para el evento.
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                    {/* Common fields */}
+                    <div className="space-y-2">
+                        <Label htmlFor="eventDate">Fecha del Evento</Label>
+                        <Input id="eventDate" type="date" required />
+                    </div>
+
+                    {/* Specific fields */}
+                    {selectedEventType === 'Celo' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="observations">Observaciones</Label>
+                            <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
+                        </div>
+                    )}
+                    {selectedEventType === 'Celo no Servido' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="reason">Motivo</Label>
+                            <Input id="reason" placeholder="Ej: Condición corporal baja"/>
+                        </div>
+                    )}
+                    {selectedEventType === 'Inseminación' && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="maleId">Macho / Lote de Semen</Label>
+                                <Input id="maleId" placeholder="ID del macho o código del semen" required />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="inseminator">Inseminador</Label>
+                                <Input id="inseminator" placeholder="Nombre del operario" required />
+                            </div>
+                        </>
+                    )}
+                    {selectedEventType === 'Parto' && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="totalBorn">Total Nacidos</Label>
+                                <Input id="totalBorn" type="number" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="liveBorn">Nacidos Vivos</Label>
+                                <Input id="liveBorn" type="number" required />
+                            </div>
+                        </>
+                    )}
+                    {selectedEventType === 'Aborto' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="abortionReason">Causa probable</Label>
+                            <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
+                        </div>
+                    )}
+                    {selectedEventType === 'Tratamiento' && (
+                        <>
+                           <div className="space-y-2">
+                                <Label htmlFor="treatmentProduct">Producto</Label>
+                                <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="treatmentReason">Motivo</Label>
+                                <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                            </div>
+                        </>
+                    )}
+                     {selectedEventType === 'Vacunación' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="vaccine">Vacuna</Label>
+                            <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                        </div>
+                    )}
+                    {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
+                        <>
+                             <div className="space-y-2">
+                                <Label htmlFor="reason">Causa / Motivo</Label>
+                                <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                            </div>
+                            {selectedEventType === 'Venta' && (
+                               <div className="space-y-2">
+                                    <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
+                                    <Input id="saleValue" type="number" step="0.01" />
+                                </div>
+                            )}
+                        </>
+                    )}
+                     <div className="space-y-2">
+                        <Label htmlFor="eventNotes">Notas Adicionales</Label>
+                        <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit">Guardar Evento</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    )
+  }
 
   return (
     <AppLayout>
@@ -259,9 +385,13 @@ export default function GestationPage() {
                   </form>
                 </DialogContent>
             </Dialog>
+            
+            <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+              <EventForm />
+            </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="sm:max-w-3xl w-full flex flex-col">
+                <SheetContent className="w-full sm:max-w-3xl flex flex-col">
                     <SheetHeader className="flex-shrink-0">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
@@ -276,32 +406,34 @@ export default function GestationPage() {
                                     <div className="flex items-start justify-between">
                                         <div className="flex-grow space-y-2">
                                             <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
-                                            <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                    <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-56">
+                                                        <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Celo")}>Celo</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Celo no Servido")}>Celo no Servido</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Inseminación")}>Inseminación</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Parto")}>Parto</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Aborto")}>Aborto</DropdownMenuItem>
+                                                        <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Tratamiento")}>Tratamiento</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Vacunación")}>Vacunación</DropdownMenuItem>
+                                                        <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Venta")}>Venta</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Descarte")}>Descarte</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => openEventDialog("Muerte")}>Muerte</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-56">
-                                                <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem>Celo</DropdownMenuItem>
-                                                <DropdownMenuItem>Celo no Servido</DropdownMenuItem>
-                                                <DropdownMenuItem>Inseminación</DropdownMenuItem>
-                                                <DropdownMenuItem>Parto</DropdownMenuItem>
-                                                <DropdownMenuItem>Aborto</DropdownMenuItem>
-                                                <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem>Tratamiento</DropdownMenuItem>
-                                                <DropdownMenuItem>Vacunación</DropdownMenuItem>
-                                                <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem>Venta</DropdownMenuItem>
-                                                <DropdownMenuItem>Descarte</DropdownMenuItem>
-                                                <DropdownMenuItem>Muerte</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                             <Image
                                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
                                                 alt={`QR Code for ${selectedPig.id}`}
