@@ -172,146 +172,144 @@ export default function PigHistoryPage() {
                         Complete la información para el evento.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex-1 overflow-hidden">
-                    <ScrollArea className="h-full pr-6 -mr-6">
-                        <div className="grid gap-4 py-4 pr-6">
-                            {/* Common fields */}
-                            <div className="space-y-2">
-                                <Label htmlFor="eventDate">Fecha del Evento</Label>
-                                <Input 
-                                    id="eventDate" 
-                                    type="date" 
-                                    required 
-                                    onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
-                                />
-                            </div>
-    
-                            {/* Specific fields */}
-                            {selectedEventType === 'Celo' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="observations">Observaciones</Label>
-                                    <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
-                                </div>
-                            )}
-                            {selectedEventType === 'Celo no Servido' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="reason">Motivo</Label>
-                                    <Input id="reason" placeholder="Ej: Condición corporal baja"/>
-                                </div>
-                            )}
-                            {selectedEventType === 'Inseminación' && (
-                                <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="maleId">Macho / Lote de Semen</Label>
-                                        <Input id="maleId" placeholder="ID del macho o código del semen" required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
-                                        <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
-                                        <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="inseminator">Inseminador</Label>
-                                        <Input id="inseminator" placeholder="Nombre del operario" required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Fecha Probable de Parto</Label>
-                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
-                                            {probableFarrowingDate}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                            {selectedEventType === 'Parto' && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="totalBorn">Total Nacidos</Label>
-                                        <Input id="totalBorn" type="number" required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="liveBorn">Vivos</Label>
-                                        <Input id="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="stillborn">Muertos</Label>
-                                        <Input id="stillborn" type="number" required />
-                                    </div>
-                                     <div className="space-y-2">
-                                        <Label htmlFor="mummified">Momias</Label>
-                                        <Input id="mummified" type="number" required />
-                                    </div>
-                                     <div className="space-y-2">
-                                        <Label htmlFor="lowViability">Baja Viabilidad</Label>
-                                        <Input id="lowViability" type="number" required />
-                                    </div>
-                                     <div className="space-y-2">
-                                        <Label htmlFor="sowWeightParto">Peso Cerda (kg)</Label>
-                                        <Input id="sowWeightParto" type="number" step="0.1" placeholder="Opcional"/>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="litterWeight">Peso Camada (kg)</Label>
-                                        <Input id="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Peso Promedio (kg)</Label>
-                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">
-                                            {averagePigletWeight}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {selectedEventType === 'Aborto' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="abortionReason">Causa probable</Label>
-                                    <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
-                                </div>
-                            )}
-                            {selectedEventType === 'Tratamiento' && (
-                                <>
-                                <div className="space-y-2">
-                                        <Label htmlFor="treatmentProduct">Producto</Label>
-                                        <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="treatmentReason">Motivo</Label>
-                                        <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
-                                    </div>
-                                </>
-                            )}
-                            {selectedEventType === 'Vacunación' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="vaccine">Vacuna</Label>
-                                    <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
-                                </div>
-                            )}
-                            {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
-                                <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="reason">Causa / Motivo</Label>
-                                        <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
-                                    </div>
-                                    {selectedEventType === 'Venta' && (
-                                    <div className="space-y-2">
-                                            <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
-                                            <Input id="saleValue" type="number" step="0.01" />
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                            <div className="space-y-2">
-                                <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                                <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
-                            </div>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6">
+                        {/* Common fields */}
+                        <div className="space-y-2">
+                            <Label htmlFor="eventDate">Fecha del Evento</Label>
+                            <Input 
+                                id="eventDate" 
+                                type="date" 
+                                required 
+                                onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
+                            />
                         </div>
-                    </ScrollArea>
-                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
-                        <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
-                        <Button type="submit">Guardar Evento</Button>
-                    </DialogFooter>
-                </form>
+
+                        {/* Specific fields */}
+                        {selectedEventType === 'Celo' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="observations">Observaciones</Label>
+                                <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
+                            </div>
+                        )}
+                        {selectedEventType === 'Celo no Servido' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="reason">Motivo</Label>
+                                <Input id="reason" placeholder="Ej: Condición corporal baja"/>
+                            </div>
+                        )}
+                        {selectedEventType === 'Inseminación' && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="maleId">Macho / Lote de Semen</Label>
+                                    <Input id="maleId" placeholder="ID del macho o código del semen" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
+                                    <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
+                                    <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="inseminator">Inseminador</Label>
+                                    <Input id="inseminator" placeholder="Nombre del operario" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Fecha Probable de Parto</Label>
+                                    <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
+                                        {probableFarrowingDate}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {selectedEventType === 'Parto' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="totalBorn">Total Nacidos</Label>
+                                    <Input id="totalBorn" type="number" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="liveBorn">Vivos</Label>
+                                    <Input id="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="stillborn">Muertos</Label>
+                                    <Input id="stillborn" type="number" required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="mummified">Momias</Label>
+                                    <Input id="mummified" type="number" required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="lowViability">Baja Viabilidad</Label>
+                                    <Input id="lowViability" type="number" required />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="sowWeightParto">Peso Cerda (kg)</Label>
+                                    <Input id="sowWeightParto" type="number" step="0.1" placeholder="Opcional"/>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="litterWeight">Peso Camada (kg)</Label>
+                                    <Input id="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Peso Promedio (kg)</Label>
+                                    <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">
+                                        {averagePigletWeight}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {selectedEventType === 'Aborto' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="abortionReason">Causa probable</Label>
+                                <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
+                            </div>
+                        )}
+                        {selectedEventType === 'Tratamiento' && (
+                            <>
+                            <div className="space-y-2">
+                                    <Label htmlFor="treatmentProduct">Producto</Label>
+                                    <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="treatmentReason">Motivo</Label>
+                                    <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                                </div>
+                            </>
+                        )}
+                        {selectedEventType === 'Vacunación' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="vaccine">Vacuna</Label>
+                                <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                            </div>
+                        )}
+                        {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="reason">Causa / Motivo</Label>
+                                    <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                                </div>
+                                {selectedEventType === 'Venta' && (
+                                <div className="space-y-2">
+                                        <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
+                                        <Input id="saleValue" type="number" step="0.01" />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="eventNotes">Notas Adicionales</Label>
+                            <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                        </div>
+                    </form>
+                </div>
+                <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
+                    <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" form="event-form">Guardar Evento</Button>
+                </DialogFooter>
             </DialogContent>
         )
       }
