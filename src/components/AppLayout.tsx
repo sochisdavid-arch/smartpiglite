@@ -22,6 +22,7 @@ import {
   Settings,
   LogOut,
   User,
+  HeartPulse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,6 +42,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/pigs', label: 'Cerdos', icon: PiggyBank },
+    { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
   ];
 
@@ -59,7 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
