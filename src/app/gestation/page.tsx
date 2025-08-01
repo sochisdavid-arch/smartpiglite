@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X } from 'lucide-react';
+import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X, HeartPulse } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -97,6 +97,9 @@ export default function GestationPage() {
   const [filterId, setFilterId] = React.useState('');
   const [filterBreed, setFilterBreed] = React.useState('');
   const [filteredPigs, setFilteredPigs] = React.useState(pigs);
+
+  const femalePigs = pigs.filter(p => p.gender === 'Hembra');
+  const malePigs = pigs.filter(p => p.gender === 'Macho');
 
 
   React.useEffect(() => {
@@ -194,6 +197,7 @@ export default function GestationPage() {
         <Tabs defaultValue="animals" className="w-full">
           <TabsList>
             <TabsTrigger value="animals">Animales</TabsTrigger>
+            <TabsTrigger value="new-gestation">Nueva Gestación</TabsTrigger>
           </TabsList>
 
           <TabsContent value="animals" className="mt-6">
@@ -420,6 +424,60 @@ export default function GestationPage() {
                 </CardContent>
                 </Card>
             </div>
+          </TabsContent>
+          <TabsContent value="new-gestation" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Iniciar Nueva Gestación</CardTitle>
+                <CardDescription>Seleccione una hembra y registre los datos del servicio de inseminación.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="sow-selection">Seleccionar Hembra</Label>
+                      <Select name="sow-selection" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Elija una hembra disponible" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {femalePigs.map(pig => (
+                            <SelectItem key={pig.id} value={pig.id}>{pig.id} - {pig.breed}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="insemination-date">Fecha de Inseminación</Label>
+                      <Input id="insemination-date" name="insemination-date" type="date" required />
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="male-selection">Macho Utilizado</Label>
+                       <Select name="male-selection" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Elija un macho" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {malePigs.map(pig => (
+                            <SelectItem key={pig.id} value={pig.id}>{pig.id} - {pig.breed}</SelectItem>
+                          ))}
+                           <SelectItem value="semen-externo">Semen Externo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="gestation-cycle">Ciclo de Gestación</Label>
+                        <Input id="gestation-cycle" name="gestation-cycle" type="number" placeholder="Ej. 2" required />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="technician">Técnico Responsable</Label>
+                        <Input id="technician" name="technician" placeholder="Nombre del inseminador" />
+                    </div>
+                  </div>
+                  <Button type="submit"><HeartPulse className="mr-2 h-4 w-4" /> Iniciar Gestación</Button>
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
         
