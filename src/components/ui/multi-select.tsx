@@ -15,7 +15,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Button } from "./button";
-import { Checkbox } from "./checkbox";
 
 type Option = {
   value: string;
@@ -94,6 +93,7 @@ export function MultiSelect({
                           } else {
                             onChange([...selected, option.value]);
                           }
+                          setOpen(true);
                         }}
                       >
                         <div className={cn(
