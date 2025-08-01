@@ -25,15 +25,17 @@ import { differenceInWeeks, parseISO, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const initialPigs = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85 },
-  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60 },
-  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110 },
-  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25 },
-  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95 },
-  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115 },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Macho', purchaseValue: 150 },
+  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160 },
+  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155 },
+  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120 },
+  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165 },
+  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145 },
 ];
+
 
 const pigBreeds = [
   // Razas Puras
@@ -65,6 +67,8 @@ export default function PigsPage() {
       birthDate: birthDateValue,
       arrivalDate: arrivalDateValue,
       weight: parseInt(formData.get('weight') as string),
+      gender: formData.get('gender') as string,
+      purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
       age: differenceInWeeks(new Date(), parseISO(birthDateValue))
     };
     setPigs(prevPigs => [...prevPigs, newAnimal]);
@@ -113,6 +117,19 @@ export default function PigsPage() {
                             </ScrollArea>
                         </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="gender" className="text-right">Género</Label>
+                    <RadioGroup name="gender" required defaultValue="Hembra" className="col-span-3 flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Hembra" id="female" />
+                        <Label htmlFor="female">Hembra</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Macho" id="male" />
+                        <Label htmlFor="male">Macho</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
@@ -168,6 +185,10 @@ export default function PigsPage() {
                     <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
                     <Input id="weight" name="weight" type="number" className="col-span-3" required />
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
+                    <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit">Guardar Animal</Button>
@@ -201,10 +222,12 @@ export default function PigsPage() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Raza</TableHead>
+                  <TableHead>Género</TableHead>
                   <TableHead>F. Nacimiento</TableHead>
                   <TableHead>F. Llegada</TableHead>
                   <TableHead className="text-right">Edad (sem.)</TableHead>
                   <TableHead className="text-right">Peso (kg)</TableHead>
+                  <TableHead className="text-right">Compra ($)</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -213,10 +236,12 @@ export default function PigsPage() {
                   <TableRow key={pig.id}>
                     <TableCell className="font-medium">{pig.id}</TableCell>
                     <TableCell>{pig.breed}</TableCell>
+                    <TableCell>{pig.gender}</TableCell>
                     <TableCell>{pig.birthDate}</TableCell>
                     <TableCell>{pig.arrivalDate}</TableCell>
                     <TableCell className="text-right">{pig.age}</TableCell>
                     <TableCell className="text-right">{pig.weight}</TableCell>
+                    <TableCell className="text-right">{pig.purchaseValue ? pig.purchaseValue.toFixed(2) : '-'}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -242,3 +267,5 @@ export default function PigsPage() {
     </AppLayout>
   );
 }
+
+    
