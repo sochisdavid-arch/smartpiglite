@@ -330,7 +330,7 @@ export default function PigHistoryPage() {
                         </div>
                         <div className="space-y-1">
                             <Label>Estado Actual</Label>
-                            <p><Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge></p>
+                            <div><Badge variant={getStatusVariant(pig.status)}>{pig.status}</Badge></div>
                         </div>
                          <div className="space-y-1">
                             <Label>F. Parto Probable</Label>
