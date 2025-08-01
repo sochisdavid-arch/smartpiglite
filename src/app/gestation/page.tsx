@@ -155,9 +155,15 @@ export default function GestationPage() {
 
   // States for new tabs
   const [abortions, setAbortions] = React.useState<Abortion[]>([]);
+  const [abortionsSowId, setAbortionsSowId] = React.useState('');
   const [movements, setMovements] = React.useState<Movement[]>([]);
+  const [movementPigId, setMovementPigId] = React.useState('');
   const [treatments, setTreatments] = React.useState<Treatment[]>([]);
+  const [treatmentPigId, setTreatmentPigId] = React.useState('');
   const [historyPigId, setHistoryPigId] = React.useState('');
+  const [feedingSowId, setFeedingSowId] = React.useState('');
+
+  const [formBreed, setFormBreed] = React.useState('');
 
 
   React.useEffect(() => {
@@ -181,17 +187,20 @@ export default function GestationPage() {
 
   const openAddDialog = () => {
     setEditingPig(null);
+    setFormBreed('');
     setIsFormOpen(true);
   };
 
   const openEditDialog = (pig: Pig) => {
     setEditingPig(pig);
+    setFormBreed(pig.breed);
     setIsFormOpen(true);
   };
   
   const closeFormDialog = () => {
     setIsFormOpen(false);
     setEditingPig(null);
+    setFormBreed('');
   };
   
   const openDeleteDialog = (pig: Pig) => {
@@ -220,7 +229,7 @@ export default function GestationPage() {
     
     const submittedAnimal: Pig = {
       id: formData.get('id') as string,
-      breed: formData.get('breed') as string,
+      breed: formBreed,
       birthDate: birthDateValue,
       arrivalDate: formData.get('arrivalDate') as string,
       weight: parseInt(formData.get('weight') as string),
@@ -299,7 +308,7 @@ export default function GestationPage() {
       const formData = new FormData(event.currentTarget);
       const newAbortion: Abortion = {
           id: `AB-${Date.now()}`,
-          sowId: formData.get('sowId') as string,
+          sowId: abortionsSowId,
           abortionDate: formData.get('abortionDate') as string,
           cause: formData.get('cause') as string,
           observations: formData.get('observations') as string,
@@ -307,6 +316,7 @@ export default function GestationPage() {
       setAbortions(prev => [newAbortion, ...prev]);
       toast({ title: "Aborto Registrado", description: `Se ha registrado un aborto para la cerda ${newAbortion.sowId}.` });
       (event.target as HTMLFormElement).reset();
+      setAbortionsSowId('');
   };
 
   const handleMovementSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -314,7 +324,7 @@ export default function GestationPage() {
       const formData = new FormData(event.currentTarget);
       const newMovement: Movement = {
           id: `MOV-${Date.now()}`,
-          pigId: formData.get('pigId') as string,
+          pigId: movementPigId,
           origin: formData.get('origin') as string,
           destination: formData.get('destination') as string,
           movementDate: formData.get('movementDate') as string,
@@ -323,6 +333,7 @@ export default function GestationPage() {
       setMovements(prev => [newMovement, ...prev]);
       toast({ title: "Movimiento Registrado", description: `Movimiento del animal ${newMovement.pigId} registrado.` });
       (event.target as HTMLFormElement).reset();
+      setMovementPigId('');
   };
 
   const handleTreatmentSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -330,7 +341,7 @@ export default function GestationPage() {
       const formData = new FormData(event.currentTarget);
       const newTreatment: Treatment = {
           id: `TRT-${Date.now()}`,
-          pigId: formData.get('pigId') as string,
+          pigId: treatmentPigId,
           treatmentDate: formData.get('treatmentDate') as string,
           product: formData.get('product') as string,
           dose: formData.get('dose') as string,
@@ -339,6 +350,7 @@ export default function GestationPage() {
       setTreatments(prev => [newTreatment, ...prev]);
       toast({ title: "Tratamiento Registrado", description: `Tratamiento para el animal ${newTreatment.pigId} registrado.` });
       (event.target as HTMLFormElement).reset();
+      setTreatmentPigId('');
   };
 
 
@@ -398,15 +410,12 @@ export default function GestationPage() {
                             <div className="col-span-3">
                                 <Combobox
                                     options={breedOptions}
-                                    value={editingPig?.breed || ''}
-                                    onChange={(value) => {
-                                        const event = { target: { name: 'breed', value } } as unknown as React.ChangeEvent<HTMLInputElement>;
-                                        // This is a workaround to make it compatible with the form handler
-                                    }}
+                                    value={formBreed}
+                                    onChange={setFormBreed}
                                     placeholder="Seleccionar raza/línea"
                                     noResultsText="No se encontraron razas."
+                                    name="breed"
                                 />
-                                <input type="hidden" name="breed" value={editingPig?.breed || ''}/>
                             </div>
                         </div>
                           <div className="grid grid-cols-4 items-center gap-4">
@@ -728,7 +737,7 @@ export default function GestationPage() {
                   <Button><Search className="h-4 w-4"/></Button>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/50">
-                  <h3 className="font-semibold text-lg mb-4 text-center">Calendario Gestacional: Cerda PIG-001</h3>
+                  <h3 className="font-semibold text-lg mb-4 text-center">Calendario Gestacional: Cerda {trackingSowId || "..."}</h3>
                   <div className="text-center">
                     <p className="text-4xl font-bold text-primary">Día 35</p>
                     <p className="text-muted-foreground">de 114 (aprox.)</p>
@@ -814,7 +823,12 @@ export default function GestationPage() {
                         <form onSubmit={handleAbortionSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="abortion-sowId">Cerda (ID)</Label>
-                                <Combobox name="sowId" options={sowOptions} placeholder="Buscar cerda..."/>
+                                <Combobox 
+                                  value={abortionsSowId}
+                                  onChange={setAbortionsSowId}
+                                  options={sowOptions}
+                                  placeholder="Buscar cerda..."
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="abortionDate">Fecha del Aborto</Label>
@@ -863,7 +877,12 @@ export default function GestationPage() {
                         <div className="grid gap-4 md:grid-cols-2">
                            <div className="space-y-2">
                                 <Label htmlFor="movement-pigId">Animal (ID)</Label>
-                                <Combobox name="pigId" options={pigIdOptions} placeholder="Buscar animal..." />
+                                <Combobox 
+                                    value={movementPigId}
+                                    onChange={setMovementPigId}
+                                    options={pigIdOptions} 
+                                    placeholder="Buscar animal..." 
+                                />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="movementDate">Fecha de Movimiento</Label>
@@ -914,7 +933,12 @@ export default function GestationPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="feeding-sowId">Cerda</Label>
-                                <Combobox options={sowOptions} placeholder="Seleccionar cerda"/>
+                                <Combobox 
+                                    options={sowOptions}
+                                    value={feedingSowId}
+                                    onChange={setFeedingSowId}
+                                    placeholder="Seleccionar cerda"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Etapa Gestacional</Label>
@@ -990,7 +1014,12 @@ export default function GestationPage() {
                         <div className="grid gap-4 md:grid-cols-3">
                             <div className="space-y-2">
                                 <Label htmlFor="treatment-pigId">Animal (ID)</Label>
-                                <Combobox name="pigId" options={pigIdOptions} placeholder="Buscar animal..." />
+                                <Combobox
+                                    value={treatmentPigId}
+                                    onChange={setTreatmentPigId}
+                                    options={pigIdOptions} 
+                                    placeholder="Buscar animal..." 
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="treatmentDate">Fecha de Tratamiento</Label>

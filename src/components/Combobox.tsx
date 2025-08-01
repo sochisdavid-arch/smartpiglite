@@ -31,15 +31,9 @@ interface ComboboxProps {
 
 export function Combobox({ options, value, onChange, placeholder, noResultsText, name }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [internalValue, setInternalValue] = React.useState(value || '');
-
-  React.useEffect(() => {
-    setInternalValue(value || '');
-  }, [value]);
-
+  
   const handleSelect = (currentValue: string) => {
-    const newValue = currentValue === internalValue ? "" : currentValue;
-    setInternalValue(newValue);
+    const newValue = currentValue === value ? "" : currentValue;
     if (onChange) {
       onChange(newValue);
     }
@@ -48,7 +42,7 @@ export function Combobox({ options, value, onChange, placeholder, noResultsText,
 
   return (
     <>
-      <input type="hidden" name={name} value={internalValue} />
+      <input type="hidden" name={name} value={value} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -57,8 +51,8 @@ export function Combobox({ options, value, onChange, placeholder, noResultsText,
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {internalValue
-              ? options.find((option) => option.value === internalValue)?.label
+            {value
+              ? options.find((option) => option.value === value)?.label
               : placeholder || "Seleccione una opción..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -78,7 +72,7 @@ export function Combobox({ options, value, onChange, placeholder, noResultsText,
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        internalValue === option.value ? "opacity-100" : "opacity-0"
+                        value === option.value ? "opacity-100" : "opacity-0"
                       )}
                     />
                     {option.label}
