@@ -136,10 +136,6 @@ export default function GestationPage() {
   const [filterBreed, setFilterBreed] = React.useState('all');
   const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
 
-  const totalSowsForConsumption = React.useMemo(() => {
-    return pigs.filter(p => p.gender === 'Hembra' && ['Gestante', 'Vacia', 'Destetada', 'Remplazo'].includes(p.status)).length;
-  }, [pigs]);
-
   React.useEffect(() => {
     // Load pigs from localStorage
     const pigsFromStorage = localStorage.getItem('pigs');
@@ -283,15 +279,17 @@ export default function GestationPage() {
    const ConsumptionForm = () => {
         const [selectedFeed, setSelectedFeed] = React.useState<string>();
         const [totalQuantity, setTotalQuantity] = React.useState<number | string>('');
+        const [sowCount, setSowCount] = React.useState<number | string>('');
         const feedOptions = mockInventory.filter(p => p.category === 'alimento').map(f => ({ value: f.id, label: `${f.name} (Stock: ${f.stock}kg)` }));
 
         const averageConsumption = React.useMemo(() => {
             const numTotalQuantity = Number(totalQuantity);
-            if (numTotalQuantity > 0 && totalSowsForConsumption > 0) {
-                return (numTotalQuantity / totalSowsForConsumption).toFixed(2);
+            const numSowCount = Number(sowCount);
+            if (numTotalQuantity > 0 && numSowCount > 0) {
+                return (numTotalQuantity / numSowCount).toFixed(2);
             }
             return '0.00';
-        }, [totalQuantity, totalSowsForConsumption]);
+        }, [totalQuantity, sowCount]);
 
 
         const handleSubmit = (e: React.FormEvent) => {
@@ -317,7 +315,7 @@ export default function GestationPage() {
                 date: consumptionDate,
                 totalQuantity: Number(totalQuantity),
                 feedType: foundFeed,
-                sowCount: totalSowsForConsumption,
+                sowCount: Number(sowCount),
                 averageConsumption: Number(averageConsumption),
             };
 
@@ -327,7 +325,7 @@ export default function GestationPage() {
             
             toast({
                 title: "¡Consumo de Lote Registrado!",
-                description: `${totalQuantity}kg de ${foundFeed.label.split(' (')[0]} registrado para ${totalSowsForConsumption} hembras.`,
+                description: `${totalQuantity}kg de ${foundFeed.label.split(' (')[0]} registrado para ${sowCount} hembras.`,
             });
             
             setIsConsumptionFormOpen(false);
@@ -338,18 +336,18 @@ export default function GestationPage() {
                 <DialogHeader>
                     <DialogTitle>Registrar Consumo del Lote de Reproductoras</DialogTitle>
                     <DialogDescription>
-                        Registre el consumo diario de alimento para todas las hembras en gestación, vacías, destetadas y de reemplazo. El consumo se descontará del inventario.
+                        Registre el consumo diario de alimento para un grupo de hembras. El consumo se descontará del inventario.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4 py-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-1">
-                            <Label>Hembras en Lote</Label>
-                            <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{totalSowsForConsumption}</div>
-                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="consumptionDate">Fecha</Label>
                             <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="sowCount">Nº de Hembras</Label>
+                            <Input id="sowCount" name="sowCount" type="number" placeholder="Ej. 25" required value={sowCount} onChange={e => setSowCount(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="quantity">Cantidad Total (kg)</Label>
