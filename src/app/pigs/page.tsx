@@ -1,3 +1,7 @@
+
+"use client";
+
+import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
-const pigs = [
+const initialPigs = [
   { id: 'PIG-001', breed: 'Duroc', age: 12, weight: 85, status: 'Gestación' },
   { id: 'PIG-002', breed: 'Yorkshire', age: 8, weight: 60, status: 'Lactancia' },
   { id: 'PIG-003', breed: 'Landrace', age: 20, weight: 110, status: 'Engorde' },
@@ -24,23 +38,82 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'des
     'Destetado': 'destructive'
 };
 
-const statusTranslation: { [key: string]: string } = {
-    Gestation: 'Gestación',
-    Lactation: 'Lactancia',
-    Fattening: 'Engorde',
-    Weaned: 'Destetado'
-};
-
 export default function PigsPage() {
+  const [pigs, setPigs] = React.useState(initialPigs);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+
+  const handleAddAnimal = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const newAnimal = {
+      id: formData.get('id') as string,
+      breed: formData.get('breed') as string,
+      age: parseInt(formData.get('age') as string),
+      weight: parseInt(formData.get('weight') as string),
+      status: formData.get('status') as string,
+    };
+    setPigs(prevPigs => [...prevPigs, newAnimal]);
+    setIsDialogOpen(false);
+  };
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Resumen de Cerdos</h1>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Cerdo
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Animal
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Añadir Nuevo Animal</DialogTitle>
+                <DialogDescription>
+                  Completa la información para registrar un nuevo animal en el sistema.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddAnimal}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="id" className="text-right">ID</Label>
+                    <Input id="id" name="id" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="breed" className="text-right">Raza</Label>
+                    <Input id="breed" name="breed" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="age" className="text-right">Edad (sem.)</Label>
+                    <Input id="age" name="age" type="number" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
+                    <Input id="weight" name="weight" type="number" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="status" className="text-right">Estado</Label>
+                    <Select name="status" required>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Gestación">Gestación</SelectItem>
+                            <SelectItem value="Lactancia">Lactancia</SelectItem>
+                            <SelectItem value="Engorde">Engorde</SelectItem>
+                            <SelectItem value="Destetado">Destetado</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Guardar Animal</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Card>
@@ -119,3 +192,5 @@ export default function PigsPage() {
     </AppLayout>
   );
 }
+
+    
