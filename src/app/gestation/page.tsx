@@ -217,112 +217,114 @@ export default function GestationPage() {
                 </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                    {/* Common fields */}
-                    <div className="space-y-2">
-                        <Label htmlFor="eventDate">Fecha del Evento</Label>
-                        <Input 
-                            id="eventDate" 
-                            type="date" 
-                            required 
-                            onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
-                        />
-                    </div>
+                <ScrollArea className="h-96 pr-6">
+                    <div className="grid gap-4 py-4">
+                        {/* Common fields */}
+                        <div className="space-y-2">
+                            <Label htmlFor="eventDate">Fecha del Evento</Label>
+                            <Input 
+                                id="eventDate" 
+                                type="date" 
+                                required 
+                                onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
+                            />
+                        </div>
 
-                    {/* Specific fields */}
-                    {selectedEventType === 'Celo' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="observations">Observaciones</Label>
-                            <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
-                        </div>
-                    )}
-                    {selectedEventType === 'Celo no Servido' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="reason">Motivo</Label>
-                            <Input id="reason" placeholder="Ej: Condición corporal baja"/>
-                        </div>
-                    )}
-                    {selectedEventType === 'Inseminación' && (
-                        <>
+                        {/* Specific fields */}
+                        {selectedEventType === 'Celo' && (
                             <div className="space-y-2">
-                                <Label htmlFor="maleId">Macho / Lote de Semen</Label>
-                                <Input id="maleId" placeholder="ID del macho o código del semen" required />
+                                <Label htmlFor="observations">Observaciones</Label>
+                                <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
                             </div>
+                        )}
+                        {selectedEventType === 'Celo no Servido' && (
                             <div className="space-y-2">
-                                <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
-                                <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
+                                <Label htmlFor="reason">Motivo</Label>
+                                <Input id="reason" placeholder="Ej: Condición corporal baja"/>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
-                                <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="inseminator">Inseminador</Label>
-                                <Input id="inseminator" placeholder="Nombre del operario" required />
-                            </div>
-                             <div className="space-y-2">
-                                <Label>Fecha Probable de Parto</Label>
-                                <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
-                                    {probableFarrowingDate}
+                        )}
+                        {selectedEventType === 'Inseminación' && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="maleId">Macho / Lote de Semen</Label>
+                                    <Input id="maleId" placeholder="ID del macho o código del semen" required />
                                 </div>
-                            </div>
-                        </>
-                    )}
-                    {selectedEventType === 'Parto' && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="totalBorn">Total Nacidos</Label>
-                                <Input id="totalBorn" type="number" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="liveBorn">Nacidos Vivos</Label>
-                                <Input id="liveBorn" type="number" required />
-                            </div>
-                        </>
-                    )}
-                    {selectedEventType === 'Aborto' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="abortionReason">Causa probable</Label>
-                            <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
-                        </div>
-                    )}
-                    {selectedEventType === 'Tratamiento' && (
-                        <>
-                           <div className="space-y-2">
-                                <Label htmlFor="treatmentProduct">Producto</Label>
-                                <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="treatmentReason">Motivo</Label>
-                                <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
-                            </div>
-                        </>
-                    )}
-                     {selectedEventType === 'Vacunación' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="vaccine">Vacuna</Label>
-                            <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
-                        </div>
-                    )}
-                    {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
-                        <>
-                             <div className="space-y-2">
-                                <Label htmlFor="reason">Causa / Motivo</Label>
-                                <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
-                            </div>
-                            {selectedEventType === 'Venta' && (
-                               <div className="space-y-2">
-                                    <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
-                                    <Input id="saleValue" type="number" step="0.01" />
+                                <div className="space-y-2">
+                                    <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
+                                    <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
                                 </div>
-                            )}
-                        </>
-                    )}
-                     <div className="space-y-2">
-                        <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                        <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                                <div className="space-y-2">
+                                    <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
+                                    <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="inseminator">Inseminador</Label>
+                                    <Input id="inseminator" placeholder="Nombre del operario" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Fecha Probable de Parto</Label>
+                                    <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
+                                        {probableFarrowingDate}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {selectedEventType === 'Parto' && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="totalBorn">Total Nacidos</Label>
+                                    <Input id="totalBorn" type="number" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="liveBorn">Nacidos Vivos</Label>
+                                    <Input id="liveBorn" type="number" required />
+                                </div>
+                            </>
+                        )}
+                        {selectedEventType === 'Aborto' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="abortionReason">Causa probable</Label>
+                                <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
+                            </div>
+                        )}
+                        {selectedEventType === 'Tratamiento' && (
+                            <>
+                            <div className="space-y-2">
+                                    <Label htmlFor="treatmentProduct">Producto</Label>
+                                    <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="treatmentReason">Motivo</Label>
+                                    <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                                </div>
+                            </>
+                        )}
+                        {selectedEventType === 'Vacunación' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="vaccine">Vacuna</Label>
+                                <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                            </div>
+                        )}
+                        {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="reason">Causa / Motivo</Label>
+                                    <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                                </div>
+                                {selectedEventType === 'Venta' && (
+                                <div className="space-y-2">
+                                        <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
+                                        <Input id="saleValue" type="number" step="0.01" />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="eventNotes">Notas Adicionales</Label>
+                            <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                        </div>
                     </div>
-                </div>
+                </ScrollArea>
                 <DialogFooter>
                     <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
                     <Button type="submit">Guardar Evento</Button>
