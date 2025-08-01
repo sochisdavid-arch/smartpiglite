@@ -378,7 +378,7 @@ export default function GestationPage() {
                 </TableHeader>
                 <TableBody>
                     {filteredPigs.map((pig) => (
-                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer">
+                    <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/20">
                         <TableCell className="font-medium">{pig.id}</TableCell>
                         <TableCell>{pig.breed}</TableCell>
                         <TableCell>{pig.gender}</TableCell>
@@ -431,3 +431,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
