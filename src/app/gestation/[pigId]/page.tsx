@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 
 // Mock data - in a real app, this would come from an API
@@ -120,6 +121,7 @@ const allEventTypes: EventType[] = ["Celo", "Celo no Servido", "Inseminación", 
 export default function PigHistoryPage() {
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const pigId = params.pigId as string;
     
     const [pig, setPig] = React.useState<Pig | null>(null);
@@ -127,7 +129,9 @@ export default function PigHistoryPage() {
     const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
 
     React.useEffect(() => {
-        const foundPig = initialPigs.find(p => p.id === pigId);
+        const pigsFromStorage = localStorage.getItem('pigs');
+        const pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+        const foundPig = pigs.find((p: Pig) => p.id === pigId);
         if (foundPig) {
             setPig({...foundPig, age: calculateAge(foundPig.birthDate)});
         }
@@ -167,11 +171,46 @@ export default function PigHistoryPage() {
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
-            // Handle form submission logic here in the future
-            console.log(`Submitting ${selectedEventType} form for pig ${pigId}`);
-            // Here you would typically update the pig's event list
-            // For now, we just close the dialog
+            const formData = new FormData(e.target as HTMLFormElement);
+            const eventDate = formData.get('eventDate') as string;
+            
+            const newEvent: Event = {
+                type: selectedEventType,
+                date: eventDate,
+                details: formData.get('eventNotes') as string || `${selectedEventType} registrado.`,
+            };
+
+            let updatedPig = { ...pig! };
+            updatedPig.events.unshift(newEvent); // Add to the beginning
+            updatedPig.lastEvent = newEvent;
+
+            if (selectedEventType === 'Parto') {
+                updatedPig.status = 'Lactante';
+            }
+            
+            // This is where you would typically make an API call to save the data
+            // For now, we update localStorage to persist mock data across pages
+            const pigsFromStorage = localStorage.getItem('pigs');
+            let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+            pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
+            localStorage.setItem('pigs', JSON.stringify(pigs));
+
+            setPig(updatedPig); // Update local state to re-render the page
+            
+            toast({
+                title: "¡Evento Registrado!",
+                description: `El evento "${selectedEventType}" ha sido añadido al historial.`,
+            });
+            
             setIsEventFormOpen(false);
+
+            if (selectedEventType === 'Parto') {
+                toast({
+                    title: "¡Estado Actualizado!",
+                    description: `La cerda ${pig!.id} ha sido movida a Lactancia.`,
+                });
+                router.push('/gestation');
+            }
         }
         
         return (
@@ -183,13 +222,14 @@ export default function PigHistoryPage() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto -mx-6 px-6">
-                 <ScrollArea className="h-full">
-                    <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6 pr-6">
+                 <ScrollArea className="h-full pr-6">
+                    <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6">
                         {/* Common fields */}
                         <div className="space-y-2">
                             <Label htmlFor="eventDate">Fecha del Evento</Label>
                             <Input 
                                 id="eventDate" 
+                                name="eventDate"
                                 type="date" 
                                 required 
                                 onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
@@ -200,32 +240,32 @@ export default function PigHistoryPage() {
                         {selectedEventType === 'Celo' && (
                             <div className="space-y-2">
                                 <Label htmlFor="observations">Observaciones</Label>
-                                <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
+                                <Textarea id="observations" name="observations" placeholder="Ej: Signos de celo muy evidentes."/>
                             </div>
                         )}
                         {selectedEventType === 'Celo no Servido' && (
                             <div className="space-y-2">
                                 <Label htmlFor="reason">Motivo</Label>
-                                <Input id="reason" placeholder="Ej: Condición corporal baja"/>
+                                <Input id="reason" name="reason" placeholder="Ej: Condición corporal baja"/>
                             </div>
                         )}
                         {selectedEventType === 'Inseminación' && (
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="maleId">Macho / Lote de Semen</Label>
-                                    <Input id="maleId" placeholder="ID del macho o código del semen" required />
+                                    <Input id="maleId" name="maleId" placeholder="ID del macho o código del semen" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
-                                    <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
+                                    <Input id="sowWeight" name="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
-                                    <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                                    <Input id="inseminationGroup" name="inseminationGroup" placeholder="Ej. SEMANA-34" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="inseminator">Inseminador</Label>
-                                    <Input id="inseminator" placeholder="Nombre del operario" required />
+                                    <Input id="inseminator" name="inseminator" placeholder="Nombre del operario" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Fecha Probable de Parto</Label>
@@ -239,27 +279,27 @@ export default function PigHistoryPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2">
                                     <Label htmlFor="totalBorn">Total Nacidos</Label>
-                                    <Input id="totalBorn" type="number" required />
+                                    <Input id="totalBorn" name="totalBorn" type="number" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="liveBorn">Vivos</Label>
-                                    <Input id="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
+                                    <Input id="liveBorn" name="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="stillborn">Muertos</Label>
-                                    <Input id="stillborn" type="number" required />
+                                    <Input id="stillborn" name="stillborn" type="number" required />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="mummified">Momias</Label>
-                                    <Input id="mummified" type="number" required />
+                                    <Input id="mummified" name="mummified" type="number" required />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="lowViability">Baja Viabilidad</Label>
-                                    <Input id="lowViability" type="number" required />
+                                    <Input id="lowViability" name="lowViability" type="number" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="litterWeight">Peso Camada (kg)</Label>
-                                    <Input id="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
+                                    <Input id="litterWeight" name="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
                                 </div>
                                  <div className="space-y-2">
                                     <Label>Peso Promedio (kg)</Label>
@@ -269,14 +309,14 @@ export default function PigHistoryPage() {
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <Label htmlFor="sowWeightParto">Peso Cerda (kg) - Opcional</Label>
-                                    <Input id="sowWeightParto" type="number" step="0.1" placeholder="Ej. 220.5"/>
+                                    <Input id="sowWeightParto" name="sowWeightParto" type="number" step="0.1" placeholder="Ej. 220.5"/>
                                 </div>
                             </div>
                         )}
                         {selectedEventType === 'Aborto' && (
                             <div className="space-y-2">
                                 <Label htmlFor="abortionReason">Causa probable</Label>
-                                <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
+                                <Input id="abortionReason" name="abortionReason" placeholder="Ej: Estrés por calor"/>
                             </div>
                         )}
                         {selectedEventType === 'Tratamiento' && (
@@ -294,11 +334,11 @@ export default function PigHistoryPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="treatmentDose">Dosis (ml)</Label>
-                                    <Input id="treatmentDose" type="number" step="0.1" placeholder="Ej. 2.5" required />
+                                    <Input id="treatmentDose" name="treatmentDose" type="number" step="0.1" placeholder="Ej. 2.5" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="treatmentReason">Motivo</Label>
-                                    <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                                    <Input id="treatmentReason" name="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
                                 </div>
                             </>
                         )}
@@ -317,7 +357,7 @@ export default function PigHistoryPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="vaccineDose">Dosis (ml)</Label>
-                                    <Input id="vaccineDose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                    <Input id="vaccineDose" name="vaccineDose" type="number" step="0.1" placeholder="Ej. 2.0" required />
                                 </div>
                              </>
                         )}
@@ -325,19 +365,19 @@ export default function PigHistoryPage() {
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="reason">Causa / Motivo</Label>
-                                    <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                                    <Input id="reason" name="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
                                 </div>
                                 {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
                                 <div className="space-y-2">
                                         <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
-                                        <Input id="saleValue" type="number" step="0.01" placeholder="Opcional" />
+                                        <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Opcional" />
                                     </div>
                                 )}
                             </>
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                            <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                            <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
                         </div>
                     </form>
                     </ScrollArea>
@@ -366,7 +406,7 @@ export default function PigHistoryPage() {
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="outline" size="icon" onClick={() => router.back()}>
+                        <Button variant="outline" size="icon" onClick={() => router.push('/gestation')}>
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida: {pig.id}</h1>
@@ -456,3 +496,5 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
+
+    

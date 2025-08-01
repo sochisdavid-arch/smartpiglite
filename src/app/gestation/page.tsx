@@ -36,6 +36,7 @@ import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -97,26 +98,38 @@ const calculateProbableFarrowingDate = (inseminationDate: string) => {
 };
 
 export default function GestationPage() {
-  const [pigs, setPigs] = React.useState<Pig[]>(initialPigs.map(p => ({
-    ...p,
-    age: calculateAge(p.birthDate)
-  })));
+  const [pigs, setPigs] = React.useState<Pig[]>([]);
   const router = useRouter();
+  const { toast } = useToast();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
-  const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
-  const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
-
+  
   // States for filters
   const [filterId, setFilterId] = React.useState('');
   const [filterBreed, setFilterBreed] = React.useState('all');
-  const [filteredPigs, setFilteredPigs] = React.useState(pigs);
+  const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
 
   React.useEffect(() => {
-    let tempPigs = pigs;
+    // In a real app, this would be an API call. Here we use localStorage.
+    const pigsFromStorage = localStorage.getItem('pigs');
+    const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+    const processedPigs = allPigs.map((p: Pig) => ({
+      ...p,
+      age: calculateAge(p.birthDate)
+    }));
+    setPigs(processedPigs);
+    // Persist initial data if it's not there
+    if (!pigsFromStorage) {
+        localStorage.setItem('pigs', JSON.stringify(initialPigs));
+    }
+  }, []);
+
+
+  React.useEffect(() => {
+    let tempPigs = pigs.filter(p => p.status !== 'Lactante');
     if (filterId) {
       tempPigs = tempPigs.filter(p => p.id.toLowerCase().includes(filterId.toLowerCase()));
     }
@@ -147,11 +160,6 @@ export default function GestationPage() {
       setIsDeleteDialogOpen(true);
   };
 
-  const openEventDialog = (eventType: EventType) => {
-    setSelectedEventType(eventType);
-    setIsEventFormOpen(true);
-  };
-  
   const clearFilters = () => {
     setFilterId('');
     setFilterBreed('all');
@@ -162,184 +170,71 @@ export default function GestationPage() {
     const formData = new FormData(event.currentTarget);
     const birthDateValue = formData.get('birthDate') as string;
     
-    const submittedAnimal: Pig = {
-      id: formData.get('id') as string,
-      breed: formData.get('breed') as string,
-      birthDate: birthDateValue,
-      arrivalDate: formData.get('arrivalDate') as string,
-      weight: parseInt(formData.get('weight') as string),
-      gender: formData.get('gender') as string,
-      purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
-      age: calculateAge(birthDateValue),
-      status: 'Remplazo', 
-      lastEvent: { type: 'Ninguno', date: '' },
-      events: [],
-    };
+    let submittedAnimal: Pig;
 
     if (editingPig) {
-        setPigs(pigs.map(p => p.id === editingPig.id ? {...submittedAnimal, status: p.status, lastEvent: p.lastEvent, events: p.events } : p));
+        submittedAnimal = {
+          ...editingPig,
+          id: formData.get('id') as string,
+          breed: formData.get('breed') as string,
+          birthDate: birthDateValue,
+          arrivalDate: formData.get('arrivalDate') as string,
+          weight: parseInt(formData.get('weight') as string),
+          gender: formData.get('gender') as string,
+          purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
+          age: calculateAge(birthDateValue),
+        };
+        setPigs(pigs.map(p => p.id === editingPig.id ? submittedAnimal : p));
     } else {
+        submittedAnimal = {
+          id: formData.get('id') as string,
+          breed: formData.get('breed') as string,
+          birthDate: birthDateValue,
+          arrivalDate: formData.get('arrivalDate') as string,
+          weight: parseInt(formData.get('weight') as string),
+          gender: formData.get('gender') as string,
+          purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
+          age: calculateAge(birthDateValue),
+          status: 'Remplazo', 
+          lastEvent: { type: 'Ninguno', date: '' },
+          events: [],
+        };
         setPigs(prevPigs => [...prevPigs, submittedAnimal]);
     }
     
+    // Update localStorage
+    const pigsFromStorage = localStorage.getItem('pigs');
+    let allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
+    if (editingPig) {
+        allPigs = allPigs.map((p: Pig) => p.id === editingPig.id ? submittedAnimal : p);
+    } else {
+        allPigs.push(submittedAnimal);
+    }
+    localStorage.setItem('pigs', JSON.stringify(allPigs));
+    
+    toast({
+        title: editingPig ? "Animal Actualizado" : "Animal Añadido",
+        description: `El animal con ID ${submittedAnimal.id} ha sido ${editingPig ? 'actualizado' : 'guardado'} correctamente.`
+    });
+
     closeFormDialog();
     (event.target as HTMLFormElement).reset();
   };
   
   const handleDeleteConfirm = () => {
     if (pigToDelete) {
-        setPigs(pigs.filter(p => p.id !== pigToDelete.id));
+        const newPigs = pigs.filter(p => p.id !== pigToDelete.id)
+        setPigs(newPigs);
+        localStorage.setItem('pigs', JSON.stringify(newPigs));
+         toast({
+            title: "Animal Eliminado",
+            description: `El animal con ID ${pigToDelete.id} ha sido eliminado.`,
+            variant: "destructive"
+        });
     }
     setIsDeleteDialogOpen(false);
     setPigToDelete(null);
   };
-
-  const EventForm = () => {
-    if (!selectedEventType) return null;
-    const [inseminationDate, setInseminationDate] = React.useState<string>('');
-    const probableFarrowingDate = React.useMemo(() => {
-        if (inseminationDate) {
-            const date = parseISO(inseminationDate);
-            if (isValid(date)) {
-                return format(addDays(date, 114), 'dd/MM/yyyy');
-            }
-        }
-        return '---';
-    }, [inseminationDate]);
-
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle form submission logic here in the future
-        console.log(`Submitting ${selectedEventType} form`);
-        setIsEventFormOpen(false);
-    }
-    
-    return (
-        <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
-            <DialogHeader>
-                <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
-                <DialogDescription>
-                    Complete la información para el evento.
-                </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-                <ScrollArea className="flex-grow pr-6 -mr-6">
-                    <div className="grid gap-4 py-4 pr-6">
-                        {/* Common fields */}
-                        <div className="space-y-2">
-                            <Label htmlFor="eventDate">Fecha del Evento</Label>
-                            <Input 
-                                id="eventDate" 
-                                type="date" 
-                                required 
-                                onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Specific fields */}
-                        {selectedEventType === 'Celo' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="observations">Observaciones</Label>
-                                <Textarea id="observations" placeholder="Ej: Signos de celo muy evidentes."/>
-                            </div>
-                        )}
-                        {selectedEventType === 'Celo no Servido' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="reason">Motivo</Label>
-                                <Input id="reason" placeholder="Ej: Condición corporal baja"/>
-                            </div>
-                        )}
-                        {selectedEventType === 'Inseminación' && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="maleId">Macho / Lote de Semen</Label>
-                                    <Input id="maleId" placeholder="ID del macho o código del semen" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>
-                                    <Input id="sowWeight" type="number" step="0.1" placeholder="Ej. 180.5"/>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
-                                    <Input id="inseminationGroup" placeholder="Ej. SEMANA-34" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="inseminator">Inseminador</Label>
-                                    <Input id="inseminator" placeholder="Nombre del operario" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Fecha Probable de Parto</Label>
-                                    <div className="text-lg font-semibold p-2 border rounded-md bg-muted">
-                                        {probableFarrowingDate}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                        {selectedEventType === 'Parto' && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="totalBorn">Total Nacidos</Label>
-                                    <Input id="totalBorn" type="number" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="liveBorn">Nacidos Vivos</Label>
-                                    <Input id="liveBorn" type="number" required />
-                                </div>
-                            </>
-                        )}
-                        {selectedEventType === 'Aborto' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="abortionReason">Causa probable</Label>
-                                <Input id="abortionReason" placeholder="Ej: Estrés por calor"/>
-                            </div>
-                        )}
-                        {selectedEventType === 'Tratamiento' && (
-                            <>
-                            <div className="space-y-2">
-                                    <Label htmlFor="treatmentProduct">Producto</Label>
-                                    <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="treatmentReason">Motivo</Label>
-                                    <Input id="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
-                                </div>
-                            </>
-                        )}
-                        {selectedEventType === 'Vacunación' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="vaccine">Vacuna</Label>
-                                <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
-                            </div>
-                        )}
-                        {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="reason">Causa / Motivo</Label>
-                                    <Input id="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
-                                </div>
-                                {selectedEventType === 'Venta' && (
-                                <div className="space-y-2">
-                                        <Label htmlFor="saleValue">Valor de la Venta ($)</Label>
-                                        <Input id="saleValue" type="number" step="0.01" />
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        <div className="space-y-2">
-                            <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                            <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
-                        </div>
-                    </div>
-                </ScrollArea>
-                <DialogFooter className="flex-shrink-0 pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit">Guardar Evento</Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    )
-  }
 
   const getStatusVariant = (status: StatusType) => {
     switch (status) {
@@ -433,10 +328,6 @@ export default function GestationPage() {
                   </form>
                 </DialogContent>
             </Dialog>
-            
-            <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
-              <EventForm />
-            </Dialog>
 
             <Card>
               <CardHeader>
@@ -485,7 +376,7 @@ export default function GestationPage() {
                                 <div className="flex flex-col">
                                     <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
                                     <span className="text-xs text-muted-foreground mt-1">
-                                        {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}
+                                        {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${isValid(parseISO(pig.lastEvent.date)) ? format(parseISO(pig.lastEvent.date), 'dd/MM/yy') : 'Fecha Inválida'}` : 'Sin eventos'}
                                     </span>
                                 </div>
                             </TableCell>
@@ -537,12 +428,12 @@ export default function GestationPage() {
                               <CardDescription>{pig.breed}</CardDescription>
                             </div>
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuTrigger asChild onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuContent align="end" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                   <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
                                   <DropdownMenuSeparator />
@@ -558,7 +449,7 @@ export default function GestationPage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Último Evento</span>
-                            <span>{pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${format(parseISO(pig.lastEvent.date), 'dd/MM/yy')}` : 'Sin eventos'}</span>
+                            <span>{pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${isValid(parseISO(pig.lastEvent.date)) ? format(parseISO(pig.lastEvent.date), 'dd/MM/yy') : 'Fecha Inválida'}` : 'Sin eventos'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Grupo Insem.</span>
@@ -600,3 +491,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
