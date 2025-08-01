@@ -11,11 +11,10 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DialogFooter } from '@/components/ui/dialog';
 
 
 // Mock data - in a real app, this would come from an API
@@ -268,7 +267,7 @@ export default function PigHistoryPage() {
                             </div>
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="flex-shrink-0 pt-4">
+                    <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
                         <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
                         <Button type="submit">Guardar Evento</Button>
                     </DialogFooter>
