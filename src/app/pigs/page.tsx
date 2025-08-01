@@ -9,7 +9,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import {
   Dialog,
@@ -28,20 +27,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 const initialPigs = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, status: 'Gestación' },
-  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, status: 'Lactancia' },
-  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, status: 'Engorde' },
-  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, status: 'Destetado' },
-  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, status: 'Gestación' },
-  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, status: 'Engorde' },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85 },
+  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60 },
+  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110 },
+  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25 },
+  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95 },
+  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115 },
 ];
-
-const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'destructive' } = {
-    'Gestación': 'secondary',
-    'Lactancia': 'default',
-    'Engorde': 'outline',
-    'Destetado': 'destructive'
-};
 
 const pigBreeds = [
   // Razas Puras
@@ -73,7 +65,6 @@ export default function PigsPage() {
       birthDate: birthDateValue,
       arrivalDate: arrivalDateValue,
       weight: parseInt(formData.get('weight') as string),
-      status: formData.get('status') as string,
       age: differenceInWeeks(new Date(), parseISO(birthDateValue))
     };
     setPigs(prevPigs => [...prevPigs, newAnimal]);
@@ -177,20 +168,6 @@ export default function PigsPage() {
                     <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
                     <Input id="weight" name="weight" type="number" className="col-span-3" required />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status" className="text-right">Estado</Label>
-                    <Select name="status" required>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Seleccionar estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Gestación">Gestación</SelectItem>
-                            <SelectItem value="Lactancia">Lactancia</SelectItem>
-                            <SelectItem value="Engorde">Engorde</SelectItem>
-                            <SelectItem value="Destetado">Destetado</SelectItem>
-                        </SelectContent>
-                    </Select>
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit">Guardar Animal</Button>
@@ -203,19 +180,8 @@ export default function PigsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <Input placeholder="Buscar por ID..." />
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gestation">Gestación</SelectItem>
-                  <SelectItem value="lactation">Lactancia</SelectItem>
-                  <SelectItem value="fattening">Engorde</SelectItem>
-                  <SelectItem value="weaned">Destetado</SelectItem>
-                </SelectContent>
-              </Select>
                <Select>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por Raza" />
@@ -239,7 +205,6 @@ export default function PigsPage() {
                   <TableHead>F. Llegada</TableHead>
                   <TableHead className="text-right">Edad (sem.)</TableHead>
                   <TableHead className="text-right">Peso (kg)</TableHead>
-                  <TableHead className="text-center">Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -252,9 +217,6 @@ export default function PigsPage() {
                     <TableCell>{pig.arrivalDate}</TableCell>
                     <TableCell className="text-right">{pig.age}</TableCell>
                     <TableCell className="text-right">{pig.weight}</TableCell>
-                    <TableCell className="text-center">
-                        <Badge variant={statusVariant[pig.status] || 'default'}>{pig.status}</Badge>
-                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
