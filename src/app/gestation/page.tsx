@@ -209,116 +209,116 @@ export default function GestationPage() {
 
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
-                        <DialogDescription>
-                        {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleFormSubmit}>
-                        <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="id" className="text-right">ID</Label>
-                            <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="breed" className="text-right">Raza</Label>
-                            <Select name="breed" required defaultValue={editingPig?.breed}>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Seleccionar raza/línea" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <ScrollArea className="h-48">
-                                        {pigBreeds.map(breed => (
-                                            <SelectItem key={breed} value={breed}>{breed}</SelectItem>
-                                        ))}
-                                    </ScrollArea>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="gender" className="text-right">Género</Label>
-                            <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Hembra" id="female" />
-                                <Label htmlFor="female">Hembra</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Macho" id="male" />
-                                <Label htmlFor="male">Macho</Label>
-                            </div>
-                            </RadioGroup>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
-                            <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "col-span-3 justify-start text-left font-normal",
-                                    !birthDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {birthDate ? format(birthDate, "PPP", { locale: es}) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="center">
-                                <Calendar
-                                mode="single"
-                                selected={birthDate}
-                                onSelect={setBirthDate}
-                                fromYear={new Date().getFullYear() - 30}
-                                toYear={new Date().getFullYear()}
-                                captionLayout="dropdown-buttons"
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
-                            <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "col-span-3 justify-start text-left font-normal",
-                                    !arrivalDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {arrivalDate ? format(arrivalDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="center">
-                                <Calendar
-                                mode="single"
-                                selected={arrivalDate}
-                                onSelect={setArrivalDate}
-                                fromYear={new Date().getFullYear() - 30}
-                                toYear={new Date().getFullYear()}
-                                captionLayout="dropdown-buttons"
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
-                            <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
-                            <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
-                        </div>
-                        </div>
-                        <DialogFooter>
-                          <Button type="button" variant="ghost" onClick={closeFormDialog}>Cancelar</Button>
-                          <Button type="submit">{editingPig ? 'Guardar Cambios' : 'Guardar Animal'}</Button>
-                        </DialogFooter>
-                    </form>
+                      <DialogHeader>
+                          <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
+                          <DialogDescription>
+                          {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
+                          </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleFormSubmit}>
+                          <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="id" className="text-right">ID</Label>
+                              <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="breed" className="text-right">Raza</Label>
+                              <Select name="breed" required defaultValue={editingPig?.breed}>
+                                  <SelectTrigger className="col-span-3">
+                                      <SelectValue placeholder="Seleccionar raza/línea" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <ScrollArea className="h-48">
+                                          {pigBreeds.map(breed => (
+                                              <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                                          ))}
+                                      </ScrollArea>
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="gender" className="text-right">Género</Label>
+                              <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
+                              <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Hembra" id="female" />
+                                  <Label htmlFor="female">Hembra</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Macho" id="male" />
+                                  <Label htmlFor="male">Macho</Label>
+                              </div>
+                              </RadioGroup>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
+                              <Popover>
+                              <PopoverTrigger asChild>
+                                  <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                      "col-span-3 justify-start text-left font-normal",
+                                      !birthDate && "text-muted-foreground"
+                                  )}
+                                  >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {birthDate ? format(birthDate, "PPP", { locale: es}) : <span>Seleccionar fecha</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                  mode="single"
+                                  selected={birthDate}
+                                  onSelect={setBirthDate}
+                                  fromYear={new Date().getFullYear() - 30}
+                                  toYear={new Date().getFullYear()}
+                                  captionLayout="dropdown-buttons"
+                                  initialFocus
+                                  />
+                              </PopoverContent>
+                              </Popover>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
+                              <Popover>
+                              <PopoverTrigger asChild>
+                                  <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                      "col-span-3 justify-start text-left font-normal",
+                                      !arrivalDate && "text-muted-foreground"
+                                  )}
+                                  >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {arrivalDate ? format(arrivalDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                  mode="single"
+                                  selected={arrivalDate}
+                                  onSelect={setArrivalDate}
+                                  fromYear={new Date().getFullYear() - 30}
+                                  toYear={new Date().getFullYear()}
+                                  captionLayout="dropdown-buttons"
+                                  initialFocus
+                                  />
+                              </PopoverContent>
+                              </Popover>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
+                              <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
+                              <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
+                          </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={closeFormDialog}>Cancelar</Button>
+                            <Button type="submit">{editingPig ? 'Guardar Cambios' : 'Guardar Animal'}</Button>
+                          </DialogFooter>
+                      </form>
                     </DialogContent>
                 </Dialog>
 
@@ -684,3 +684,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
