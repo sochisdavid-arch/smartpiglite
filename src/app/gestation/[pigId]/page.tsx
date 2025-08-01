@@ -7,6 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays } from 'date-fns';
 
@@ -196,4 +197,3 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
-
