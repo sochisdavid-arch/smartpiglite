@@ -38,8 +38,8 @@ export default function LoginPage() {
       console.error("Error during Google sign-in:", error);
       toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: "No se pudo iniciar sesión con Google. Por favor, inténtalo de nuevo.",
+        title: "Error de inicio de sesión con Google",
+        description: "No se pudo iniciar sesión. Por favor, inténtalo de nuevo más tarde.",
       });
     }
   };
@@ -57,8 +57,8 @@ export default function LoginPage() {
       console.error("Error during Microsoft sign-in:", error);
        toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: "No se pudo iniciar sesión con Microsoft. Por favor, inténtalo de nuevo.",
+        title: "Error de inicio de sesión con Microsoft",
+        description: "No se pudo iniciar sesión. Por favor, inténtalo de nuevo más tarde.",
       });
     }
   };
