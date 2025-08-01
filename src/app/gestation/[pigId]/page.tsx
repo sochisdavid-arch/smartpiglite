@@ -173,7 +173,8 @@ export default function PigHistoryPage() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto -mx-6 px-6">
-                    <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6">
+                 <ScrollArea className="h-full">
+                    <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6 pr-6">
                         {/* Common fields */}
                         <div className="space-y-2">
                             <Label htmlFor="eventDate">Fecha del Evento</Label>
@@ -226,7 +227,7 @@ export default function PigHistoryPage() {
                         )}
                         {selectedEventType === 'Parto' && (
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 col-span-2">
                                     <Label htmlFor="totalBorn">Total Nacidos</Label>
                                     <Input id="totalBorn" type="number" required />
                                 </div>
@@ -246,19 +247,19 @@ export default function PigHistoryPage() {
                                     <Label htmlFor="lowViability">Baja Viabilidad</Label>
                                     <Input id="lowViability" type="number" required />
                                 </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="sowWeightParto">Peso Cerda (kg)</Label>
-                                    <Input id="sowWeightParto" type="number" step="0.1" placeholder="Opcional"/>
-                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="litterWeight">Peso Camada (kg)</Label>
                                     <Input id="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
                                 </div>
-                                <div className="space-y-2">
+                                 <div className="space-y-2">
                                     <Label>Peso Promedio (kg)</Label>
                                     <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">
                                         {averagePigletWeight}
                                     </div>
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label htmlFor="sowWeightParto">Peso Cerda (kg) - Opcional</Label>
+                                    <Input id="sowWeightParto" type="number" step="0.1" placeholder="Ej. 220.5"/>
                                 </div>
                             </div>
                         )}
@@ -270,9 +271,13 @@ export default function PigHistoryPage() {
                         )}
                         {selectedEventType === 'Tratamiento' && (
                             <>
-                            <div className="space-y-2">
+                                <div className="space-y-2">
                                     <Label htmlFor="treatmentProduct">Producto</Label>
                                     <Input id="treatmentProduct" placeholder="Nombre del medicamento" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="treatmentDose">Dosis (ml)</Label>
+                                    <Input id="treatmentDose" type="number" step="0.1" placeholder="Ej. 2.5" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="treatmentReason">Motivo</Label>
@@ -281,10 +286,16 @@ export default function PigHistoryPage() {
                             </>
                         )}
                         {selectedEventType === 'Vacunación' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="vaccine">Vacuna</Label>
-                                <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
-                            </div>
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="vaccine">Vacuna / Producto</Label>
+                                    <Input id="vaccine" placeholder="Nombre de la vacuna o enfermedad" required/>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="vaccineDose">Dosis (ml)</Label>
+                                    <Input id="vaccineDose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                </div>
+                             </>
                         )}
                         {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
                             <>
@@ -305,6 +316,7 @@ export default function PigHistoryPage() {
                             <Textarea id="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
                         </div>
                     </form>
+                    </ScrollArea>
                 </div>
                 <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
                     <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
