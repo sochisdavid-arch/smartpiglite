@@ -9,9 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X, CalendarPlus } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -20,13 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +32,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
@@ -112,8 +103,6 @@ export default function GestationPage() {
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
-  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
-  const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
   const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
   const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
 
@@ -154,18 +143,9 @@ export default function GestationPage() {
       setIsDeleteDialogOpen(true);
   };
 
-  const openDetailsSheet = (pig: Pig) => {
-    setSelectedPig(pig);
-    setIsDetailsSheetOpen(true);
-  };
-
   const openEventDialog = (eventType: EventType) => {
     setSelectedEventType(eventType);
     setIsEventFormOpen(true);
-  };
-  
-  const handlePrint = () => {
-    window.print();
   };
   
   const clearFilters = () => {
@@ -453,105 +433,6 @@ export default function GestationPage() {
               <EventForm />
             </Dialog>
 
-            <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="w-full h-full p-0 flex flex-col" side="right">
-                    <SheetHeader className="flex-shrink-0 p-6 border-b">
-                    <SheetTitle>Hoja de Vida del Animal</SheetTitle>
-                    <SheetDescription>
-                        Información completa y detallada del animal seleccionado.
-                    </SheetDescription>
-                    </SheetHeader>
-                    {selectedPig && (
-                        <>
-                        <ScrollArea className="flex-grow p-6">
-                            <div id="animal-details" className="grid gap-4 print:text-black">
-                                <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                                        <div className="space-y-2">
-                                            <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
-                                                <Badge variant={getStatusVariant(selectedPig.status)}>{selectedPig.status}</Badge>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 flex-shrink-0">
-                                          <div className="flex items-center gap-2 flex-shrink-0">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-56">
-                                                    <DropdownMenuLabel>Eventos Reproductivos</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Celo")}>Celo</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Celo no Servido")}>Celo no Servido</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Inseminación")}>Inseminación</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Parto")}>Parto</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Aborto")}>Aborto</DropdownMenuItem>
-                                                    <DropdownMenuLabel>Eventos de Salud</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Tratamiento")}>Tratamiento</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Vacunación")}>Vacunación</DropdownMenuItem>
-                                                    <DropdownMenuLabel>Eventos de Manejo</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Venta")}>Venta</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Descarte")}>Descarte</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => openEventDialog("Muerte")}>Muerte</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                          </div>
-                                          <Image
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
-                                                alt={`QR Code for ${selectedPig.id}`}
-                                                width={100}
-                                                height={100}
-                                                className="rounded-md"
-                                            />
-                                        </div>
-                                    </div>
-                                    <Separator/>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                        <div className="text-muted-foreground">Género</div>
-                                        <div>{selectedPig.gender}</div>
-
-                                        <div className="text-muted-foreground">Fecha de Nacimiento</div>
-                                        <div>{selectedPig.birthDate ? format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy') : 'N/A'}</div>
-                                        
-                                        <div className="text-muted-foreground">Fecha de Llegada</div>
-                                        <div>{selectedPig.arrivalDate ? format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy') : 'N/A'}</div>
-                                        
-                                        <div className="text-muted-foreground">Edad Actual</div>
-                                        <div>{selectedPig.age} semanas</div>
-                                        
-                                        <div className="text-muted-foreground">Peso Actual</div>
-                                        <div>{selectedPig.weight} kg</div>
-
-                                        <div className="text-muted-foreground">Valor de Compra</div>
-                                        <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
-                                    </div>
-                                </div>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Historial de Eventos</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground">
-                                        <p>Próximamente...</p>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </ScrollArea>
-                        <div className="flex-shrink-0 p-6 border-t">
-                            <Button onClick={handlePrint} className="w-full print:hidden">
-                            <Printer className="mr-2 h-4 w-4" />
-                            Imprimir Hoja de Vida
-                            </Button>
-                        </div>
-                        </>
-                    )}
-                </SheetContent>
-            </Sheet>
-
-
             <Card>
               <CardHeader>
                   <CardTitle>Filtros</CardTitle>
@@ -593,7 +474,7 @@ export default function GestationPage() {
                   </TableHeader>
                   <TableBody>
                       {filteredPigs.map((pig) => (
-                      <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
+                      <TableRow key={pig.id}>
                           <TableCell className="font-medium">{pig.id}</TableCell>
                           <TableCell>
                               <div className="flex flex-col">
@@ -628,7 +509,6 @@ export default function GestationPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
                               </DropdownMenuContent>
@@ -643,7 +523,7 @@ export default function GestationPage() {
                 {/* Mobile Card View */}
                 <div className="grid grid-cols-1 gap-4 md:hidden">
                   {filteredPigs.map((pig) => (
-                    <Card key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
+                    <Card key={pig.id} className="cursor-pointer hover:bg-accent/50">
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <div>
@@ -659,7 +539,6 @@ export default function GestationPage() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
                             </DropdownMenuContent>
