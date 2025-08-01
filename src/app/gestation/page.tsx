@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -10,8 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X, HeartPulse } from 'lucide-react';
+import { Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -97,10 +95,6 @@ export default function GestationPage() {
   const [filterId, setFilterId] = React.useState('');
   const [filterBreed, setFilterBreed] = React.useState('');
   const [filteredPigs, setFilteredPigs] = React.useState(pigs);
-
-  const femalePigs = pigs.filter(p => p.gender === 'Hembra');
-  const malePigs = pigs.filter(p => p.gender === 'Macho');
-
 
   React.useEffect(() => {
     let tempPigs = pigs;
@@ -194,292 +188,229 @@ export default function GestationPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="animals" className="w-full">
-          <TabsList>
-            <TabsTrigger value="animals">Animales</TabsTrigger>
-            <TabsTrigger value="new-gestation">Nueva Gestación</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="animals" className="mt-6">
-            <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
-                    <Button onClick={openAddDialog}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Añadir Animal
-                    </Button>
-                </div>
-
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="sm:max-w-[425px] overflow-visible">
-                      <DialogHeader>
-                          <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
-                          <DialogDescription>
-                          {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
-                          </DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={handleAnimalFormSubmit}>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="id" className="text-right">ID</Label>
-                                <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="breed" className="text-right">Raza</Label>
-                              <Select name="breed" required defaultValue={editingPig?.breed}>
-                                <SelectTrigger className="col-span-3">
-                                  <SelectValue placeholder="Seleccionar raza/línea" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="gender" className="text-right">Género</Label>
-                                <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="Hembra" id="female" />
-                                    <Label htmlFor="female">Hembra</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="Macho" id="male" />
-                                    <Label htmlFor="male">Macho</Label>
-                                </div>
-                                </RadioGroup>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="birthDate" className="text-right">F. Nacimiento</Label>
-                                <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="arrivalDate" className="text-right">F. Llegada</Label>
-                                <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
-                                <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
-                                <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={closeFormDialog}>Cancelar</Button>
-                            <Button type="submit">{editingPig ? 'Guardar Cambios' : 'Guardar Animal'}</Button>
-                          </DialogFooter>
-                      </form>
-                    </DialogContent>
-                </Dialog>
-
-                <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                    <SheetContent className="sm:max-w-xl w-full flex flex-col">
-                        <SheetHeader className="flex-shrink-0">
-                        <SheetTitle>Hoja de Vida del Animal</SheetTitle>
-                        <SheetDescription>
-                            Información completa y detallada del animal seleccionado.
-                        </SheetDescription>
-                        </SheetHeader>
-                        {selectedPig && (
-                            <>
-                            <ScrollArea className="flex-grow pr-6 -mr-6">
-                                <div id="animal-details" className="grid gap-4 py-4 print:text-black">
-                                    <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
-                                                <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
-                                            </div>
-                                            <Image
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
-                                                alt={`QR Code for ${selectedPig.id}`}
-                                                width={100}
-                                                height={100}
-                                                className="rounded-md"
-                                            />
-                                        </div>
-                                        <Separator/>
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                            <div className="text-muted-foreground">Género</div>
-                                            <div>{selectedPig.gender}</div>
-
-                                            <div className="text-muted-foreground">Fecha de Nacimiento</div>
-                                            <div>{selectedPig.birthDate ? format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy') : 'N/A'}</div>
-                                            
-                                            <div className="text-muted-foreground">Fecha de Llegada</div>
-                                            <div>{selectedPig.arrivalDate ? format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy') : 'N/A'}</div>
-                                            
-                                            <div className="text-muted-foreground">Edad Actual</div>
-                                            <div>{selectedPig.age} semanas</div>
-                                            
-                                            <div className="text-muted-foreground">Peso Actual</div>
-                                            <div>{selectedPig.weight} kg</div>
-
-                                            <div className="text-muted-foreground">Valor de Compra</div>
-                                            <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
-                                        </div>
-                                    </div>
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Historial Reproductivo</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="text-center text-muted-foreground">
-                                            <p>Próximamente...</p>
-                                        </CardContent>
-                                    </Card>
-                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Historial de Tratamientos</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="text-center text-muted-foreground">
-                                            <p>Próximamente...</p>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </ScrollArea>
-                            <div className="flex-shrink-0 pt-4 border-t">
-                                <Button onClick={handlePrint} className="w-full print:hidden">
-                                <Printer className="mr-2 h-4 w-4" />
-                                Imprimir Hoja de Vida
-                                </Button>
-                            </div>
-                            </>
-                        )}
-                    </SheetContent>
-                </Sheet>
-
-
-                <Card>
-                  <CardHeader>
-                      <CardTitle>Filtros</CardTitle>
-                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                          <Input
-                            placeholder="Buscar por ID..."
-                            value={filterId}
-                            onChange={(e) => setFilterId(e.target.value)}
-                          />
-                          <Select value={filterBreed} onValueChange={setFilterBreed}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Filtrar por Raza" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Todas las Razas</SelectItem>
-                                {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
-                              </SelectContent>
-                          </Select>
-                          <Button variant="outline" onClick={clearFilters}>
-                            <X className="mr-2 h-4 w-4" />
-                            Limpiar Filtros
-                          </Button>
-                      </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Raza</TableHead>
-                        <TableHead>Género</TableHead>
-                        <TableHead>F. Nacimiento</TableHead>
-                        <TableHead>F. Llegada</TableHead>
-                        <TableHead className="text-right">Edad (sem.)</TableHead>
-                        <TableHead className="text-right">Peso (kg)</TableHead>
-                        <TableHead className="text-right">Compra ($)</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredPigs.map((pig) => (
-                        <TableRow key={pig.id}>
-                            <TableCell className="font-medium">{pig.id}</TableCell>
-                            <TableCell>{pig.breed}</TableCell>
-                            <TableCell>{pig.gender}</TableCell>
-                            <TableCell>{pig.birthDate}</TableCell>
-                            <TableCell>{pig.arrivalDate}</TableCell>
-                            <TableCell className="text-right">{pig.age}</TableCell>
-                            <TableCell className="text-right">{pig.weight}</TableCell>
-                            <TableCell className="text-right">{pig.purchaseValue ? pig.purchaseValue.toFixed(2) : '-'}</TableCell>
-                            <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Abrir menú</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                  <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
-                </CardContent>
-                </Card>
+        <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
+                <Button onClick={openAddDialog}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Añadir Animal
+                </Button>
             </div>
-          </TabsContent>
-          <TabsContent value="new-gestation" className="mt-6">
+
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogContent className="sm:max-w-[425px] overflow-visible">
+                  <DialogHeader>
+                      <DialogTitle>{editingPig ? 'Editar Animal' : 'Añadir Nuevo Animal'}</DialogTitle>
+                      <DialogDescription>
+                      {editingPig ? 'Actualiza la información del animal.' : 'Completa la información para registrar un nuevo animal en el sistema.'}
+                      </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAnimalFormSubmit}>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="id" className="text-right">ID</Label>
+                            <Input id="id" name="id" className="col-span-3" required defaultValue={editingPig?.id} disabled={!!editingPig} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="breed" className="text-right">Raza</Label>
+                          <Select name="breed" required defaultValue={editingPig?.breed}>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Seleccionar raza/línea" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="gender" className="text-right">Género</Label>
+                            <RadioGroup name="gender" required defaultValue={editingPig?.gender || "Hembra"} className="col-span-3 flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Hembra" id="female" />
+                                <Label htmlFor="female">Hembra</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Macho" id="male" />
+                                <Label htmlFor="male">Macho</Label>
+                            </div>
+                            </RadioGroup>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="birthDate" className="text-right">F. Nacimiento</Label>
+                            <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="arrivalDate" className="text-right">F. Llegada</Label>
+                            <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
+                            <Input id="weight" name="weight" type="number" className="col-span-3" required defaultValue={editingPig?.weight} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="purchaseValue" className="text-right">Valor Compra ($)</Label>
+                            <Input id="purchaseValue" name="purchaseValue" type="number" placeholder="Opcional" className="col-span-3" defaultValue={editingPig?.purchaseValue} />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={closeFormDialog}>Cancelar</Button>
+                        <Button type="submit">{editingPig ? 'Guardar Cambios' : 'Guardar Animal'}</Button>
+                      </DialogFooter>
+                  </form>
+                </DialogContent>
+            </Dialog>
+
+            <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
+                <SheetContent className="sm:max-w-xl w-full flex flex-col">
+                    <SheetHeader className="flex-shrink-0">
+                    <SheetTitle>Hoja de Vida del Animal</SheetTitle>
+                    <SheetDescription>
+                        Información completa y detallada del animal seleccionado.
+                    </SheetDescription>
+                    </SheetHeader>
+                    {selectedPig && (
+                        <>
+                        <ScrollArea className="flex-grow pr-6 -mr-6">
+                            <div id="animal-details" className="grid gap-4 py-4 print:text-black">
+                                <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
+                                            <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                        </div>
+                                        <Image
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedPig.id}`}
+                                            alt={`QR Code for ${selectedPig.id}`}
+                                            width={100}
+                                            height={100}
+                                            className="rounded-md"
+                                        />
+                                    </div>
+                                    <Separator/>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div className="text-muted-foreground">Género</div>
+                                        <div>{selectedPig.gender}</div>
+
+                                        <div className="text-muted-foreground">Fecha de Nacimiento</div>
+                                        <div>{selectedPig.birthDate ? format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy') : 'N/A'}</div>
+                                        
+                                        <div className="text-muted-foreground">Fecha de Llegada</div>
+                                        <div>{selectedPig.arrivalDate ? format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy') : 'N/A'}</div>
+                                        
+                                        <div className="text-muted-foreground">Edad Actual</div>
+                                        <div>{selectedPig.age} semanas</div>
+                                        
+                                        <div className="text-muted-foreground">Peso Actual</div>
+                                        <div>{selectedPig.weight} kg</div>
+
+                                        <div className="text-muted-foreground">Valor de Compra</div>
+                                        <div>{selectedPig.purchaseValue ? `$${selectedPig.purchaseValue.toFixed(2)}` : 'N/A'}</div>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Historial Reproductivo</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-center text-muted-foreground">
+                                        <p>Próximamente...</p>
+                                    </CardContent>
+                                </Card>
+                                 <Card>
+                                    <CardHeader>
+                                        <CardTitle>Historial de Tratamientos</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-center text-muted-foreground">
+                                        <p>Próximamente...</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </ScrollArea>
+                        <div className="flex-shrink-0 pt-4 border-t">
+                            <Button onClick={handlePrint} className="w-full print:hidden">
+                            <Printer className="mr-2 h-4 w-4" />
+                            Imprimir Hoja de Vida
+                            </Button>
+                        </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+
             <Card>
               <CardHeader>
-                <CardTitle>Iniciar Nueva Gestación</CardTitle>
-                <CardDescription>Seleccione una hembra y registre los datos del servicio de inseminación.</CardDescription>
+                  <CardTitle>Filtros</CardTitle>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                      <Input
+                        placeholder="Buscar por ID..."
+                        value={filterId}
+                        onChange={(e) => setFilterId(e.target.value)}
+                      />
+                      <Select value={filterBreed} onValueChange={setFilterBreed}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Filtrar por Raza" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas las Razas</SelectItem>
+                            {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                      <Button variant="outline" onClick={clearFilters}>
+                        <X className="mr-2 h-4 w-4" />
+                        Limpiar Filtros
+                      </Button>
+                  </div>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="sow-selection">Seleccionar Hembra</Label>
-                      <Select name="sow-selection" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Elija una hembra disponible" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {femalePigs.map(pig => (
-                            <SelectItem key={pig.id} value={pig.id}>{pig.id} - {pig.breed}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="insemination-date">Fecha de Inseminación</Label>
-                      <Input id="insemination-date" name="insemination-date" type="date" required />
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="male-selection">Macho Utilizado</Label>
-                       <Select name="male-selection" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Elija un macho" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {malePigs.map(pig => (
-                            <SelectItem key={pig.id} value={pig.id}>{pig.id} - {pig.breed}</SelectItem>
-                          ))}
-                           <SelectItem value="semen-externo">Semen Externo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="gestation-cycle">Ciclo de Gestación</Label>
-                        <Input id="gestation-cycle" name="gestation-cycle" type="number" placeholder="Ej. 2" required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="technician">Técnico Responsable</Label>
-                        <Input id="technician" name="technician" placeholder="Nombre del inseminador" />
-                    </div>
-                  </div>
-                  <Button type="submit"><HeartPulse className="mr-2 h-4 w-4" /> Iniciar Gestación</Button>
-                </form>
-              </CardContent>
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Raza</TableHead>
+                    <TableHead>Género</TableHead>
+                    <TableHead>F. Nacimiento</TableHead>
+                    <TableHead>F. Llegada</TableHead>
+                    <TableHead className="text-right">Edad (sem.)</TableHead>
+                    <TableHead className="text-right">Peso (kg)</TableHead>
+                    <TableHead className="text-right">Compra ($)</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {filteredPigs.map((pig) => (
+                    <TableRow key={pig.id}>
+                        <TableCell className="font-medium">{pig.id}</TableCell>
+                        <TableCell>{pig.breed}</TableCell>
+                        <TableCell>{pig.gender}</TableCell>
+                        <TableCell>{pig.birthDate}</TableCell>
+                        <TableCell>{pig.arrivalDate}</TableCell>
+                        <TableCell className="text-right">{pig.age}</TableCell>
+                        <TableCell className="text-right">{pig.weight}</TableCell>
+                        <TableCell className="text-right">{pig.purchaseValue ? pig.purchaseValue.toFixed(2) : '-'}</TableCell>
+                        <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menú</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                              <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => openDetailsSheet(pig)}>Ver Detalles</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+        </div>
         
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
@@ -501,3 +432,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
