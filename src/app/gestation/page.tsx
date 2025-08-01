@@ -231,15 +231,15 @@ export default function GestationPage() {
     }
     
     return (
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md flex flex-col">
             <DialogHeader>
                 <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
                 <DialogDescription>
                     Complete la información para el evento.
                 </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit}>
-                <ScrollArea className="h-[50vh] pr-6 -mr-6">
+            <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
+                <ScrollArea className="flex-grow pr-6 -mr-6">
                     <div className="grid gap-4 py-4 pr-6">
                         {/* Common fields */}
                         <div className="space-y-2">
@@ -347,7 +347,7 @@ export default function GestationPage() {
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
+                <DialogFooter className="flex-shrink-0 pt-4">
                     <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
                     <Button type="submit">Guardar Evento</Button>
                 </DialogFooter>
@@ -457,7 +457,7 @@ export default function GestationPage() {
             </Dialog>
 
             <Sheet open={isDetailsSheetOpen} onOpenChange={setIsDetailsSheetOpen}>
-                <SheetContent className="w-screen sm:max-w-none flex flex-col" side="right">
+                <SheetContent className="w-screen max-w-full h-screen" side="right">
                     <SheetHeader className="flex-shrink-0">
                     <SheetTitle>Hoja de Vida del Animal</SheetTitle>
                     <SheetDescription>
