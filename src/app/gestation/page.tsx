@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInWeeks, parseISO, format, isValid } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -260,7 +261,7 @@ export default function GestationPage() {
                                 )}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {birthDate ? format(birthDate, "PPP") : <span>Seleccionar fecha</span>}
+                                {birthDate ? format(birthDate, "PPP", { locale: es}) : <span>Seleccionar fecha</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -268,6 +269,9 @@ export default function GestationPage() {
                                 mode="single"
                                 selected={birthDate}
                                 onSelect={setBirthDate}
+                                fromYear={new Date().getFullYear() - 30}
+                                toYear={new Date().getFullYear()}
+                                captionLayout="dropdown-buttons"
                                 initialFocus
                                 />
                             </PopoverContent>
@@ -285,7 +289,7 @@ export default function GestationPage() {
                                 )}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {arrivalDate ? format(arrivalDate, "PPP") : <span>Seleccionar fecha</span>}
+                                {arrivalDate ? format(arrivalDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -293,6 +297,9 @@ export default function GestationPage() {
                                 mode="single"
                                 selected={arrivalDate}
                                 onSelect={setArrivalDate}
+                                fromYear={new Date().getFullYear() - 30}
+                                toYear={new Date().getFullYear()}
+                                captionLayout="dropdown-buttons"
                                 initialFocus
                                 />
                             </PopoverContent>
@@ -677,5 +684,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
