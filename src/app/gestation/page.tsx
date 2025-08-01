@@ -239,7 +239,7 @@ export default function GestationPage() {
                 </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
-                <ScrollArea className="h-96 pr-6 -mr-6">
+                <ScrollArea className="h-[50vh] pr-6 -mr-6">
                     <div className="grid gap-4 py-4 pr-6">
                         {/* Common fields */}
                         <div className="space-y-2">
