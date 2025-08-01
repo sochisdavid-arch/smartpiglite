@@ -130,6 +130,8 @@ export default function PigHistoryPage() {
 
     const EventForm = () => {
         if (!selectedEventType) return null;
+    
+        // State for insemination date to calculate probable farrowing date
         const [inseminationDate, setInseminationDate] = React.useState<string>('');
         const probableFarrowingDate = React.useMemo(() => {
             if (inseminationDate) {
@@ -141,6 +143,18 @@ export default function PigHistoryPage() {
             return '---';
         }, [inseminationDate]);
     
+        // State for farrowing form fields to calculate average weight
+        const [liveBorn, setLiveBorn] = React.useState<number | string>('');
+        const [litterWeight, setLitterWeight] = React.useState<number | string>('');
+        const averagePigletWeight = React.useMemo(() => {
+            const numLiveBorn = Number(liveBorn);
+            const numLitterWeight = Number(litterWeight);
+            if (numLiveBorn > 0 && numLitterWeight > 0) {
+                return (numLitterWeight / numLiveBorn).toFixed(2);
+            }
+            return '---';
+        }, [liveBorn, litterWeight]);
+
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
             // Handle form submission logic here in the future
@@ -158,8 +172,8 @@ export default function PigHistoryPage() {
                         Complete la información para el evento.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4">
-                    <ScrollArea className="h-full pr-6 -mr-6">
+                <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
+                    <ScrollArea className="flex-grow pr-6 -mr-6">
                         <div className="grid gap-4 py-4 pr-6">
                             {/* Common fields */}
                             <div className="space-y-2">
@@ -212,16 +226,42 @@ export default function PigHistoryPage() {
                                 </>
                             )}
                             {selectedEventType === 'Parto' && (
-                                <>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="totalBorn">Total Nacidos</Label>
                                         <Input id="totalBorn" type="number" required />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="liveBorn">Nacidos Vivos</Label>
-                                        <Input id="liveBorn" type="number" required />
+                                        <Label htmlFor="liveBorn">Vivos</Label>
+                                        <Input id="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
                                     </div>
-                                </>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stillborn">Muertos</Label>
+                                        <Input id="stillborn" type="number" required />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="mummified">Momias</Label>
+                                        <Input id="mummified" type="number" required />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="lowViability">Baja Viabilidad</Label>
+                                        <Input id="lowViability" type="number" required />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="sowWeightParto">Peso Cerda (kg)</Label>
+                                        <Input id="sowWeightParto" type="number" step="0.1" placeholder="Opcional"/>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="litterWeight">Peso Camada (kg)</Label>
+                                        <Input id="litterWeight" type="number" step="0.1" required value={litterWeight} onChange={e => setLitterWeight(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Peso Promedio (kg)</Label>
+                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">
+                                            {averagePigletWeight}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                             {selectedEventType === 'Aborto' && (
                                 <div className="space-y-2">
@@ -382,3 +422,5 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
+
+    
