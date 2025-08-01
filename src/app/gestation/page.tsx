@@ -332,14 +332,14 @@ export default function GestationPage() {
         }
 
         return (
-             <DialogContent className="sm:max-w-3xl max-h-[80vh]">
+             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Registrar Consumo del Lote de Reproductoras</DialogTitle>
                     <DialogDescription>
                         Registre el consumo diario de alimento para un grupo de hembras. El consumo se descontará del inventario.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="h-full pr-6 -mr-6">
+                <ScrollArea className="pr-6 -mr-6">
                 <div className="space-y-4 py-4 pr-6">
                     <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -386,8 +386,8 @@ export default function GestationPage() {
                                 <TableRow>
                                     <TableHead>Fecha</TableHead>
                                     <TableHead>Alimento</TableHead>
+                                    <TableHead>Nº Hembras</TableHead>
                                     <TableHead className="text-right">Total (kg)</TableHead>
-                                    <TableHead className="text-right">Nº Hembras</TableHead>
                                     <TableHead className="text-right">Promedio (kg)</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -396,8 +396,8 @@ export default function GestationPage() {
                                     <TableRow key={record.id}>
                                         <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell>{record.feedType.label.split(' (')[0]}</TableCell>
+                                        <TableCell>{record.sowCount}</TableCell>
                                         <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
-                                        <TableCell className="text-right">{record.sowCount}</TableCell>
                                         <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
@@ -673,4 +673,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
