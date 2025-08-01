@@ -42,6 +42,10 @@ import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+
+type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
+type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Pig {
     id: string;
@@ -52,15 +56,21 @@ interface Pig {
     gender: string;
     purchaseValue?: number;
     age: number;
+    status: StatusType;
+    lastEvent: {
+        type: EventType | 'Ninguno';
+        date: string;
+    };
 }
 
+
 const initialPigs: Pig[] = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0 },
-  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0 },
-  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0 },
-  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0 },
-  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165, age: 0 },
-  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145, age: 0 },
+  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10' } },
+  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' } },
+  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' } },
+  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
+  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
+  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' } },
 ];
 
 const pigBreeds = [
@@ -71,9 +81,6 @@ const pigBreeds = [
   // Otras
   "Otro"
 ];
-
-type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
-
 
 const calculateAge = (birthDate: string) => {
     if (!birthDate) return 0;
@@ -166,11 +173,13 @@ export default function GestationPage() {
       weight: parseInt(formData.get('weight') as string),
       gender: formData.get('gender') as string,
       purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
-      age: calculateAge(birthDateValue)
+      age: calculateAge(birthDateValue),
+      status: 'Remplazo', 
+      lastEvent: { type: 'Ninguno', date: '' },
     };
 
     if (editingPig) {
-        setPigs(pigs.map(p => p.id === editingPig.id ? submittedAnimal : p));
+        setPigs(pigs.map(p => p.id === editingPig.id ? {...submittedAnimal, status: p.status, lastEvent: p.lastEvent } : p));
     } else {
         setPigs(prevPigs => [...prevPigs, submittedAnimal]);
     }
@@ -334,6 +343,18 @@ export default function GestationPage() {
     )
   }
 
+  const getStatusVariant = (status: StatusType) => {
+    switch (status) {
+      case 'Gestante': return 'default';
+      case 'Lactante': return 'default';
+      case 'Destetada': return 'secondary';
+      case 'Vacia': return 'destructive';
+      case 'Remplazo': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
@@ -440,6 +461,9 @@ export default function GestationPage() {
                                             <h3 className="text-lg font-semibold">ID: {selectedPig.id}</h3>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-sm px-2 py-1 rounded-full bg-primary text-primary-foreground">{selectedPig.breed}</span>
+                                                <Badge variant={getStatusVariant(selectedPig.status)}>{selectedPig.status}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                     <Button><CalendarPlus className="mr-2 h-4 w-4" /> Agregar Evento</Button>
@@ -547,13 +571,11 @@ export default function GestationPage() {
                 <TableHeader>
                     <TableRow>
                     <TableHead>ID</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead>Raza</TableHead>
                     <TableHead>Género</TableHead>
-                    <TableHead>F. Nacimiento</TableHead>
-                    <TableHead>F. Llegada</TableHead>
                     <TableHead className="text-right">Edad (sem.)</TableHead>
                     <TableHead className="text-right">Peso (kg)</TableHead>
-                    <TableHead className="text-right">Compra ($)</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -561,13 +583,18 @@ export default function GestationPage() {
                     {filteredPigs.map((pig) => (
                     <TableRow key={pig.id} onClick={() => openDetailsSheet(pig)} className="cursor-pointer hover:bg-accent/50">
                         <TableCell className="font-medium">{pig.id}</TableCell>
+                        <TableCell>
+                            <div className="flex flex-col">
+                                <Badge variant={getStatusVariant(pig.status)} className="w-fit">{pig.status}</Badge>
+                                <span className="text-xs text-muted-foreground mt-1">
+                                    {pig.lastEvent.type !== 'Ninguno' ? `${pig.lastEvent.type} - ${pig.lastEvent.date}` : 'Sin eventos'}
+                                </span>
+                            </div>
+                        </TableCell>
                         <TableCell>{pig.breed}</TableCell>
                         <TableCell>{pig.gender}</TableCell>
-                        <TableCell>{pig.birthDate}</TableCell>
-                        <TableCell>{pig.arrivalDate}</TableCell>
                         <TableCell className="text-right">{pig.age}</TableCell>
                         <TableCell className="text-right">{pig.weight}</TableCell>
-                        <TableCell className="text-right">{pig.purchaseValue ? pig.purchaseValue.toFixed(2) : '-'}</TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -612,3 +639,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
