@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const initialPigs = [
   { id: 'PIG-001', breed: 'Duroc', age: 12, weight: 85, status: 'Gestación' },
@@ -37,6 +38,15 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'outline' | 'des
     'Engorde': 'outline',
     'Destetado': 'destructive'
 };
+
+const pigBreeds = [
+  // Razas Puras
+  "Duroc", "Yorkshire (Large White)", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
+  // Líneas Genéticas Comerciales
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  // Otras
+  "Otro"
+];
 
 export default function PigsPage() {
   const [pigs, setPigs] = React.useState(initialPigs);
@@ -83,7 +93,18 @@ export default function PigsPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="breed" className="text-right">Raza</Label>
-                    <Input id="breed" name="breed" className="col-span-3" required />
+                     <Select name="breed" required>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Seleccionar raza/línea" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <ScrollArea className="h-48">
+                                {pigBreeds.map(breed => (
+                                    <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                                ))}
+                            </ScrollArea>
+                        </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="age" className="text-right">Edad (sem.)</Label>
@@ -192,5 +213,3 @@ export default function PigsPage() {
     </AppLayout>
   );
 }
-
-    
