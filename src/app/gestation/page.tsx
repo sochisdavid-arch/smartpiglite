@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar as CalendarIcon, Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, FileText, Printer } from 'lucide-react';
+import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import {
@@ -41,10 +41,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInWeeks, parseISO, format, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 
@@ -78,6 +74,7 @@ const pigBreeds = [
 ];
 
 const calculateAge = (birthDate: string) => {
+    if (!birthDate) return 0;
     const date = parseISO(birthDate);
     if (!isValid(date)) return 0;
     return differenceInWeeks(new Date(), date);
@@ -97,21 +94,13 @@ export default function GestationPage() {
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = React.useState(false);
   const [selectedPig, setSelectedPig] = React.useState<Pig | null>(null);
 
-
-  const [birthDate, setBirthDate] = React.useState<Date | undefined>();
-  const [arrivalDate, setArrivalDate] = React.useState<Date | undefined>();
-
   const openAddDialog = () => {
     setEditingPig(null);
-    setBirthDate(undefined);
-    setArrivalDate(undefined);
     setIsFormOpen(true);
   };
 
   const openEditDialog = (pig: Pig) => {
     setEditingPig(pig);
-    setBirthDate(parseISO(pig.birthDate));
-    setArrivalDate(parseISO(pig.arrivalDate));
     setIsFormOpen(true);
   };
   
@@ -137,14 +126,13 @@ export default function GestationPage() {
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const birthDateValue = birthDate ? format(birthDate, 'yyyy-MM-dd') : '';
-    const arrivalDateValue = arrivalDate ? format(arrivalDate, 'yyyy-MM-dd') : '';
+    const birthDateValue = formData.get('birthDate') as string;
     
     const submittedAnimal: Pig = {
       id: formData.get('id') as string,
       breed: formData.get('breed') as string,
       birthDate: birthDateValue,
-      arrivalDate: arrivalDateValue,
+      arrivalDate: formData.get('arrivalDate') as string,
       weight: parseInt(formData.get('weight') as string),
       gender: formData.get('gender') as string,
       purchaseValue: formData.get('purchaseValue') ? parseInt(formData.get('purchaseValue') as string) : undefined,
@@ -251,59 +239,11 @@ export default function GestationPage() {
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="birthDate" className="text-right">Fecha de Nacimiento</Label>
-                              <Popover>
-                              <PopoverTrigger asChild>
-                                  <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                      "col-span-3 justify-start text-left font-normal",
-                                      !birthDate && "text-muted-foreground"
-                                  )}
-                                  >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {birthDate ? format(birthDate, "PPP", { locale: es}) : <span>Seleccionar fecha</span>}
-                                  </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                  mode="single"
-                                  selected={birthDate}
-                                  onSelect={setBirthDate}
-                                  fromYear={new Date().getFullYear() - 30}
-                                  toYear={new Date().getFullYear()}
-                                  captionLayout="dropdown-buttons"
-                                  initialFocus
-                                  />
-                              </PopoverContent>
-                              </Popover>
+                              <Input id="birthDate" name="birthDate" type="date" className="col-span-3" required defaultValue={editingPig?.birthDate} />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="arrivalDate" className="text-right">Fecha de Llegada</Label>
-                              <Popover>
-                              <PopoverTrigger asChild>
-                                  <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                      "col-span-3 justify-start text-left font-normal",
-                                      !arrivalDate && "text-muted-foreground"
-                                  )}
-                                  >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {arrivalDate ? format(arrivalDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
-                                  </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                  mode="single"
-                                  selected={arrivalDate}
-                                  onSelect={setArrivalDate}
-                                  fromYear={new Date().getFullYear() - 30}
-                                  toYear={new Date().getFullYear()}
-                                  captionLayout="dropdown-buttons"
-                                  initialFocus
-                                  />
-                              </PopoverContent>
-                              </Popover>
+                              <Input id="arrivalDate" name="arrivalDate" type="date" className="col-span-3" required defaultValue={editingPig?.arrivalDate} />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="weight" className="text-right">Peso (kg)</Label>
@@ -354,10 +294,10 @@ export default function GestationPage() {
                                             <div>{selectedPig.gender}</div>
 
                                             <div className="text-muted-foreground">Fecha de Nacimiento</div>
-                                            <div>{format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy')}</div>
+                                            <div>{selectedPig.birthDate ? format(parseISO(selectedPig.birthDate), 'dd/MM/yyyy') : 'N/A'}</div>
                                             
                                             <div className="text-muted-foreground">Fecha de Llegada</div>
-                                            <div>{format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy')}</div>
+                                            <div>{selectedPig.arrivalDate ? format(parseISO(selectedPig.arrivalDate), 'dd/MM/yyyy') : 'N/A'}</div>
                                             
                                             <div className="text-muted-foreground">Edad Actual</div>
                                             <div>{selectedPig.age} semanas</div>
@@ -684,5 +624,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
