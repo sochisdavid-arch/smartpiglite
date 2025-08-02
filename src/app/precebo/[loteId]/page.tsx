@@ -40,8 +40,6 @@ interface ConsumptionRecord {
     startDate: string;
     endDate: string;
     feedType: string;
-    deaths: number | string;
-    sales: number | string;
     consumption: (number | string)[];
     inventory: number;
     totalWeek: number;
@@ -88,7 +86,7 @@ export default function LotePreceboPage() {
         return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
     }, [batch]);
 
-    const handleHistoryChange = (updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
+    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
       let accumulatedFeed = 0;
       let previousWeekInventory = currentBatch.initialPigletCount;
       
@@ -96,9 +94,7 @@ export default function LotePreceboPage() {
           const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
           accumulatedFeed += weeklyConsumption;
           
-          const deaths = Number(week.deaths || 0);
-          const sales = Number(week.sales || 0);
-          const currentInventory = previousWeekInventory - deaths - sales;
+          const currentInventory = previousWeekInventory;
           
           const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
           const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
@@ -127,7 +123,7 @@ export default function LotePreceboPage() {
              localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
          }
       }
-    };
+    }, [getConsumptionStorageKey, loteId]);
 
 
     React.useEffect(() => {
@@ -162,8 +158,6 @@ export default function LotePreceboPage() {
                             endDate: weekEndDate.toISOString(),
                             feedType: '',
                             consumption: Array(7).fill(''),
-                            deaths: '',
-                            sales: '',
                             inventory: 0,
                             totalWeek: 0,
                             totalAccumulated: 0,
@@ -179,21 +173,8 @@ export default function LotePreceboPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loteId, getConsumptionStorageKey]);
 
-
-    const updateConsumptionData = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
-        if (batch) {
-            handleHistoryChange(updatedHistory, batch);
-        }
-    }, [batch, getConsumptionStorageKey]);
-
-    const handleFeedTypeChange = React.useCallback((weekId: string, feedType: string) => {
-        const updatedHistory = consumptionHistory.map(week =>
-            week.id === weekId ? { ...week, feedType } : week
-        );
-        updateConsumptionData(updatedHistory);
-    }, [consumptionHistory, updateConsumptionData]);
-
-    const handleConsumptionChange = React.useCallback((weekId: string, dayIndex: number, value: string) => {
+    const updateConsumptionData = React.useCallback((weekId: string, dayIndex: number, value: string) => {
+        if (!batch) return;
         const updatedHistory = consumptionHistory.map(week => {
             if (week.id === weekId) {
                 const newConsumption = [...week.consumption];
@@ -202,18 +183,17 @@ export default function LotePreceboPage() {
             }
             return week;
         });
-        updateConsumptionData(updatedHistory);
-    }, [consumptionHistory, updateConsumptionData]);
+        handleHistoryChange(updatedHistory, batch);
+    }, [batch, consumptionHistory, handleHistoryChange]);
 
-    const handleBajasChange = React.useCallback((weekId: string, type: 'deaths' | 'sales', value: string) => {
-        const updatedHistory = consumptionHistory.map(week => {
-            if (week.id === weekId) {
-                return { ...week, [type]: value };
-            }
-            return week;
-        });
-        updateConsumptionData(updatedHistory);
-    }, [consumptionHistory, updateConsumptionData]);
+
+    const handleFeedTypeChange = React.useCallback((weekId: string, feedType: string) => {
+        if (!batch) return;
+        const updatedHistory = consumptionHistory.map(week =>
+            week.id === weekId ? { ...week, feedType } : week
+        );
+        handleHistoryChange(updatedHistory, batch);
+    }, [batch, consumptionHistory, handleHistoryChange]);
     
     const openEventDialog = (eventType: PreceboEventType) => {
         setSelectedEventType(eventType);
@@ -359,12 +339,12 @@ export default function LotePreceboPage() {
                     </DropdownMenu>
                 </div>
 
-                 <Card>
+                <Card>
                     <CardHeader>
                         <CardTitle>Información del Lote</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
-                       <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1">
                             <span className="text-muted-foreground">Lote N°</span>
                             <span className="font-semibold">{batch.id}</span>
                         </div>
@@ -410,8 +390,6 @@ export default function LotePreceboPage() {
                                     <TableHead className="min-w-[80px]">Semana</TableHead>
                                     <TableHead className="min-w-[150px]">Fecha</TableHead>
                                     <TableHead className="min-w-[150px]">Alimento</TableHead>
-                                    <TableHead className="min-w-[90px]">Muertes</TableHead>
-                                    <TableHead className="min-w-[90px]">Ventas</TableHead>
                                     {daysOfWeek.map(day => (
                                         <TableHead key={day} className="capitalize min-w-[70px]">{day}</TableHead>
                                     ))}
@@ -441,30 +419,12 @@ export default function LotePreceboPage() {
                                                 </SelectContent>
                                             </Select>
                                         </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                key={`${weekData.id}-deaths`}
-                                                type="number"
-                                                value={weekData.deaths}
-                                                onChange={(e) => handleBajasChange(weekData.id, 'deaths', e.target.value)}
-                                                className="w-20 text-center"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                key={`${weekData.id}-sales`}
-                                                type="number"
-                                                value={weekData.sales}
-                                                onChange={(e) => handleBajasChange(weekData.id, 'sales', e.target.value)}
-                                                className="w-20 text-center"
-                                            />
-                                        </TableCell>
                                         {weekData.consumption.map((dayConsumption, dayIndex) => (
                                             <TableCell key={`${weekData.id}-day-${dayIndex}`}>
                                                 <Input 
                                                     type="number"
                                                     value={dayConsumption}
-                                                    onChange={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
+                                                    onChange={(e) => updateConsumptionData(weekData.id, dayIndex, e.target.value)}
                                                     className="w-16 text-center"
                                                 />
                                             </TableCell>
