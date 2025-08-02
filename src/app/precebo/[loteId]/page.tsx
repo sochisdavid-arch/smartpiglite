@@ -5,14 +5,21 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Syringe, Move, Banknote, PackagePlus, ShieldPlus, Skull } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO, isValid, addDays, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockInventory } from '@/lib/mock-data';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface NurseryBatch {
     id: string;
@@ -43,13 +50,31 @@ interface ConsumptionRecord {
     consumptionPerPigPerDay: number;
 }
 
+type PreceboEventType = "Muerte en lote" | "Traslado de lote" | "Venta de lote" | "Ingreso a lote" | "Tratamiento" | "Vacunación";
+
+const eventIcons: { [key in PreceboEventType]: React.ReactElement } = {
+    "Muerte en lote": <Skull className="h-5 w-5 text-destructive" />,
+    "Traslado de lote": <Move className="h-5 w-5 text-blue-500" />,
+    "Venta de lote": <Banknote className="h-5 w-5 text-green-500" />,
+    "Ingreso a lote": <PackagePlus className="h-5 w-5 text-purple-500" />,
+    "Tratamiento": <Syringe className="h-5 w-5 text-red-500" />,
+    "Vacunación": <ShieldPlus className="h-5 w-5 text-green-500" />,
+};
+
+const allEventTypes: PreceboEventType[] = ["Muerte en lote", "Traslado de lote", "Venta de lote", "Ingreso a lote", "Tratamiento", "Vacunación"];
+
 
 export default function LotePreceboPage() {
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const loteId = params.loteId as string;
+    
     const [batch, setBatch] = React.useState<NurseryBatch | null>(null);
     const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
+    
+    const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
+    const [selectedEventType, setSelectedEventType] = React.useState<PreceboEventType | null>(null);
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
     
@@ -60,60 +85,10 @@ export default function LotePreceboPage() {
         const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; 
         
         const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-        const rotatedDays = [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
-        return rotatedDays;
+        return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
     }, [batch]);
     
-    React.useEffect(() => {
-        const storedBatches = localStorage.getItem('nurseryBatches');
-        if (storedBatches) {
-            const batchData = JSON.parse(storedBatches);
-            const foundBatch = batchData[loteId];
-            if (foundBatch) {
-                const processedBatch: NurseryBatch = {
-                    ...foundBatch,
-                    pigletCount: Number(foundBatch.pigletCount),
-                    initialPigletCount: Number(foundBatch.initialPigletCount || foundBatch.pigletCount),
-                    totalWeight: Number(foundBatch.totalWeight),
-                    avgWeight: Number(foundBatch.avgWeight),
-                    avgAge: Number(foundBatch.avgAge),
-                };
-                setBatch(processedBatch);
-
-                const storageKey = getConsumptionStorageKey();
-                const storedConsumption = localStorage.getItem(storageKey);
-                let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
-
-                if (history.length < 8) {
-                    const additionalWeeks = Array.from({ length: 8 - history.length }).map((_, weekIndex) => {
-                        const currentWeekIndex = history.length + weekIndex;
-                        const weekStartDate = addDays(parseISO(foundBatch.creationDate), currentWeekIndex * 7);
-                        const weekEndDate = addDays(weekStartDate, 6);
-                        return {
-                            id: `week-${currentWeekIndex + 1}`,
-                            weekNumber: currentWeekIndex + 1,
-                            startDate: weekStartDate.toISOString(),
-                            endDate: weekEndDate.toISOString(),
-                            feedType: '',
-                            consumption: Array(7).fill(''),
-                            deaths: '',
-                            sales: '',
-                            inventory: 0,
-                            totalWeek: 0,
-                            totalAccumulated: 0,
-                            accumulatedPerPig: 0,
-                            consumptionPerPigPerDay: 0,
-                        };
-                    });
-                    history = [...history, ...additionalWeeks];
-                }
-                setConsumptionHistory(history);
-            }
-        }
-    }, [loteId, getConsumptionStorageKey]);
-
-
-    const handleHistoryChange = (updatedHistory: ConsumptionRecord[]) => {
+    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
         if (!batch) return;
 
         let accumulatedFeed = 0;
@@ -145,17 +120,65 @@ export default function LotePreceboPage() {
         setConsumptionHistory(calculatedHistory);
         localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
 
-        const finalInventory = calculatedHistory[calculatedHistory.length - 1]?.inventory ?? batch.initialPigletCount;
+        const finalInventory = calculatedHistory.length > 0 ? calculatedHistory[calculatedHistory.length - 1].inventory : batch.initialPigletCount;
         if(batch.pigletCount !== finalInventory) {
            setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
-           // Also update the main batch record in localStorage if needed
            const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
            if (storedBatches[loteId]) {
                storedBatches[loteId].pigletCount = finalInventory;
                localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
            }
         }
-    };
+    }, [batch, getConsumptionStorageKey, loteId]);
+
+
+    React.useEffect(() => {
+        const storedBatches = localStorage.getItem('nurseryBatches');
+        if (storedBatches) {
+            const batchData = JSON.parse(storedBatches);
+            const foundBatch = batchData[loteId];
+            if (foundBatch) {
+                const processedBatch: NurseryBatch = {
+                    ...foundBatch,
+                    pigletCount: Number(foundBatch.pigletCount),
+                    initialPigletCount: Number(foundBatch.initialPigletCount || foundBatch.pigletCount),
+                    totalWeight: Number(foundBatch.totalWeight),
+                    avgWeight: Number(foundBatch.avgWeight),
+                    avgAge: Number(foundBatch.avgAge),
+                };
+                setBatch(processedBatch);
+
+                const storageKey = getConsumptionStorageKey();
+                const storedConsumption = localStorage.getItem(storageKey);
+                let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
+                
+                if (history.length < 8) {
+                    const additionalWeeks = Array.from({ length: 8 - history.length }).map((_, weekIndex) => {
+                        const currentWeekIndex = history.length + weekIndex;
+                        const weekStartDate = addDays(parseISO(foundBatch.creationDate), currentWeekIndex * 7);
+                        const weekEndDate = addDays(weekStartDate, 6);
+                        return {
+                            id: `week-${currentWeekIndex + 1}`,
+                            weekNumber: currentWeekIndex + 1,
+                            startDate: weekStartDate.toISOString(),
+                            endDate: weekEndDate.toISOString(),
+                            feedType: '',
+                            consumption: Array(7).fill(''),
+                            deaths: '',
+                            sales: '',
+                            inventory: 0,
+                            totalWeek: 0,
+                            totalAccumulated: 0,
+                            accumulatedPerPig: 0,
+                            consumptionPerPigPerDay: 0,
+                        };
+                    });
+                    history = [...history, ...additionalWeeks];
+                }
+                handleHistoryChange(history);
+            }
+        }
+    }, [loteId, getConsumptionStorageKey, handleHistoryChange]);
 
 
     const handleFeedTypeChange = (weekId: string, feedType: string) => {
@@ -186,6 +209,107 @@ export default function LotePreceboPage() {
         });
         handleHistoryChange(updatedHistory);
     }
+    
+    const openEventDialog = (eventType: PreceboEventType) => {
+        setSelectedEventType(eventType);
+        setIsEventFormOpen(true);
+    };
+
+    const EventForm = () => {
+        if (!selectedEventType) return null;
+
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            // Here you would handle form submission, save the event,
+            // and potentially update the batch data.
+            toast({
+                title: "¡Evento Registrado!",
+                description: `El evento "${selectedEventType}" ha sido registrado para el lote ${loteId}.`,
+            });
+            setIsEventFormOpen(false);
+        }
+        
+        return (
+            <DialogContent className="max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
+                    <DialogDescription>
+                        Complete la información del evento para el lote {loteId}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <ScrollArea className="h-full pr-6">
+                        <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="eventDate">Fecha del Evento</Label>
+                                <Input id="eventDate" name="eventDate" type="date" required />
+                            </div>
+
+                            {['Tratamiento', 'Vacunación'].includes(selectedEventType) && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="product">Producto</Label>
+                                        <Select name="product" required>
+                                            <SelectTrigger><SelectValue placeholder={`Seleccionar ${selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna'}`} /></SelectTrigger>
+                                            <SelectContent>
+                                                {mockInventory.filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
+                                                    <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="dose">Dosis por Animal (ml)</Label>
+                                        <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="treatmentReason">Motivo / Enfermedad</Label>
+                                        <Input id="treatmentReason" name="treatmentReason" placeholder="Ej: Preventivo, tratamiento para diarrea" required/>
+                                    </div>
+                                </>
+                            )}
+                            
+                            {['Muerte en lote', 'Venta de lote', 'Ingreso a lote'].includes(selectedEventType) && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="animalCount">Número de Animales</Label>
+                                        <Input id="animalCount" name="animalCount" type="number" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="avgWeight">Peso Promedio (kg) - Opcional</Label>
+                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" placeholder="Ej. 15.5" />
+                                    </div>
+                                </>
+                            )}
+                            
+                            {selectedEventType === 'Venta de lote' && (
+                                 <div className="space-y-2">
+                                    <Label htmlFor="saleValue">Valor Total de Venta ($)</Label>
+                                    <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Valor total"/>
+                                </div>
+                            )}
+
+                            {selectedEventType === 'Traslado de lote' && (
+                                 <div className="space-y-2">
+                                    <Label htmlFor="destination">Destino del Lote</Label>
+                                    <Input id="destination" name="destination" placeholder="Ej: Módulo de Ceba 1" required />
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <Label htmlFor="eventNotes">Notas Adicionales</Label>
+                                <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                            </div>
+                        </form>
+                    </ScrollArea>
+                </div>
+                <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
+                    <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" form="event-form">Guardar Evento</Button>
+                </DialogFooter>
+            </DialogContent>
+        )
+    }
 
     if (!batch) {
         return (
@@ -210,48 +334,62 @@ export default function LotePreceboPage() {
                         </Button>
                         <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
                     </div>
-                     <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Agregar Evento
-                    </Button>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Agregar Evento
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {allEventTypes.map(eventType => (
+                                <DropdownMenuItem key={eventType} onSelect={() => openEventDialog(eventType)}>
+                                    <div className="flex items-center gap-2">
+                                        {eventIcons[eventType]}
+                                        <span>{eventType}</span>
+                                    </div>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
-                <Card>
+                 <Card>
                     <CardHeader>
                         <CardTitle>Información del Lote</CardTitle>
                     </CardHeader>
-                     <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Lote N°</p>
-                            <p className="font-semibold">{batch.id}</p>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
+                       <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Lote N°</span>
+                            <span className="font-semibold">{batch.id}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Módulo Precebo</p>
-                            <p className="font-semibold">{batch.module || 'PRE-01'}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Módulo Precebo</span>
+                            <span className="font-semibold">{batch.module || 'PRE-01'}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Fecha Ingreso</p>
-                            <p className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Fecha Ingreso</span>
+                            <span className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</span>
                         </div>
-                         <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">N° Inicial</p>
-                            <p className="font-semibold">{Number(batch.initialPigletCount).toFixed(0)}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Nº Inicial</span>
+                            <span className="font-semibold">{Number(batch.initialPigletCount).toFixed(0)}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">N° Actual</p>
-                            <p className="font-semibold">{Number(batch.pigletCount).toFixed(0)}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Nº Actual</span>
+                            <span className="font-semibold">{Number(batch.pigletCount).toFixed(0)}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Peso Total (kg)</p>
-                            <p className="font-semibold">{Number(batch.totalWeight).toFixed(2)}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Peso Total (kg)</span>
+                            <span className="font-semibold">{Number(batch.totalWeight).toFixed(2)}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Peso Prom. (kg)</p>
-                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Peso Prom. (kg)</span>
+                            <span className="font-semibold">{Number(batch.avgWeight).toFixed(2)}</span>
                         </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-muted-foreground">Edad Inicial (días)</p>
-                            <p className="font-semibold">{batch.avgAge}</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-muted-foreground">Edad Inicial (días)</span>
+                            <span className="font-semibold">{batch.avgAge}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -285,7 +423,7 @@ export default function LotePreceboPage() {
                                         <TableCell>{weekData.weekNumber}</TableCell>
                                         <TableCell>
                                             {isValid(parseISO(weekData.startDate)) ? 
-                                            `${format(parseISO(weekData.startDate), 'dd/MMM', { locale: es })} - ${format(parseISO(weekData.endDate), 'dd/MMM', { locale: es })}`
+                                            `${format(parseISO(weekData.startDate), 'dd/MMM', { locale: es })} al ${format(parseISO(weekData.endDate), 'dd/MMM', { locale: es })}`
                                             : 'N/A'}
                                         </TableCell>
                                         <TableCell>
@@ -338,6 +476,9 @@ export default function LotePreceboPage() {
                     </CardContent>
                 </Card>
             </div>
+             <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+                <EventForm />
+            </Dialog>
         </AppLayout>
     );
 }
