@@ -87,49 +87,47 @@ export default function LotePreceboPage() {
         const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
         return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
     }, [batch]);
-    
-    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
-        if (!batch) return;
 
-        let accumulatedFeed = 0;
-        let previousWeekInventory = batch.initialPigletCount;
-        
-        const calculatedHistory = updatedHistory.map(week => {
-            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
-            accumulatedFeed += weeklyConsumption;
-            
-            const deaths = Number(week.deaths || 0);
-            const sales = Number(week.sales || 0);
-            const currentInventory = previousWeekInventory - deaths - sales;
-            
-            const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
-            const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
-            
-            previousWeekInventory = currentInventory;
+    const handleHistoryChange = (updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
+      let accumulatedFeed = 0;
+      let previousWeekInventory = currentBatch.initialPigletCount;
+      
+      const calculatedHistory = updatedHistory.map(week => {
+          const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
+          accumulatedFeed += weeklyConsumption;
+          
+          const deaths = Number(week.deaths || 0);
+          const sales = Number(week.sales || 0);
+          const currentInventory = previousWeekInventory - deaths - sales;
+          
+          const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
+          const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
+          
+          previousWeekInventory = currentInventory;
 
-            return {
-                ...week,
-                totalWeek: weeklyConsumption,
-                inventory: currentInventory,
-                totalAccumulated: accumulatedFeed,
-                accumulatedPerPig,
-                consumptionPerPigPerDay,
-            };
-        });
+          return {
+              ...week,
+              totalWeek: weeklyConsumption,
+              inventory: currentInventory,
+              totalAccumulated: accumulatedFeed,
+              accumulatedPerPig,
+              consumptionPerPigPerDay,
+          };
+      });
 
-        setConsumptionHistory(calculatedHistory);
-        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
+      setConsumptionHistory(calculatedHistory);
+      localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
 
-        const finalInventory = calculatedHistory.length > 0 ? calculatedHistory[calculatedHistory.length - 1].inventory : batch.initialPigletCount;
-        if(batch.pigletCount !== finalInventory) {
-           setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
-           const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
-           if (storedBatches[loteId]) {
-               storedBatches[loteId].pigletCount = finalInventory;
-               localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
-           }
-        }
-    }, [batch, getConsumptionStorageKey, loteId]);
+      const finalInventory = calculatedHistory.length > 0 ? calculatedHistory[calculatedHistory.length - 1].inventory : currentBatch.initialPigletCount;
+      if(currentBatch.pigletCount !== finalInventory) {
+         setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
+         const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
+         if (storedBatches[loteId]) {
+             storedBatches[loteId].pigletCount = finalInventory;
+             localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
+         }
+      }
+    };
 
 
     React.useEffect(() => {
@@ -175,20 +173,27 @@ export default function LotePreceboPage() {
                     });
                     history = [...history, ...additionalWeeks];
                 }
-                handleHistoryChange(history);
+                handleHistoryChange(history, processedBatch);
             }
         }
-    }, [loteId, getConsumptionStorageKey, handleHistoryChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loteId, getConsumptionStorageKey]);
 
 
-    const handleFeedTypeChange = (weekId: string, feedType: string) => {
+    const updateConsumptionData = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
+        if (batch) {
+            handleHistoryChange(updatedHistory, batch);
+        }
+    }, [batch, getConsumptionStorageKey]);
+
+    const handleFeedTypeChange = React.useCallback((weekId: string, feedType: string) => {
         const updatedHistory = consumptionHistory.map(week =>
             week.id === weekId ? { ...week, feedType } : week
         );
-        handleHistoryChange(updatedHistory);
-    };
+        updateConsumptionData(updatedHistory);
+    }, [consumptionHistory, updateConsumptionData]);
 
-    const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
+    const handleConsumptionChange = React.useCallback((weekId: string, dayIndex: number, value: string) => {
         const updatedHistory = consumptionHistory.map(week => {
             if (week.id === weekId) {
                 const newConsumption = [...week.consumption];
@@ -197,18 +202,18 @@ export default function LotePreceboPage() {
             }
             return week;
         });
-        handleHistoryChange(updatedHistory);
-    };
+        updateConsumptionData(updatedHistory);
+    }, [consumptionHistory, updateConsumptionData]);
 
-    const handleBajasChange = (weekId: string, type: 'deaths' | 'sales', value: string) => {
+    const handleBajasChange = React.useCallback((weekId: string, type: 'deaths' | 'sales', value: string) => {
         const updatedHistory = consumptionHistory.map(week => {
             if (week.id === weekId) {
                 return { ...week, [type]: value };
             }
             return week;
         });
-        handleHistoryChange(updatedHistory);
-    }
+        updateConsumptionData(updatedHistory);
+    }, [consumptionHistory, updateConsumptionData]);
     
     const openEventDialog = (eventType: PreceboEventType) => {
         setSelectedEventType(eventType);
