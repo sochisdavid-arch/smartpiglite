@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, PlusCircle, MinusCircle } from 'lucide-react';
-import { format, parseISO, isValid, addDays, getDay } from 'date-fns';
+import { format, parseISO, isValid, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -19,7 +19,7 @@ import { mockInventory } from '@/lib/mock-data';
 
 // --- Types ---
 interface DailyConsumption {
-    [dayIndex: number]: number; // 0 for Sunday, 1 for Monday...
+    [dayIndex: number]: number;
 }
 
 interface WeeklyConsumption {
@@ -51,7 +51,6 @@ interface NurseryBatch {
     daysInPrecebo: number;
 }
 
-
 const feedOptions = mockInventory.filter(p => p.category === 'alimento');
 
 export default function LotePreceboPage() {
@@ -75,21 +74,20 @@ export default function LotePreceboPage() {
             const foundBatch = Object.values(batchData).find((b: any) => b.id === loteId);
             if (foundBatch) {
                 currentBatch = foundBatch as NurseryBatch;
-                 currentBatch.pigletCount = Number(currentBatch.pigletCount);
-                 currentBatch.avgWeight = Number(currentBatch.avgWeight);
-                 currentBatch.avgAge = Number(currentBatch.avgAge);
-                 currentBatch.daysInPrecebo = currentBatch.daysInPrecebo || 42;
+                currentBatch.pigletCount = Number(currentBatch.pigletCount) || 0;
+                currentBatch.avgWeight = Number(currentBatch.avgWeight) || 0;
+                currentBatch.avgAge = Number(currentBatch.avgAge) || 0;
+                currentBatch.daysInPrecebo = currentBatch.daysInPrecebo || 42;
             }
         }
         setBatch(currentBatch);
 
-        if (currentBatch) {
+        if (currentBatch && isValid(parseISO(currentBatch.creationDate))) {
             const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
             if (storedConsumption) {
                 setConsumption(JSON.parse(storedConsumption));
             } else {
                  const batchStartDate = currentBatch.creationDate;
-                 // Initialize with 8 weeks by default
                  const initialWeeks = Array.from({ length: 8 }, (_, i) => {
                      const weekNumber = i + 1;
                      const startDate = addDays(parseISO(batchStartDate), i * 7);
@@ -113,15 +111,12 @@ export default function LotePreceboPage() {
         }
     }, [loteId, getStorageKey]);
 
-
     const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
     const currentAnimalCount = batch ? Number(batch.pigletCount) - totalMortality : 0;
     
     const updateConsumption = (updatedConsumption: WeeklyConsumption[]) => {
-        let accumulatedConsumption = 0;
         const recalculated = updatedConsumption.map(week => {
             const newTotalWeek = Object.values(week.dailyConsumption || {}).reduce((sum, val) => sum + Number(val || 0), 0);
-            accumulatedConsumption += newTotalWeek;
             const newAvgPigPerDay = currentAnimalCount > 0 ? (newTotalWeek / 7) / currentAnimalCount : 0;
             return { 
                 ...week, 
@@ -172,9 +167,7 @@ export default function LotePreceboPage() {
         });
         setIsMortalityDialogOpen(false);
     };
-
-    let accumulatedConsumption = 0;
-
+    
     if (!batch) {
         return (
             <AppLayout>
@@ -183,9 +176,9 @@ export default function LotePreceboPage() {
         );
     }
     
-    const getWeekDayHeaders = (startDate: string) => {
-        if (!startDate || !isValid(parseISO(startDate))) return [];
-        const baseDate = parseISO(startDate);
+    const getWeekDayHeaders = (startDateString: string) => {
+        if (!startDateString || !isValid(parseISO(startDateString))) return [];
+        const baseDate = parseISO(startDateString);
         return Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(baseDate, i);
             return {
@@ -205,6 +198,8 @@ export default function LotePreceboPage() {
         const endDate = addDays(startDate, 6);
         return `${format(startDate, 'dd/MMM', { locale: es })} al ${format(endDate, 'dd/MMM', { locale: es })}`;
     };
+    
+    let accumulatedConsumption = 0;
 
     return (
         <AppLayout>
@@ -241,7 +236,7 @@ export default function LotePreceboPage() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
-                            <p className="font-semibold">{Number(batch.pigletCount)}</p>
+                            <p className="font-semibold">{batch.pigletCount}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Días</p>
@@ -313,18 +308,18 @@ export default function LotePreceboPage() {
                                                         <Input 
                                                             type="number" 
                                                             step="0.1" 
-                                                            className="h-8 w-20"
+                                                            className="h-8 w-20 text-center"
                                                             value={weekData.dailyConsumption?.[day.dayIndex] || ''}
                                                             onChange={(e) => handleConsumptionChange(weekData.id, day.dayIndex, e.target.value)}
                                                             placeholder="kg"
                                                         />
                                                     </TableCell>
                                                 ))}
-                                                <TableCell>{Number(weekData.totalWeek || 0).toFixed(2)}</TableCell>
-                                                <TableCell>{accumulatedConsumption.toFixed(2)}</TableCell>
-                                                <TableCell>{currentAnimalCount}</TableCell>
-                                                <TableCell>{(currentAnimalCount > 0 ? accumulatedConsumption / currentAnimalCount : 0).toFixed(2)}</TableCell>
-                                                <TableCell>{Number(weekData.avgPigPerDay || 0).toFixed(3)}</TableCell>
+                                                <TableCell className="text-center">{Number(weekData.totalWeek || 0).toFixed(2)}</TableCell>
+                                                <TableCell className="text-center">{accumulatedConsumption.toFixed(2)}</TableCell>
+                                                <TableCell className="text-center">{currentAnimalCount}</TableCell>
+                                                <TableCell className="text-center">{(currentAnimalCount > 0 ? accumulatedConsumption / currentAnimalCount : 0).toFixed(2)}</TableCell>
+                                                <TableCell className="text-center">{Number(weekData.avgPigPerDay || 0).toFixed(3)}</TableCell>
                                             </TableRow>
                                         );
                                     })}
@@ -369,6 +364,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
 
     
