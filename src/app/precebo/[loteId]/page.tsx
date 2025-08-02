@@ -83,21 +83,22 @@ export default function LotePreceboPage() {
             return {
                 ...week,
                 totalWeek: weeklyConsumption,
-                totalAccumulated: accumulatedFeed,
                 inventory: currentInventory,
+                totalAccumulated: accumulatedFeed,
                 accumulatedPerPig: accumulatedPerPig,
                 consumptionPerPigPerDay: consumptionPerPigPerDay,
             };
         });
 
         setConsumptionHistory(newHistory);
-        localStorage.setItem(`consumptionHistory_precebo_${loteId}`, JSON.stringify(newHistory));
+        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(newHistory));
         
-        // Update batch piglet count
         const finalInventory = newHistory[newHistory.length - 1]?.inventory ?? currentBatch.initialPigletCount;
-        setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
+        if(batch && batch.pigletCount !== finalInventory) {
+            setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
+        }
 
-    }, [loteId]);
+    }, [loteId, batch]);
 
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
@@ -115,7 +116,7 @@ export default function LotePreceboPage() {
                 };
                 setBatch(processedBatch);
 
-                const storageKey = `consumptionHistory_precebo_${loteId}`;
+                const storageKey = getConsumptionStorageKey();
                 const storedConsumption = localStorage.getItem(storageKey);
                 let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
 
@@ -142,17 +143,23 @@ export default function LotePreceboPage() {
                     });
                     history = [...history, ...additionalWeeks];
                 }
-                updateConsumption(history, processedBatch);
+                setConsumptionHistory(history);
             }
         }
-    }, [loteId, updateConsumption]);
+    }, [loteId, getConsumptionStorageKey]);
+
+    React.useEffect(() => {
+        if (batch && consumptionHistory.length > 0) {
+            updateConsumption(consumptionHistory, batch);
+        }
+    }, [batch, consumptionHistory, updateConsumption]);
 
 
-    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
+    const handleHistoryChange = (updatedHistory: ConsumptionRecord[]) => {
         if(batch) {
             updateConsumption(updatedHistory, batch);
         }
-    }, [batch, updateConsumption]);
+    };
 
 
     const handleFeedTypeChange = (weekId: string, feedType: string) => {
@@ -201,11 +208,17 @@ export default function LotePreceboPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" onClick={() => router.push('/precebo')}>
-                        <ArrowLeft className="h-4 w-4" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Button variant="outline" size="icon" onClick={() => router.push('/precebo')}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
+                    </div>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Evento
                     </Button>
-                    <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
                 </div>
 
                 <Card>
@@ -292,6 +305,7 @@ export default function LotePreceboPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Input
+                                                key={`${weekData.id}-deaths`}
                                                 type="number"
                                                 value={weekData.deaths}
                                                 onChange={(e) => handleBajasChange(weekData.id, 'deaths', e.target.value)}
@@ -300,6 +314,7 @@ export default function LotePreceboPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Input
+                                                key={`${weekData.id}-sales`}
                                                 type="number"
                                                 value={weekData.sales}
                                                 onChange={(e) => handleBajasChange(weekData.id, 'sales', e.target.value)}
@@ -331,4 +346,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
