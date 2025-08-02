@@ -85,7 +85,16 @@ export default function LotePreceboPage() {
         if (storedBatches) {
             const batchData = JSON.parse(storedBatches);
             const foundBatch = Object.values(batchData).find((b: any) => b.id === loteId);
-            setBatch(foundBatch as NurseryBatch || initialBatchData);
+            if (foundBatch) {
+                const typedBatch = foundBatch as NurseryBatch;
+                // Ensure numeric types are correct
+                typedBatch.pigletCount = Number(typedBatch.pigletCount);
+                typedBatch.avgWeight = Number(typedBatch.avgWeight);
+                typedBatch.avgAge = Number(typedBatch.avgAge);
+                setBatch(typedBatch);
+            } else {
+                setBatch(initialBatchData);
+            }
         } else {
              setBatch(initialBatchData);
         }
@@ -95,10 +104,11 @@ export default function LotePreceboPage() {
         if (storedConsumption) {
             setConsumption(JSON.parse(storedConsumption));
         } else {
+            const batchStartDate = batch?.creationDate || initialBatchData.creationDate;
             // Initialize with 8 empty weeks if no data
             const initialWeeks = Array.from({ length: 8 }, (_, i) => {
                 const weekNumber = i + 1;
-                const startDate = addDays(parseISO(initialBatchData.creationDate), i * 7);
+                const startDate = addDays(parseISO(batchStartDate), i * 7);
                 return {
                     id: `week-${weekNumber}`,
                     weekNumber,
@@ -116,11 +126,11 @@ export default function LotePreceboPage() {
         if (storedMortality) {
             setMortality(JSON.parse(storedMortality));
         }
-    }, [loteId, getStorageKey]);
+    }, [loteId, getStorageKey, batch?.creationDate]);
 
     // --- Calculations ---
     const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
-    const currentAnimalCount = batch ? batch.pigletCount - totalMortality : 0;
+    const currentAnimalCount = batch ? Number(batch.pigletCount) - totalMortality : 0;
     
     // --- Handlers ---
     const handleConsumptionChange = (weekId: string, day: keyof DailyConsumption, value: string) => {
@@ -188,9 +198,6 @@ export default function LotePreceboPage() {
         );
     }
     
-    const cycleDays = 49; // Standard 7 weeks
-    const exitDate = addDays(parseISO(batch.creationDate), cycleDays);
-
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -231,7 +238,7 @@ export default function LotePreceboPage() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Peso Prom. Inicial</p>
-                            <p className="font-semibold">{batch.avgWeight.toFixed(2)} kg</p>
+                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)} kg</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Edad Inicial</p>
@@ -324,5 +331,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
-    
