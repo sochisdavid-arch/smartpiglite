@@ -200,7 +200,7 @@ export default function LactationPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {lactatingSows.length > 0 ? lactatingSows.map((pig) => (
-                                        <TableRow key={pig.id} onClick={() => router.push(`/gestation/${pig.id}`)} className="cursor-pointer">
+                                        <TableRow key={pig.id} onClick={() => router.push(`/lactation/${pig.id}`)} className="cursor-pointer">
                                             <TableCell className="font-medium">{pig.id}</TableCell>
                                             <TableCell>{pig.breed}</TableCell>
                                             <TableCell>
@@ -241,7 +241,7 @@ export default function LactationPage() {
                         {/* Mobile Card View */}
                         <div className="grid grid-cols-1 gap-4 md:hidden">
                             {lactatingSows.length > 0 ? lactatingSows.map((pig) => (
-                                <Card key={pig.id} onClick={() => router.push(`/gestation/${pig.id}`)} className="hover:bg-accent/50 cursor-pointer">
+                                <Card key={pig.id} onClick={() => router.push(`/lactation/${pig.id}`)} className="hover:bg-accent/50 cursor-pointer">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -373,3 +373,5 @@ export default function LactationPage() {
         </AppLayout>
     );
 }
+
+    

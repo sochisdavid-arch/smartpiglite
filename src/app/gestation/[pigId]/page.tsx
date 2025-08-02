@@ -20,11 +20,11 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // Mock data - in a real app, this would come from an API
-type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
+type GestationEventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Event {
-    type: EventType | 'Ninguno';
+    type: GestationEventType | 'Ninguno';
     date: string;
     inseminationGroup?: string;
     details?: string;
@@ -106,7 +106,7 @@ const getStatusVariant = (status: StatusType) => {
     }
 };
 
-const eventIcons: { [key in EventType]: React.ReactElement } = {
+const eventIcons: { [key in GestationEventType]: React.ReactElement } = {
     "Inseminación": <HeartPulse className="h-5 w-5 text-pink-500" />,
     "Parto": <Baby className="h-5 w-5 text-blue-500" />,
     "Tratamiento": <Syringe className="h-5 w-5 text-red-500" />,
@@ -119,7 +119,7 @@ const eventIcons: { [key in EventType]: React.ReactElement } = {
     "Muerte": <XCircle className="h-5 w-5" />,
 };
 
-const allEventTypes: EventType[] = ["Celo", "Celo no Servido", "Inseminación", "Parto", "Aborto", "Tratamiento", "Vacunación", "Venta", "Descarte", "Muerte"];
+const allEventTypes: GestationEventType[] = ["Celo", "Celo no Servido", "Inseminación", "Parto", "Aborto", "Tratamiento", "Vacunación", "Venta", "Descarte", "Muerte"];
 
 export default function PigHistoryPage() {
     const router = useRouter();
@@ -129,7 +129,7 @@ export default function PigHistoryPage() {
     
     const [pig, setPig] = React.useState<Pig | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
-    const [selectedEventType, setSelectedEventType] = React.useState<EventType | null>(null);
+    const [selectedEventType, setSelectedEventType] = React.useState<GestationEventType | null>(null);
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -140,7 +140,7 @@ export default function PigHistoryPage() {
         }
     }, [pigId]);
 
-    const openEventDialog = (eventType: EventType) => {
+    const openEventDialog = (eventType: GestationEventType) => {
         setSelectedEventType(eventType);
         setIsEventFormOpen(true);
     };
@@ -208,7 +208,7 @@ export default function PigHistoryPage() {
                     title: "¡Estado Actualizado!",
                     description: `La cerda ${pig!.id} ha sido movida a Lactancia.`,
                 });
-                router.push('/gestation');
+                router.push('/lactation');
             }
         }
         
@@ -470,7 +470,7 @@ export default function PigHistoryPage() {
                                 {pig.events.map((event, index) => (
                                     <div key={index} className="flex gap-4 items-start">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
-                                            {eventIcons[event.type as EventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
+                                            {eventIcons[event.type as GestationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
                                         <div className="flex-grow pt-2">
                                             <p className="font-semibold">{event.type}</p>
@@ -494,3 +494,5 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
+
+    
