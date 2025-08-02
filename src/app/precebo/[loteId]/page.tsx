@@ -69,7 +69,7 @@ export default function LotePreceboPage() {
     const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
     const currentAnimalCount = batch ? Number(batch.pigletCount) - totalMortality : 0;
 
-    const updateConsumptionStateAndStorage = (updatedConsumption: WeeklyConsumption[]) => {
+    const updateConsumptionStateAndStorage = React.useCallback((updatedConsumption: WeeklyConsumption[], currentAnimalCount: number) => {
         const recalculated = updatedConsumption.map(week => {
             const newTotalWeek = Object.values(week.dailyConsumption || {}).reduce((sum, val) => sum + Number(val || 0), 0);
             const newAvgPigPerDay = currentAnimalCount > 0 ? (newTotalWeek / 7) / currentAnimalCount : 0;
@@ -81,7 +81,7 @@ export default function LotePreceboPage() {
         });
         setConsumption(recalculated);
         localStorage.setItem(getStorageKey('consumption'), JSON.stringify(recalculated));
-    }
+    }, [getStorageKey]);
     
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
@@ -90,34 +90,36 @@ export default function LotePreceboPage() {
             const batchData = JSON.parse(storedBatches);
             const foundBatch = Object.values(batchData).find((b: any) => b.id === loteId);
             if (foundBatch) {
-                currentBatch = foundBatch as NurseryBatch;
-                currentBatch.pigletCount = Number(currentBatch.pigletCount) || 0;
-                currentBatch.avgWeight = Number(currentBatch.avgWeight) || 0;
-                currentBatch.avgAge = Number(currentBatch.avgAge) || 0;
-                currentBatch.daysInPrecebo = currentBatch.daysInPrecebo || 42;
+                currentBatch = {
+                    ...(foundBatch as NurseryBatch),
+                    pigletCount: Number((foundBatch as NurseryBatch).pigletCount) || 0,
+                    avgWeight: Number((foundBatch as NurseryBatch).avgWeight) || 0,
+                    avgAge: Number((foundBatch as NurseryBatch).avgAge) || 0,
+                    daysInPrecebo: (foundBatch as NurseryBatch).daysInPrecebo || 42,
+                };
             }
         }
         setBatch(currentBatch);
 
         if (currentBatch && isValid(parseISO(currentBatch.creationDate))) {
             const storedMortality = localStorage.getItem(getStorageKey('mortality'));
-            if (storedMortality) {
-                setMortality(JSON.parse(storedMortality));
-            }
+            const mortalityData = storedMortality ? JSON.parse(storedMortality) : [];
+            setMortality(mortalityData);
+            
+            const totalMortality = mortalityData.reduce((sum: number, record: MortalityRecord) => sum + record.quantity, 0);
+            const animalCount = Number(currentBatch.pigletCount) - totalMortality;
 
             const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
             let consumptionData: WeeklyConsumption[] = storedConsumption ? JSON.parse(storedConsumption) : [];
 
+            // Ensure there are always 8 weeks
             if (consumptionData.length < 8) {
-                 const batchStartDate = currentBatch.creationDate;
-                 const existingWeeks = consumptionData.length;
-                 const weeksToAdd = 8 - existingWeeks;
-                 
-                 const newWeeks = Array.from({ length: weeksToAdd }, (_, i) => {
-                     const weekIndex = existingWeeks + i;
-                     const weekNumber = weekIndex + 1;
-                     const startDate = addDays(parseISO(batchStartDate), weekIndex * 7);
-                     return {
+                 const batchStartDate = parseISO(currentBatch.creationDate);
+                 const newWeeks: WeeklyConsumption[] = [];
+                 for (let i = consumptionData.length; i < 8; i++) {
+                     const weekNumber = i + 1;
+                     const startDate = addDays(batchStartDate, i * 7);
+                     newWeeks.push({
                          id: `week-${weekNumber}`,
                          weekNumber,
                          startDate: format(startDate, 'yyyy-MM-dd'),
@@ -125,13 +127,13 @@ export default function LotePreceboPage() {
                          dailyConsumption: {},
                          totalWeek: 0,
                          avgPigPerDay: 0
-                     };
-                 });
+                     });
+                 }
                  consumptionData = [...consumptionData, ...newWeeks];
             }
-            updateConsumptionStateAndStorage(consumptionData);
+            updateConsumptionStateAndStorage(consumptionData, animalCount);
         }
-    }, [loteId, getStorageKey]);
+    }, [loteId, getStorageKey, updateConsumptionStateAndStorage]);
 
     const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
         const numericValue = parseFloat(value) || 0;
@@ -140,14 +142,14 @@ export default function LotePreceboPage() {
             ? { ...week, dailyConsumption: { ...(week.dailyConsumption || {}), [dayIndex]: numericValue } }
             : week
         );
-        updateConsumptionStateAndStorage(updated);
+        updateConsumptionStateAndStorage(updated, currentAnimalCount);
     };
 
     const handleFeedTypeChange = (weekId: string, value: string) => {
         const updated = consumption.map(week => 
             week.id === weekId ? { ...week, feedType: value } : week
         );
-        updateConsumptionStateAndStorage(updated);
+        updateConsumptionStateAndStorage(updated, currentAnimalCount);
     }
 
     const handleMortalitySubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,8 +166,8 @@ export default function LotePreceboPage() {
         setMortality(updatedMortality);
         localStorage.setItem(getStorageKey('mortality'), JSON.stringify(updatedMortality));
         
-        // Recalculate consumption averages after mortality update
-        updateConsumptionStateAndStorage(consumption);
+        const newAnimalCount = batch ? Number(batch.pigletCount) - updatedMortality.reduce((sum, record) => sum + record.quantity, 0) : 0;
+        updateConsumptionStateAndStorage(consumption, newAnimalCount);
 
         toast({
             title: "Baja Registrada",
@@ -304,7 +306,7 @@ export default function LotePreceboPage() {
                                                      </Select>
                                                 </TableCell>
                                                 {weekDays.map(day => (
-                                                    <TableCell key={day.dayIndex} className="p-1">
+                                                    <TableCell key={`${weekData.id}-${day.dayIndex}`} className="p-1">
                                                         <Input 
                                                             type="number" 
                                                             step="0.1" 
@@ -364,5 +366,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
-    
