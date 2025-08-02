@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO, isValid, addDays, getDay, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -63,11 +63,9 @@ export default function LotePreceboPage() {
         return rotatedDays;
     }, [batch]);
     
-    const updateConsumption = React.useCallback((history: ConsumptionRecord[]) => {
-        if (!batch) return;
-
+    const updateConsumption = React.useCallback((history: ConsumptionRecord[], currentBatch: NurseryBatch) => {
         let accumulatedFeed = 0;
-        let previousWeekInventory = batch.initialPigletCount;
+        let previousWeekInventory = currentBatch.initialPigletCount;
 
         const newHistory = history.map(week => {
             const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
@@ -93,8 +91,13 @@ export default function LotePreceboPage() {
         });
 
         setConsumptionHistory(newHistory);
-        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(newHistory));
-    }, [batch, getConsumptionStorageKey]);
+        localStorage.setItem(`consumptionHistory_precebo_${loteId}`, JSON.stringify(newHistory));
+        
+        // Update batch piglet count
+        const finalInventory = newHistory[newHistory.length - 1]?.inventory ?? currentBatch.initialPigletCount;
+        setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
+
+    }, [loteId]);
 
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
@@ -102,7 +105,7 @@ export default function LotePreceboPage() {
             const batchData = JSON.parse(storedBatches);
             const foundBatch = batchData[loteId];
             if (foundBatch) {
-                const processedBatch = {
+                const processedBatch: NurseryBatch = {
                     ...foundBatch,
                     pigletCount: Number(foundBatch.pigletCount),
                     initialPigletCount: Number(foundBatch.initialPigletCount || foundBatch.pigletCount),
@@ -112,7 +115,8 @@ export default function LotePreceboPage() {
                 };
                 setBatch(processedBatch);
 
-                const storedConsumption = localStorage.getItem(getConsumptionStorageKey());
+                const storageKey = `consumptionHistory_precebo_${loteId}`;
+                const storedConsumption = localStorage.getItem(storageKey);
                 let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
 
                 if (history.length < 8) {
@@ -138,17 +142,24 @@ export default function LotePreceboPage() {
                     });
                     history = [...history, ...additionalWeeks];
                 }
-                updateConsumption(history);
+                updateConsumption(history, processedBatch);
             }
         }
-    }, [loteId, getConsumptionStorageKey, updateConsumption]);
+    }, [loteId, updateConsumption]);
+
+
+    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[]) => {
+        if(batch) {
+            updateConsumption(updatedHistory, batch);
+        }
+    }, [batch, updateConsumption]);
 
 
     const handleFeedTypeChange = (weekId: string, feedType: string) => {
         const updatedHistory = consumptionHistory.map(week =>
             week.id === weekId ? { ...week, feedType } : week
         );
-        updateConsumption(updatedHistory);
+        handleHistoryChange(updatedHistory);
     };
 
     const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
@@ -160,7 +171,7 @@ export default function LotePreceboPage() {
             }
             return week;
         });
-        updateConsumption(updatedHistory);
+        handleHistoryChange(updatedHistory);
     };
 
     const handleBajasChange = (weekId: string, type: 'deaths' | 'sales', value: string) => {
@@ -170,7 +181,7 @@ export default function LotePreceboPage() {
             }
             return week;
         });
-        updateConsumption(updatedHistory);
+        handleHistoryChange(updatedHistory);
     }
 
 
@@ -320,3 +331,4 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
