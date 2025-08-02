@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -103,8 +103,8 @@ export default function LotePreceboPage() {
         const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
         if (storedConsumption) {
             setConsumption(JSON.parse(storedConsumption));
-        } else if (batch) {
-            const batchStartDate = batch.creationDate;
+        } else if (loteId) { // Check if loteId is available to avoid running on initial render before hydration
+            const batchStartDate = (initialBatchData as NurseryBatch).creationDate;
             // Initialize with 8 empty weeks if no data
             const initialWeeks = Array.from({ length: 8 }, (_, i) => {
                 const weekNumber = i + 1;
@@ -126,7 +126,8 @@ export default function LotePreceboPage() {
         if (storedMortality) {
             setMortality(JSON.parse(storedMortality));
         }
-    }, [loteId, getStorageKey, batch]);
+    }, [loteId, getStorageKey]);
+
 
     // --- Calculations ---
     const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
@@ -150,8 +151,9 @@ export default function LotePreceboPage() {
 
     const handleAddWeek = () => {
         const lastWeek = consumption[consumption.length - 1];
+        const batchStartDate = batch?.creationDate;
         const newWeekNumber = lastWeek ? lastWeek.weekNumber + 1 : 1;
-        const newStartDate = lastWeek ? addDays(parseISO(lastWeek.startDate), 7) : new Date();
+        const newStartDate = lastWeek ? addDays(parseISO(lastWeek.startDate), 7) : batchStartDate ? parseISO(batchStartDate) : new Date();
         
         const newWeek: WeeklyConsumption = {
             id: `week-${newWeekNumber}`,
@@ -332,4 +334,3 @@ export default function LotePreceboPage() {
     );
 }
 
-    
