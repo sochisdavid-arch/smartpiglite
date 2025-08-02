@@ -44,6 +44,10 @@ interface Event {
     date: string;
     inseminationGroup?: string;
     details?: string;
+    liveBorn?: number;
+    stillborn?: number;
+    mummified?: number;
+    pigletCount?: number;
 }
 
 interface Pig {
@@ -75,6 +79,29 @@ const calculateAge = (birthDate: string) => {
     if (!isValid(date)) return 0;
     return differenceInWeeks(new Date(), date);
 }
+
+const getParityData = (pig: Pig) => {
+    const partoEvent = pig.events.find(e => e.type === 'Parto' && pig.lastEvent.date === e.date);
+    const liveBorn = partoEvent?.liveBorn ?? 0;
+    const stillborn = partoEvent?.stillborn ?? 0;
+    const mummified = partoEvent?.mummified ?? 0;
+    
+    const deaths = pig.events.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    const adoptions = pig.events.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    const donations = pig.events.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    
+    const currentPiglets = liveBorn - deaths + adoptions - donations;
+    
+    return {
+        farrowingDate: partoEvent?.date,
+        liveBorn: liveBorn,
+        stillborn: stillborn,
+        mummified: mummified,
+        currentPiglets: currentPiglets,
+        parity: pig.events.filter(e => e.type === 'Parto').length,
+    };
+};
+
 
 export default function LactationPage() {
     const router = useRouter();
@@ -112,9 +139,6 @@ export default function LactationPage() {
         };
     }, [loadPigs]);
 
-    const getParity = (pig: Pig) => {
-        return pig.events.filter(e => e.type === 'Parto').length;
-    };
 
     const openEditDialog = (pig: Pig) => {
         setEditingPig(pig);
@@ -201,25 +225,33 @@ export default function LactationPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>ID de la Cerda</TableHead>
-                                        <TableHead>Raza</TableHead>
-                                        <TableHead>Fecha de Parto</TableHead>
-                                        <TableHead className="text-center">Nº de Parto</TableHead>
+                                        <TableHead>ID Cerda</TableHead>
+                                        <TableHead>Fecha Parto</TableHead>
+                                        <TableHead className="text-center">Nº Parto</TableHead>
+                                        <TableHead className="text-center">Nacidos Vivos</TableHead>
+                                        <TableHead className="text-center">Actuales</TableHead>
+                                        <TableHead className="text-center">Mortinatos</TableHead>
+                                        <TableHead className="text-center">Momias</TableHead>
                                         <TableHead className="text-right">Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {lactatingSows.length > 0 ? lactatingSows.map((pig) => (
+                                    {lactatingSows.length > 0 ? lactatingSows.map((pig) => {
+                                        const parityData = getParityData(pig);
+                                        return (
                                         <TableRow key={pig.id} onClick={() => router.push(`/lactation/${pig.id}`)} className="cursor-pointer">
                                             <TableCell className="font-medium">{pig.id}</TableCell>
-                                            <TableCell>{pig.breed}</TableCell>
                                             <TableCell>
-                                                {pig.lastEvent.type === 'Parto' && isValid(parseISO(pig.lastEvent.date))
-                                                    ? format(parseISO(pig.lastEvent.date), 'dd/MM/yyyy')
+                                                {parityData.farrowingDate && isValid(parseISO(parityData.farrowingDate))
+                                                    ? format(parseISO(parityData.farrowingDate), 'dd/MM/yyyy')
                                                     : 'N/A'
                                                 }
                                             </TableCell>
-                                            <TableCell className="text-center">{getParity(pig)}</TableCell>
+                                            <TableCell className="text-center">{parityData.parity}</TableCell>
+                                            <TableCell className="text-center">{parityData.liveBorn}</TableCell>
+                                            <TableCell className="text-center font-bold">{parityData.currentPiglets}</TableCell>
+                                            <TableCell className="text-center">{parityData.stillborn}</TableCell>
+                                            <TableCell className="text-center">{parityData.mummified}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -237,9 +269,10 @@ export default function LactationPage() {
                                                 </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
-                                    )) : (
+                                        )
+                                    }) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="h-24 text-center">
+                                            <TableCell colSpan={8} className="h-24 text-center">
                                                 No hay cerdas en lactancia en este momento.
                                             </TableCell>
                                         </TableRow>
@@ -250,13 +283,17 @@ export default function LactationPage() {
                         
                         {/* Mobile Card View */}
                         <div className="grid grid-cols-1 gap-4 md:hidden">
-                            {lactatingSows.length > 0 ? lactatingSows.map((pig) => (
+                            {lactatingSows.length > 0 ? lactatingSows.map((pig) => {
+                                 const parityData = getParityData(pig);
+                                return (
                                 <Card key={pig.id} onClick={() => router.push(`/lactation/${pig.id}`)} className="hover:bg-accent/50 cursor-pointer">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <CardTitle>{pig.id}</CardTitle>
-                                                <CardDescription>{pig.breed}</CardDescription>
+                                                <CardDescription>
+                                                    Parto: {parityData.farrowingDate && isValid(parseISO(parityData.farrowingDate)) ? format(parseISO(parityData.farrowingDate), 'dd/MM/yyyy') : 'N/A'}
+                                                </CardDescription>
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
@@ -276,24 +313,27 @@ export default function LactationPage() {
                                     <CardContent className="grid gap-2 text-sm">
                                         <div className="flex justify-between items-center">
                                             <span className="text-muted-foreground">Estado</span>
-                                            <Badge variant="default">Lactante</Badge>
+                                            <Badge variant="default">Lactante (P: {parityData.parity})</Badge>
+                                        </div>
+                                        <div className="flex justify-between font-medium">
+                                            <span className="text-muted-foreground">Vivos</span>
+                                            <span>{parityData.liveBorn}</span>
+                                        </div>
+                                        <div className="flex justify-between font-bold text-base">
+                                            <span className="text-muted-foreground">Actuales</span>
+                                            <span>{parityData.currentPiglets}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Fecha de Parto</span>
-                                            <span>
-                                                {pig.lastEvent.type === 'Parto' && isValid(parseISO(pig.lastEvent.date))
-                                                    ? format(parseISO(pig.lastEvent.date), 'dd/MM/yyyy')
-                                                    : 'N/A'
-                                                }
-                                            </span>
+                                            <span className="text-muted-foreground">Mortinatos</span>
+                                            <span>{parityData.stillborn}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Nº de Parto</span>
-                                            <span>{getParity(pig)}</span>
+                                            <span className="text-muted-foreground">Momias</span>
+                                            <span>{parityData.mummified}</span>
                                         </div>
                                     </CardContent>
                                 </Card>
-                            )) : (
+                            )}) : (
                                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8">
                                     <Baby className="w-12 h-12 mb-4" />
                                     <p className="font-semibold">No hay cerdas en lactancia.</p>

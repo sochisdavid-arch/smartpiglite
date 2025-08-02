@@ -29,6 +29,8 @@ interface Event {
     inseminationGroup?: string;
     details?: string;
     liveBorn?: number;
+    stillborn?: number;
+    mummified?: number;
 }
 
 interface Pig {
@@ -187,6 +189,8 @@ export default function PigHistoryPage() {
             if (selectedEventType === 'Parto') {
                 const liveBornCount = Number(formData.get('liveBorn'));
                 newEvent.liveBorn = liveBornCount;
+                newEvent.stillborn = Number(formData.get('stillborn'));
+                newEvent.mummified = Number(formData.get('mummified'));
                 newEvent.details = `${liveBornCount} lechones vivos. Peso camada: ${formData.get('litterWeight')}kg.`;
             }
 
@@ -292,7 +296,7 @@ export default function PigHistoryPage() {
                                     <Input id="liveBorn" name="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="stillborn">Muertos</Label>
+                                    <Label htmlFor="stillborn">Mortinatos</Label>
                                     <Input id="stillborn" name="stillborn" type="number" required />
                                 </div>
                                  <div className="space-y-2">
