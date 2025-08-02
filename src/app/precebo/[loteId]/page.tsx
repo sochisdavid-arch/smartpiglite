@@ -10,8 +10,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock data, in a real app this would come from an API and be dynamic.
 interface NurseryBatch {
     id: string;
     creationDate: string;
@@ -24,11 +34,10 @@ interface NurseryBatch {
 
 interface WeeklyConsumption {
     week: number;
-    days: number[];
+    days: (number | string)[];
     total: number;
     accumulated: number;
-    inventory: number;
-    avgPerPig: number;
+    avgPerPigDay: number;
     avgDaily: number;
 }
 
@@ -36,20 +45,24 @@ interface MortalityRecord {
     date: string;
     count: number;
     weight: number;
-    accumulated: number;
     cause: string;
     observations: string;
 }
 
-
 export default function LotePreceboPage() {
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const loteId = params.loteId as string;
 
     const [lote, setLote] = React.useState<NurseryBatch | null>(null);
     const [consumption, setConsumption] = React.useState<WeeklyConsumption[]>([]);
     const [mortality, setMortality] = React.useState<MortalityRecord[]>([]);
+    const [isConsumptionModalOpen, setIsConsumptionModalOpen] = React.useState(false);
+    
+    const getStorageKey = React.useCallback((type: 'consumption' | 'mortality') => {
+        return `precebo_${loteId}_${type}`;
+    }, [loteId]);
 
     React.useEffect(() => {
         if (loteId) {
@@ -59,11 +72,100 @@ export default function LotePreceboPage() {
                 const foundBatch = batchData[loteId];
                 if (foundBatch) {
                     setLote(foundBatch);
+                    const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
+                    const storedMortality = localStorage.getItem(getStorageKey('mortality'));
+                    if (storedConsumption) setConsumption(JSON.parse(storedConsumption));
+                    if (storedMortality) setMortality(JSON.parse(storedMortality));
                 }
             }
         }
-    }, [loteId]);
+    }, [loteId, getStorageKey]);
     
+    const currentPigletCount = lote ? lote.pigletCount - mortality.reduce((acc, curr) => acc + curr.count, 0) : 0;
+
+    const ConsumptionDialog = () => {
+        const [dailyConsumptions, setDailyConsumptions] = React.useState<(string | number)[]>(Array(7).fill(''));
+
+        const handleDailyChange = (index: number, value: string) => {
+            const newDaily = [...dailyConsumptions];
+            newDaily[index] = value === '' ? '' : Number(value);
+            setDailyConsumptions(newDaily);
+        }
+
+        const totals = React.useMemo(() => {
+            const numericConsumptions = dailyConsumptions.map(c => Number(c) || 0);
+            const total = numericConsumptions.reduce((acc, curr) => acc + curr, 0);
+            const daysWithConsumption = numericConsumptions.filter(c => c > 0).length;
+            const avgDaily = daysWithConsumption > 0 ? total / daysWithConsumption : 0;
+            const avgPerPigDay = currentPigletCount > 0 ? (avgDaily / currentPigletCount) * 1000 : 0; // In grams
+            return { total, avgDaily, avgPerPigDay };
+        }, [dailyConsumptions]);
+
+        const handleSave = () => {
+            const lastWeek = consumption.length > 0 ? consumption[consumption.length - 1] : { week: 0, accumulated: 0 };
+            const newWeek: WeeklyConsumption = {
+                week: lastWeek.week + 1,
+                days: dailyConsumptions.map(c => c === '' ? '-' : Number(c)),
+                total: totals.total,
+                accumulated: lastWeek.accumulated + totals.total,
+                avgDaily: totals.avgDaily,
+                avgPerPigDay: totals.avgPerPigDay,
+            };
+
+            const updatedConsumption = [...consumption, newWeek];
+            setConsumption(updatedConsumption);
+            localStorage.setItem(getStorageKey('consumption'), JSON.stringify(updatedConsumption));
+            
+            toast({ title: "Registro Guardado", description: `Se ha guardado el consumo de la semana ${newWeek.week}.` });
+            setIsConsumptionModalOpen(false);
+        }
+
+        return (
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Registrar Consumo Semanal (Semana {consumption.length + 1})</DialogTitle>
+                    <DialogDescription>Ingrese el consumo de alimento en kilogramos (kg) para cada día.</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 py-4">
+                    {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day, index) => (
+                        <div key={day} className="space-y-2">
+                            <Label htmlFor={`day-${index}`}>{day}</Label>
+                            <Input 
+                                id={`day-${index}`} 
+                                type="number" 
+                                placeholder="kg" 
+                                value={dailyConsumptions[index]}
+                                onChange={(e) => handleDailyChange(index, e.target.value)}
+                            />
+                        </div>
+                    ))}
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-center">
+                    <div className="p-2 bg-muted rounded-md">
+                        <Label className="text-sm font-normal text-muted-foreground">Total Semana (kg)</Label>
+                        <p className="font-bold text-lg">{totals.total.toFixed(2)}</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded-md">
+                        <Label className="text-sm font-normal text-muted-foreground">Prom. Diario (kg)</Label>
+                        <p className="font-bold text-lg">{totals.avgDaily.toFixed(2)}</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded-md">
+                        <Label className="text-sm font-normal text-muted-foreground">Prom. Lechón/Día (g)</Label>
+                        <p className="font-bold text-lg">{totals.avgPerPigDay.toFixed(2)}</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded-md">
+                        <Label className="text-sm font-normal text-muted-foreground">Lechones Actuales</Label>
+                        <p className="font-bold text-lg">{currentPigletCount}</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsConsumptionModalOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleSave}>Guardar Semana</Button>
+                </DialogFooter>
+            </DialogContent>
+        )
+    }
 
     if (!lote) {
         return (
@@ -112,61 +214,65 @@ export default function LotePreceboPage() {
                         </div>
                          <div className="space-y-1">
                             <Label>Número Final Animales</Label>
-                            <p className="font-semibold">{lote.pigletCount - mortality.reduce((acc, curr) => acc + curr.count, 0)}</p>
+                            <p className="font-semibold">{currentPigletCount}</p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div className="space-y-1.5">
-                            <CardTitle>Registro Semanal de Consumo</CardTitle>
-                            <CardDescription>Registre el consumo de alimento del lote por semana.</CardDescription>
-                        </div>
-                         <Button size="sm">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Registrar Semana
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]">Sem</TableHead>
-                                    <TableHead>L</TableHead>
-                                    <TableHead>M</TableHead>
-                                    <TableHead>M</TableHead>
-                                    <TableHead>J</TableHead>
-                                    <TableHead>V</TableHead>
-                                    <TableHead>S</TableHead>
-                                    <TableHead>D</TableHead>
-                                    <TableHead className="text-right">Total Sem (kg)</TableHead>
-                                    <TableHead className="text-right">Acum (kg)</TableHead>
-                                    <TableHead className="text-right">Cons/Cerdo</TableHead>
-                                    <TableHead className="text-right">Cons/Día</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {consumption.length > 0 ? consumption.map(c => (
-                                    <TableRow key={c.week}>
-                                        <TableCell>{c.week}</TableCell>
-                                        {c.days.map((d, i) => <TableCell key={i}>{d}</TableCell>)}
-                                        <TableCell className="text-right">{c.total}</TableCell>
-                                        <TableCell className="text-right">{c.accumulated}</TableCell>
-                                        <TableCell className="text-right">{c.avgPerPig.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">{c.avgDaily.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                )) : (
+                <Dialog open={isConsumptionModalOpen} onOpenChange={setIsConsumptionModalOpen}>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div className="space-y-1.5">
+                                <CardTitle>Registro Semanal de Consumo</CardTitle>
+                                <CardDescription>Registre el consumo de alimento del lote por semana.</CardDescription>
+                            </div>
+                            <DialogTrigger asChild>
+                                <Button size="sm">
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Registrar Semana
+                                </Button>
+                            </DialogTrigger>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={12} className="h-24 text-center">
-                                            No hay registros de consumo para este lote.
-                                        </TableCell>
+                                        <TableHead className="w-[50px]">Sem</TableHead>
+                                        <TableHead>L</TableHead>
+                                        <TableHead>M</TableHead>
+                                        <TableHead>Mi</TableHead>
+                                        <TableHead>J</TableHead>
+                                        <TableHead>V</TableHead>
+                                        <TableHead>S</TableHead>
+                                        <TableHead>D</TableHead>
+                                        <TableHead className="text-right">Total (kg)</TableHead>
+                                        <TableHead className="text-right">Acum (kg)</TableHead>
+                                        <TableHead className="text-right">g/Lechón/Día</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {consumption.length > 0 ? consumption.map(c => (
+                                        <TableRow key={c.week}>
+                                            <TableCell className="font-medium">{c.week}</TableCell>
+                                            {c.days.map((d, i) => <TableCell key={i}>{d}</TableCell>)}
+                                            <TableCell className="text-right font-medium">{c.total.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{c.accumulated.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{c.avgPerPigDay.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={11} className="h-24 text-center">
+                                                No hay registros de consumo para este lote.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            <ConsumptionDialog />
+                        </CardContent>
+                    </Card>
+                </Dialog>
+
 
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -191,9 +297,9 @@ export default function LotePreceboPage() {
                                 </TableRow>
                             </TableHeader>
                              <TableBody>
-                                {mortality.length > 0 ? mortality.map(m => (
-                                    <TableRow key={m.date}>
-                                        <TableCell>{m.date}</TableCell>
+                                {mortality.length > 0 ? mortality.map((m, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{isValid(parseISO(m.date)) ? format(parseISO(m.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                         <TableCell className="text-center">{m.count}</TableCell>
                                         <TableCell className="text-center">{m.weight}</TableCell>
                                         <TableCell>{m.cause}</TableCell>
@@ -214,3 +320,4 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
