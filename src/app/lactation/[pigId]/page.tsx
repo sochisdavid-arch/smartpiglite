@@ -30,6 +30,7 @@ interface Event {
     pigletCount?: number;
     toSow?: string;
     fromSow?: string;
+    cause?: string;
 }
 
 interface Pig {
@@ -132,7 +133,13 @@ export default function LactationHistoryPage() {
                 details: formData.get('details') as string || `${selectedEventType} registrado.`,
             };
 
-            if (['Muerte de Lechón', 'Adopción de Lechón', 'Donación de Lechón'].includes(selectedEventType)) {
+            if (selectedEventType === 'Muerte de Lechón') {
+                newEvent.pigletCount = Number(formData.get('pigletCount'));
+                newEvent.cause = formData.get('cause') as string;
+                newEvent.details = `Causa: ${newEvent.cause}`;
+            }
+
+            if (['Adopción de Lechón', 'Donación de Lechón'].includes(selectedEventType)) {
                 newEvent.pigletCount = Number(formData.get('pigletCount'));
             }
             if (selectedEventType === 'Adopción de Lechón') newEvent.fromSow = formData.get('fromSow') as string;
@@ -202,7 +209,20 @@ export default function LactationHistoryPage() {
                             </>
                         )}
                         
-                        {['Muerte de Lechón', 'Adopción de Lechón', 'Donación de Lechón'].includes(selectedEventType) && (
+                        {selectedEventType === 'Muerte de Lechón' && (
+                           <>
+                               <div className="space-y-2">
+                                   <Label htmlFor="pigletCount">Cantidad</Label>
+                                   <Input id="pigletCount" name="pigletCount" type="number" placeholder="Nº de lechones" required />
+                               </div>
+                               <div className="space-y-2">
+                                   <Label htmlFor="cause">Causa</Label>
+                                   <Input id="cause" name="cause" placeholder="Causa de la muerte" required />
+                               </div>
+                           </>
+                        )}
+
+                        {['Adopción de Lechón', 'Donación de Lechón'].includes(selectedEventType) && (
                             <div className="space-y-2">
                                 <Label htmlFor="pigletCount">Cantidad de Lechones</Label>
                                 <Input id="pigletCount" name="pigletCount" type="number" placeholder="Ej: 2" required />
@@ -239,10 +259,12 @@ export default function LactationHistoryPage() {
                             </div>
                         )}
                         
-                        <div className="space-y-2">
-                            <Label htmlFor="details">Notas Adicionales</Label>
-                            <Textarea id="details" name="details" placeholder="Cualquier nota adicional relevante para este evento."/>
-                        </div>
+                         {selectedEventType !== 'Muerte de Lechón' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="details">Notas Adicionales</Label>
+                                <Textarea id="details" name="details" placeholder="Cualquier nota adicional relevante para este evento."/>
+                            </div>
+                        )}
                     </form>
                     </ScrollArea>
                 </div>
@@ -330,7 +352,7 @@ export default function LactationHistoryPage() {
                                             {eventIcons[event.type as LactationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
                                         <div className="flex-grow pt-2">
-                                            <p className="font-semibold">{event.type}</p>
+                                            <p className="font-semibold">{event.type} {event.type === 'Muerte de Lechón' && `(${event.pigletCount})`}</p>
                                             <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'dd/MM/yyyy')}</p>
                                             {event.details && <p className="text-sm mt-1">{event.details}</p>}
                                         </div>
@@ -350,5 +372,3 @@ export default function LactationHistoryPage() {
         </AppLayout>
     );
 }
-
-    
