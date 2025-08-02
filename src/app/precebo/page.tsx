@@ -7,30 +7,34 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Filter, Search, QrCode, PlusCircle, MoreHorizontal, Printer, Syringe, X, Bell, Stethoscope, BookOpen, GanttChartSquare, Thermometer, Droplets } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { Download, Filter, Search, Stethoscope, BookOpen, GanttChartSquare, Thermometer, Droplets, Package, X, Bell } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { format, parseISO } from 'date-fns';
+
+interface NurseryBatch {
+    id: string;
+    creationDate: string;
+    pigletCount: number;
+    avgWeight: number;
+    avgAge: number;
+    sows: string[];
+    status: 'Activo' | 'Finalizado';
+}
 
 export default function PreceboPage() {
-    const { toast } = useToast();
-   
+    const [batches, setBatches] = React.useState<NurseryBatch[]>([]);
+
+    React.useEffect(() => {
+        const storedBatches = localStorage.getItem('nurseryBatches');
+        if (storedBatches) {
+            const batchData = JSON.parse(storedBatches);
+            const batchArray = Object.values(batchData) as NurseryBatch[];
+            setBatches(batchArray.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()));
+        }
+    }, []);
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -42,10 +46,10 @@ export default function PreceboPage() {
                     </div>
                 </div>
 
-                <Tabs defaultValue="entry" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11">
-                        <TabsTrigger value="entry">Ingreso</TabsTrigger>
-                        <TabsTrigger value="batch_config">Config. Lote</TabsTrigger>
+                <Tabs defaultValue="active_batches" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12">
+                        <TabsTrigger value="active_batches">Lotes Activos</TabsTrigger>
+                        <TabsTrigger value="entry">Ingreso Manual</TabsTrigger>
                         <TabsTrigger value="health_monitoring">Sanidad</TabsTrigger>
                         <TabsTrigger value="mortality">Mortalidad</TabsTrigger>
                         <TabsTrigger value="feeding">Alimentación</TabsTrigger>
@@ -57,11 +61,54 @@ export default function PreceboPage() {
                         <TabsTrigger value="reports">Reportes</TabsTrigger>
                     </TabsList>
                     
+                     <TabsContent value="active_batches" className="mt-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Lotes Activos en Precebo</CardTitle>
+                                <CardDescription>Lotes de lechones actualmente en la fase de precebo, creados a partir de los destetes.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>ID del Lote</TableHead>
+                                            <TableHead>Fecha Creación</TableHead>
+                                            <TableHead>Nº Lechones</TableHead>
+                                            <TableHead>Edad Prom. (días)</TableHead>
+                                            <TableHead>Peso Prom. (kg)</TableHead>
+                                            <TableHead>Estado</TableHead>
+                                            <TableHead>Cerdas Origen</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {batches.length > 0 ? batches.map(batch => (
+                                            <TableRow key={batch.id}>
+                                                <TableCell className="font-medium">{batch.id}</TableCell>
+                                                <TableCell>{format(parseISO(batch.creationDate), 'dd/MM/yyyy')}</TableCell>
+                                                <TableCell>{batch.pigletCount}</TableCell>
+                                                <TableCell>{batch.avgAge}</TableCell>
+                                                <TableCell>{batch.avgWeight}</TableCell>
+                                                <TableCell>{batch.status}</TableCell>
+                                                <TableCell>{batch.sows.join(', ')}</TableCell>
+                                            </TableRow>
+                                        )) : (
+                                             <TableRow>
+                                                <TableCell colSpan={7} className="h-24 text-center">
+                                                    No hay lotes activos en precebo.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
                     <TabsContent value="entry" className="mt-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Ingreso de Lechones a Precebo</CardTitle>
-                                <CardDescription>Registre la entrada de un nuevo lote de lechones.</CardDescription>
+                                <CardTitle>Ingreso de Lechones a Precebo (Manual)</CardTitle>
+                                <CardDescription>Registre la entrada de un nuevo lote de lechones que no proviene de un destete interno.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <form className="space-y-4">
@@ -76,7 +123,7 @@ export default function PreceboPage() {
                                         </div>
                                          <div className="space-y-2">
                                             <Label htmlFor="origin">Procedencia</Label>
-                                            <Input id="origin" placeholder="Ej. Sala Maternidad 3" required />
+                                            <Input id="origin" placeholder="Ej. Compra externa" required />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="assignedRoom">Sala / Corral Asignado</Label>
@@ -104,21 +151,11 @@ export default function PreceboPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
-
-                    <TabsContent value="batch_config" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Configuración del Lote</CardTitle>
-                                <CardDescription>Detalles sobre la configuración y densidad del lote.</CardDescription>
-                            </CardHeader>
-                             <CardContent><Alert><GanttChartSquare className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La configuración del lote estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
                     
                     <TabsContent value="health_monitoring" className="mt-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Seguimiento Sanitario</CardTitle>
+                                <CardTitle>Seguimiento Sanitario por Lote</CardTitle>
                                 <CardDescription>Registre tratamientos, vacunas y observaciones de salud del lote.</CardDescription>
                             </CardHeader>
                             <CardContent><Alert><Stethoscope className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El seguimiento sanitario estará disponible próximamente.</AlertDescription></Alert></CardContent>
@@ -128,7 +165,7 @@ export default function PreceboPage() {
                     <TabsContent value="mortality" className="mt-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Registro de Mortalidades y Bajas</CardTitle>
+                                <CardTitle>Registro de Mortalidades y Bajas por Lote</CardTitle>
                                 <CardDescription>Registre las bajas del lote y sus causas probables.</CardDescription>
                             </CardHeader>
                             <CardContent><Alert><X className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de mortalidad estará disponible próximamente.</AlertDescription></Alert></CardContent>
@@ -138,10 +175,10 @@ export default function PreceboPage() {
                     <TabsContent value="feeding" className="mt-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Manejo y Alimentación</CardTitle>
+                                <CardTitle>Manejo y Alimentación por Lote</CardTitle>
                                 <CardDescription>Controle el plan de alimentación y el consumo del lote.</CardDescription>
                             </CardHeader>
-                            <CardContent><Alert><Stethoscope className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La gestión de alimentación estará disponible próximamente.</AlertDescription></Alert></CardContent>
+                            <CardContent><Alert><Package className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La gestión de alimentación estará disponible próximamente.</AlertDescription></Alert></CardContent>
                         </Card>
                     </TabsContent>
 
@@ -151,7 +188,7 @@ export default function PreceboPage() {
                                 <CardTitle>Pesajes y Seguimiento de Crecimiento</CardTitle>
                                 <CardDescription>Registre los pesajes del lote para monitorear el crecimiento.</CardDescription>
                             </CardHeader>
-                            <CardContent><Alert><Stethoscope className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de pesajes estará disponible próximamente.</AlertDescription></Alert></CardContent>
+                            <CardContent><Alert><GanttChartSquare className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de pesajes estará disponible próximamente.</AlertDescription></Alert></CardContent>
                         </Card>
                     </TabsContent>
 
@@ -203,7 +240,7 @@ export default function PreceboPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Egreso del Lote</CardTitle>
-                                <CardDescription>Registre la salida del lote del área de precebo.</CardDescription>
+                                <CardDescription>Registre la salida del lote del área de precebo hacia ceba.</CardDescription>
                             </CardHeader>
                             <CardContent><Alert><GanttChartSquare className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El egreso de lotes estará disponible próximamente.</AlertDescription></Alert></CardContent>
                         </Card>
@@ -234,3 +271,5 @@ export default function PreceboPage() {
         </AppLayout>
     );
 }
+
+    
