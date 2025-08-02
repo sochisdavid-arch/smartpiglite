@@ -103,8 +103,8 @@ export default function LotePreceboPage() {
         const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
         if (storedConsumption) {
             setConsumption(JSON.parse(storedConsumption));
-        } else {
-            const batchStartDate = batch?.creationDate || initialBatchData.creationDate;
+        } else if (batch) {
+            const batchStartDate = batch.creationDate;
             // Initialize with 8 empty weeks if no data
             const initialWeeks = Array.from({ length: 8 }, (_, i) => {
                 const weekNumber = i + 1;
@@ -126,7 +126,7 @@ export default function LotePreceboPage() {
         if (storedMortality) {
             setMortality(JSON.parse(storedMortality));
         }
-    }, [loteId, getStorageKey, batch?.creationDate]);
+    }, [loteId, getStorageKey, batch]);
 
     // --- Calculations ---
     const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
@@ -230,7 +230,7 @@ export default function LotePreceboPage() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
-                            <p className="font-semibold">{batch.pigletCount}</p>
+                            <p className="font-semibold">{Number(batch.pigletCount)}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Actual</p>
@@ -242,7 +242,7 @@ export default function LotePreceboPage() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Edad Inicial</p>
-                            <p className="font-semibold">{batch.avgAge} días</p>
+                            <p className="font-semibold">{Number(batch.avgAge)} días</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -258,18 +258,18 @@ export default function LotePreceboPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {consumption.map((weekData) => {
-                                        accumulatedConsumption += weekData.totalWeek;
+                                        accumulatedConsumption += (weekData.totalWeek || 0);
                                         return (
                                             <TableRow key={weekData.id}>
                                                 <TableCell>{weekData.weekNumber}</TableCell>
-                                                <TableCell>{isValid(parseISO(weekData.startDate)) ? format(parseISO(weekData.startDate), 'dd/MM') : 'N/A'}</TableCell>
+                                                <TableCell>{weekData.startDate && isValid(parseISO(weekData.startDate)) ? format(parseISO(weekData.startDate), 'dd/MM') : 'N/A'}</TableCell>
                                                 {daysOfWeek.map(day => (
                                                     <TableCell key={day} className="p-1">
                                                         <Input 
                                                             type="number" 
                                                             step="0.1" 
                                                             className="h-8 w-20"
-                                                            value={weekData.dailyConsumption[day]}
+                                                            value={weekData.dailyConsumption?.[day] || 0}
                                                             onChange={(e) => handleConsumptionChange(weekData.id, day, e.target.value)}
                                                             placeholder="kg"
                                                         />
@@ -331,3 +331,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+    
