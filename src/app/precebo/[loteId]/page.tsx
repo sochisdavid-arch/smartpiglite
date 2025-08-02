@@ -5,10 +5,14 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, addDays, getDay, startOfWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockInventory } from '@/lib/mock-data';
 
 interface NurseryBatch {
     id: string;
@@ -23,29 +27,121 @@ interface NurseryBatch {
     module?: string;
 }
 
+interface ConsumptionRecord {
+    id: string; // e.g., week-1
+    weekNumber: number;
+    startDate: string;
+    endDate: string;
+    feedType: string;
+    consumption: (number | string)[]; // 7 days
+    totalWeek: number;
+    totalAccumulated: number;
+    inventory: number;
+    accumulatedPerPig: number;
+    consumptionPerPigPerDay: number;
+}
+
 
 export default function LotePreceboPage() {
     const router = useRouter();
     const params = useParams();
     const loteId = params.loteId as string;
     const [batch, setBatch] = React.useState<NurseryBatch | null>(null);
+    const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
 
+    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
+    
+    const daysOfWeek = React.useMemo(() => {
+        if (!batch) return [];
+        const startDate = parseISO(batch.creationDate);
+        const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; // Mon=0, Sun=6 -> Mon=0,...Sun=6 -> Sun=0...Sat=6 -> Mon=1...Sun=0 -> Mon=0...Sun=6
+        
+        const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+        const rotatedDays = [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
+        return rotatedDays;
+    }, [batch]);
+    
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
         if (storedBatches) {
             const batchData = JSON.parse(storedBatches);
             const foundBatch = batchData[loteId];
             if (foundBatch) {
-                // Ensure numeric values are numbers
                 foundBatch.pigletCount = Number(foundBatch.pigletCount);
                 foundBatch.initialPigletCount = Number(foundBatch.initialPigletCount || foundBatch.pigletCount);
                 foundBatch.totalWeight = Number(foundBatch.totalWeight);
                 foundBatch.avgWeight = Number(foundBatch.avgWeight);
                 foundBatch.avgAge = Number(foundBatch.avgAge);
                 setBatch(foundBatch);
+
+                // Now initialize consumption history based on this batch
+                const storedConsumption = localStorage.getItem(getConsumptionStorageKey());
+                if (storedConsumption) {
+                    setConsumptionHistory(JSON.parse(storedConsumption));
+                } else {
+                    const initialHistory = Array.from({ length: 8 }).map((_, weekIndex) => {
+                        const weekStartDate = addDays(parseISO(foundBatch.creationDate), weekIndex * 7);
+                        const weekEndDate = addDays(weekStartDate, 6);
+                        return {
+                            id: `week-${weekIndex + 1}`,
+                            weekNumber: weekIndex + 1,
+                            startDate: weekStartDate.toISOString(),
+                            endDate: weekEndDate.toISOString(),
+                            feedType: '',
+                            consumption: Array(7).fill(0),
+                            totalWeek: 0,
+                            totalAccumulated: 0,
+                            inventory: 0,
+                            accumulatedPerPig: 0,
+                            consumptionPerPigPerDay: 0,
+                        };
+                    });
+                    setConsumptionHistory(initialHistory);
+                }
             }
         }
-    }, [loteId]);
+    }, [loteId, getConsumptionStorageKey]);
+
+    const updateConsumption = (updatedHistory: ConsumptionRecord[]) => {
+        let accumulated = 0;
+        const numPigs = batch?.pigletCount || 1;
+
+        const newHistory = updatedHistory.map(week => {
+            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
+            accumulated += weeklyConsumption;
+
+            return {
+                ...week,
+                totalWeek: weeklyConsumption,
+                totalAccumulated: accumulated,
+                accumulatedPerPig: accumulated / numPigs,
+                consumptionPerPigPerDay: weeklyConsumption / numPigs / 7,
+            };
+        });
+
+        setConsumptionHistory(newHistory);
+        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(newHistory));
+    };
+
+    const handleFeedTypeChange = (weekId: string, feedType: string) => {
+        const updatedHistory = consumptionHistory.map(week =>
+            week.id === weekId ? { ...week, feedType } : week
+        );
+        updateConsumption(updatedHistory);
+    };
+
+    const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
+        const updatedHistory = consumptionHistory.map(week => {
+            if (week.id === weekId) {
+                const newConsumption = [...week.consumption];
+                newConsumption[dayIndex] = value === '' ? '' : Number(value);
+                return { ...week, consumption: newConsumption };
+            }
+            return week;
+        });
+        updateConsumption(updatedHistory);
+    };
+
 
     if (!batch) {
         return (
@@ -56,6 +152,9 @@ export default function LotePreceboPage() {
             </AppLayout>
         );
     }
+    
+    const feedOptions = mockInventory.filter(p => p.category === 'alimento');
+
 
     return (
         <AppLayout>
@@ -71,7 +170,7 @@ export default function LotePreceboPage() {
                     <CardHeader>
                         <CardTitle>Información del Lote</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
+                     <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
                         <div className="space-y-1">
                             <p className="font-medium text-muted-foreground">Lote N°</p>
                             <p className="font-semibold">{batch.id}</p>
@@ -94,11 +193,11 @@ export default function LotePreceboPage() {
                         </div>
                         <div className="space-y-1">
                             <p className="font-medium text-muted-foreground">Peso Total (kg)</p>
-                            <p className="font-semibold">{Number(batch.totalWeight).toFixed(2)} kg</p>
+                            <p className="font-semibold">{Number(batch.totalWeight).toFixed(2)}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="font-medium text-muted-foreground">Peso Prom. (kg)</p>
-                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)} kg</p>
+                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="font-medium text-muted-foreground">Edad Inicial (días)</p>
@@ -111,20 +210,16 @@ export default function LotePreceboPage() {
                     <CardHeader>
                         <CardTitle>Registro de Consumo Semanal</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Semana</TableHead>
                                     <TableHead>Fecha</TableHead>
                                     <TableHead>Alimento</TableHead>
-                                    <TableHead>Sábado</TableHead>
-                                    <TableHead>Domingo</TableHead>
-                                    <TableHead>Lunes</TableHead>
-                                    <TableHead>Martes</TableHead>
-                                    <TableHead>Miércoles</TableHead>
-                                    <TableHead>Jueves</TableHead>
-                                    <TableHead>Viernes</TableHead>
+                                    {daysOfWeek.map(day => (
+                                        <TableHead key={day} className="capitalize">{day}</TableHead>
+                                    ))}
                                     <TableHead>Total Semana</TableHead>
                                     <TableHead>Total Acumulado</TableHead>
                                     <TableHead>Inventario</TableHead>
@@ -133,23 +228,39 @@ export default function LotePreceboPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {Array.from({ length: 8 }).map((_, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>dd/mm - dd/mm</TableCell>
-                                        <TableCell>Alimento X</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
-                                        <TableCell>0</TableCell>
+                                {consumptionHistory.map((weekData) => (
+                                    <TableRow key={weekData.id}>
+                                        <TableCell>{weekData.weekNumber}</TableCell>
+                                        <TableCell>
+                                            {isValid(parseISO(weekData.startDate)) ? 
+                                            `${format(parseISO(weekData.startDate), 'dd/MMM', { locale: es })} - ${format(parseISO(weekData.endDate), 'dd/MMM', { locale: es })}`
+                                            : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="min-w-[150px]">
+                                             <Select value={weekData.feedType} onValueChange={(value) => handleFeedTypeChange(weekData.id, value)}>
+                                                <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    {feedOptions.map(option => (
+                                                        <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                        {weekData.consumption.map((dayConsumption, dayIndex) => (
+                                            <TableCell key={`${weekData.id}-day-${dayIndex}`} className="min-w-[70px]">
+                                                <Input 
+                                                    type="number"
+                                                    value={dayConsumption}
+                                                    onChange={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
+                                                    className="w-16 text-center"
+                                                />
+                                            </TableCell>
+                                        ))}
+                                        <TableCell>{weekData.totalWeek.toFixed(2)}</TableCell>
+                                        <TableCell>{weekData.totalAccumulated.toFixed(2)}</TableCell>
+                                        <TableCell>{weekData.inventory.toFixed(2)}</TableCell>
+                                        <TableCell>{weekData.accumulatedPerPig.toFixed(2)}</TableCell>
+                                        <TableCell>{weekData.consumptionPerPigPerDay.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
