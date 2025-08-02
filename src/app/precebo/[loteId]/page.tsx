@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -90,7 +90,7 @@ export default function LotePreceboPage() {
     const currentPigletCount = lote ? lote.pigletCount - mortality.reduce((acc, curr) => acc + curr.count, 0) : 0;
     
     const consumptionTotals = React.useMemo(() => {
-        const totalKg = consumption.reduce((acc, curr) => acc + curr.quantity, 0);
+        const totalKg = consumption.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
         const daysWithConsumption = new Set(consumption.map(c => c.date)).size;
         const avgDailyKg = daysWithConsumption > 0 ? totalKg / daysWithConsumption : 0;
         const avgGramsPerPig = currentPigletCount > 0 && avgDailyKg > 0 ? (avgDailyKg / currentPigletCount) * 1000 : 0;
@@ -110,10 +110,7 @@ export default function LotePreceboPage() {
                 feedType: feedType || 'Desconocido',
             };
             
-            const updatedConsumption = [...consumption, newRecord].sort((a, b) => {
-                if (!a.date || !b.date) return 0;
-                return new Date(a.date).getTime() - new Date(b.date).getTime()
-            });
+            const updatedConsumption = [...consumption, newRecord];
 
             setConsumption(updatedConsumption);
             localStorage.setItem(getStorageKey('consumption'), JSON.stringify(updatedConsumption));
@@ -263,7 +260,7 @@ export default function LotePreceboPage() {
                                         <TableRow key={c.id}>
                                             <TableCell className="font-medium">{c.date && isValid(parseISO(c.date)) ? format(parseISO(c.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                             <TableCell>{c.feedType}</TableCell>
-                                            <TableCell className="text-right">{c.quantity.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{typeof c.quantity === 'number' ? c.quantity.toFixed(2) : '0.00'}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
@@ -324,4 +321,5 @@ export default function LotePreceboPage() {
             </div>
         </AppLayout>
     );
-}
+
+    
