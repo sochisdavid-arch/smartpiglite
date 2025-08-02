@@ -143,7 +143,10 @@ export default function LotePreceboPage() {
             observations: formData.get('observations') as string || undefined
         };
         
-        const newMortality = [...mortality, newRecord].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const newMortality = [...mortality, newRecord].sort((a,b) => {
+            if (!a.date || !b.date) return 0;
+            return new Date(a.date).getTime() - new Date(b.date).getTime()
+        });
         setMortality(newMortality);
         saveData(consumption, newMortality);
         toast({ title: "Baja registrada", description: "El registro de mortalidad/venta ha sido guardado." });
@@ -161,6 +164,10 @@ export default function LotePreceboPage() {
     const totalDeaths = mortality.reduce((sum, record) => sum + record.quantity, 0);
     const currentPigletCount = lote.pigletCount - totalDeaths;
     let accumulatedConsumption = 0;
+    const DAYS_IN_PRECEBO = 49; // 7 weeks
+    const startDate = isValid(parseISO(lote.creationDate)) ? parseISO(lote.creationDate) : null;
+    const endDate = startDate ? addDays(startDate, DAYS_IN_PRECEBO) : null;
+
 
     return (
         <AppLayout>
@@ -182,14 +189,12 @@ export default function LotePreceboPage() {
 
                 <Card>
                     <CardHeader>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 text-center">
-                            <div className="space-y-1"><Label>Corral/Sitio</Label><p className="font-semibold text-lg">Precebo</p></div>
-                            <div className="space-y-1"><Label>Fecha Ingreso</Label><p className="font-semibold text-lg">{isValid(parseISO(lote.creationDate)) ? format(parseISO(lote.creationDate), 'dd/MM/yyyy') : 'N/A'}</p></div>
-                             <div className="space-y-1"><Label>Edad Inicial</Label><p className="font-semibold text-lg">{lote.avgAge} días</p></div>
-                             <div className="space-y-1"><Label>Peso Prom. Inicial</Label><p className="font-semibold text-lg">{lote.avgWeight} kg</p></div>
-                            <div className="space-y-1"><Label>N° Inicial</Label><p className="font-semibold text-lg">{lote.pigletCount}</p></div>
-                             <div className="space-y-1"><Label>Muertes/Ventas</Label><p className="font-semibold text-lg text-destructive">{totalDeaths}</p></div>
-                            <div className="space-y-1"><Label>N° Actual</Label><p className="font-semibold text-lg text-primary">{currentPigletCount}</p></div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-center">
+                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Corral/Sitio</Label><p className="font-semibold text-lg">Precebo</p></div>
+                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Fecha Ingreso</Label><p className="font-semibold text-lg">{startDate ? format(startDate, 'dd/MM/yyyy') : 'N/A'}</p></div>
+                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Fecha Salida</Label><p className="font-semibold text-lg">{endDate ? format(endDate, 'dd/MM/yyyy') : 'N/A'}</p></div>
+                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>N° de Días</Label><p className="font-semibold text-lg">{DAYS_IN_PRECEBO}</p></div>
+                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>N° Actual</Label><p className="font-semibold text-lg text-primary">{currentPigletCount}</p></div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -225,7 +230,7 @@ export default function LotePreceboPage() {
                                                             type="number" 
                                                             step="0.1" 
                                                             className="text-center"
-                                                            value={c.dailyConsumption[day]} 
+                                                            value={c.dailyConsumption ? c.dailyConsumption[day] : ''} 
                                                             onChange={(e) => handleConsumptionChange(index, day, e.target.value)}
                                                         />
                                                     </TableCell>
