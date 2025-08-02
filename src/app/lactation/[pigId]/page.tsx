@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, Repeat, GitMerge, MoveUp, MoveDown, Package, Banknote } from 'lucide-react';
+import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, Repeat, GitMerge, MoveUp, MoveDown, Package, Banknote, Wheat } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays, differenceInDays, getWeek } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,6 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 
 // Types specific to Lactation
 type LactationEventType = "Tratamiento" | "Vacunación" | "Muerte de Lechón" | "Adopción de Lechón" | "Donación de Lechón" | "Destete" | "Venta" | "Muerte";
@@ -49,6 +51,13 @@ interface Pig {
     events: any[]; // Can be from any stage
 }
 
+interface ConsumptionRecord {
+    id: string;
+    date: string;
+    quantity: number;
+    feedType: string;
+}
+
 const initialPigs: Pig[] = [
   { 
     id: 'PIG-001', 
@@ -71,6 +80,9 @@ const initialPigs: Pig[] = [
 const mockInventory = [
     { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
     { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
+    { id: 'FEED-01', name: 'Alimento Gestación 1', category: 'alimento', stock: 500 },
+    { id: 'FEED-02', name: 'Alimento Gestación 2', category: 'alimento', stock: 800 },
+    { id: 'FEED-03', name: 'Alimento Lactancia', category: 'alimento', stock: 650 },
 ];
 
 const calculateAge = (birthDate: string) => {
@@ -106,6 +118,10 @@ export default function LactationHistoryPage() {
     const [pig, setPig] = React.useState<Pig | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<LactationEventType | null>(null);
+    const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
+    const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
+
+    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_${pigId}`, [pigId]);
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -114,12 +130,125 @@ export default function LactationHistoryPage() {
         if (foundPig) {
             setPig({...foundPig, age: calculateAge(foundPig.birthDate)});
         }
-    }, [pigId]);
+
+        const historyFromStorage = localStorage.getItem(getConsumptionStorageKey());
+        if (historyFromStorage) {
+            setConsumptionHistory(JSON.parse(historyFromStorage));
+        }
+    }, [pigId, getConsumptionStorageKey]);
 
     const openEventDialog = (eventType: LactationEventType) => {
         setSelectedEventType(eventType);
         setIsEventFormOpen(true);
     };
+
+     const ConsumptionForm = () => {
+        const [selectedFeed, setSelectedFeed] = React.useState<string>();
+        const [quantity, setQuantity] = React.useState<number | string>('');
+        const feedOptions = mockInventory.filter(p => p.category === 'alimento');
+
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            
+            if (!selectedFeed) {
+                toast({ variant: "destructive", title: "Campo requerido", description: "Por favor, seleccione un tipo de alimento." });
+                return;
+            }
+
+            const foundFeed = feedOptions.find(o => o.id === selectedFeed);
+            if (!foundFeed) return;
+
+            const newRecord: ConsumptionRecord = {
+                id: new Date().toISOString(),
+                date: (document.getElementById('consumptionDate') as HTMLInputElement).value,
+                quantity: Number(quantity),
+                feedType: foundFeed.name,
+            };
+
+            const updatedHistory = [newRecord, ...consumptionHistory];
+            setConsumptionHistory(updatedHistory);
+            localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(updatedHistory));
+            
+            toast({ title: "¡Consumo Registrado!", description: `${quantity}kg de ${foundFeed.name} registrado para la cerda ${pigId}.` });
+            
+            // Reset form fields
+            setSelectedFeed(undefined);
+            setQuantity('');
+        }
+
+        return (
+             <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle>Registrar Consumo Individual</DialogTitle>
+                    <DialogDescription>
+                        Registre el consumo diario de alimento para la cerda {pigId}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <ScrollArea className="h-full pr-6">
+                        <div className="space-y-4 py-4 pr-2">
+                            <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="consumptionDate">Fecha</Label>
+                                        <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                                    </div>
+                                    <div className="space-y-2 col-span-2">
+                                        <Label htmlFor="feedType">Tipo de Alimento</Label>
+                                         <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
+                                             <SelectTrigger><SelectValue placeholder="Seleccione un alimento..." /></SelectTrigger>
+                                             <SelectContent>
+                                                 {feedOptions.map(option => (
+                                                     <SelectItem key={option.id} value={option.id}>{option.name} (Stock: {option.stock}kg)</SelectItem>
+                                                 ))}
+                                             </SelectContent>
+                                         </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="quantity">Cantidad Consumida (kg)</Label>
+                                    <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 6.5" required value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                </div>
+                                 <Button type="submit" className="w-full">Guardar Consumo</Button>
+                            </form>
+
+                            <Separator />
+
+                            <div>
+                                <h3 className="text-lg font-medium mb-4">Historial de Consumos de la Cerda</h3>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Alimento</TableHead>
+                                            <TableHead className="text-right">Cantidad (kg)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {consumptionHistory.map(record => (
+                                            <TableRow key={record.id}>
+                                                <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
+                                                <TableCell>{record.feedType}</TableCell>
+                                                <TableCell className="text-right">{record.quantity.toFixed(1)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {consumptionHistory.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    </ScrollArea>
+                </div>
+                <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background -mx-6 px-6">
+                    <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cerrar</Button>
+                </DialogFooter>
+            </DialogContent>
+        )
+    }
 
     const EventForm = () => {
         if (!selectedEventType) return null;
@@ -133,7 +262,7 @@ export default function LactationHistoryPage() {
         const calculateCurrentPiglets = () => {
             if (!pig) return 0;
             const partoEvent = pig.events.find(e => e.type === 'Parto');
-            if (!partoEvent) return 0;
+            if (!partoEvent || typeof partoEvent.liveBorn !== 'number') return 0;
             
             const liveBorn = partoEvent.liveBorn || 0;
             
@@ -326,9 +455,9 @@ export default function LactationHistoryPage() {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
+                                     <div className="space-y-2">
                                         <Label>Peso Promedio (kg)</Label>
-                                        <Input id="avgWeight" name="avgWeight" value={avgWeight} onChange={e => setAvgWeight(e.target.value)} className="font-semibold bg-muted" />
+                                        <Input id="avgWeight" name="avgWeight" value={avgWeight} readOnly className="font-semibold bg-muted" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="sowWeight">Peso Cerda (kg) - Opcional</Label>
@@ -402,22 +531,28 @@ export default function LactationHistoryPage() {
                         </Button>
                         <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida Lactancia: {pig.id}</h1>
                     </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Agregar Evento
-                                <ChevronDown className="ml-2 h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            {allLactationEventTypes.map(eventType => (
-                                <DropdownMenuItem key={eventType} onSelect={() => openEventDialog(eventType)}>
-                                    {eventType}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
+                            <Wheat className="mr-2 h-4 w-4" />
+                            Registrar Consumo
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Agregar Evento
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {allLactationEventTypes.map(eventType => (
+                                    <DropdownMenuItem key={eventType} onSelect={() => openEventDialog(eventType)}>
+                                        {eventType}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
 
                 <Card>
@@ -454,7 +589,7 @@ export default function LactationHistoryPage() {
                             <div className="absolute left-[34px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
                             
                             <div className="space-y-8">
-                                {pig.events.filter(e => allLactationEventTypes.includes(e.type)).map((event, index) => (
+                                {pig.events.filter(e => allLactationEventTypes.includes(e.type as LactationEventType)).map((event, index) => (
                                     <div key={index} className="flex gap-4 items-start">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
                                             {eventIcons[event.type as LactationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
@@ -466,7 +601,7 @@ export default function LactationHistoryPage() {
                                         </div>
                                     </div>
                                 ))}
-                                {pig.events.filter(e => allLactationEventTypes.includes(e.type)).length === 0 && (
+                                {pig.events.filter(e => allLactationEventTypes.includes(e.type as LactationEventType)).length === 0 && (
                                     <p className="text-muted-foreground text-center py-4">No hay eventos de lactancia registrados.</p>
                                 )}
                             </div>
@@ -477,6 +612,11 @@ export default function LactationHistoryPage() {
             <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
                 <EventForm />
             </Dialog>
+            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
+                <ConsumptionForm />
+            </Dialog>
         </AppLayout>
     );
 }
+
+    
