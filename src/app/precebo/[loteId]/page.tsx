@@ -75,7 +75,7 @@ export default function LotePreceboPage() {
     const [selectedEventType, setSelectedEventType] = React.useState<PreceboEventType | null>(null);
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
-
+    
     const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
         let accumulatedFeed = 0;
         const calculatedHistory = updatedHistory.map(week => {
@@ -88,7 +88,7 @@ export default function LotePreceboPage() {
             return {
                 ...week,
                 totalWeek: weeklyConsumption,
-                inventory: currentBatch.pigletCount, // Use the current piglet count from the batch
+                inventory: currentBatch.initialPigletCount, 
                 totalAccumulated: accumulatedFeed,
                 accumulatedPerPig,
                 consumptionPerPigPerDay,
@@ -99,15 +99,6 @@ export default function LotePreceboPage() {
         localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
     }, [getConsumptionStorageKey]);
 
-    const daysOfWeek = React.useMemo(() => {
-        if (!batch) return [];
-        const startDate = parseISO(batch.creationDate);
-        if (!isValid(startDate)) return [];
-        const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; 
-        
-        const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-        return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
-    }, [batch]);
 
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
@@ -155,27 +146,34 @@ export default function LotePreceboPage() {
         }
     }, [loteId, getConsumptionStorageKey, handleHistoryChange]);
 
-    const updateConsumptionData = React.useCallback((weekId: string, dayIndex: number, value: string) => {
-        if (!batch) return;
-        const updatedHistory = consumptionHistory.map(week => {
-            if (week.id === weekId) {
-                const newConsumption = [...week.consumption];
-                newConsumption[dayIndex] = value;
-                return { ...week, consumption: newConsumption };
-            }
-            return week;
+
+    const handleConsumptionChange = React.useCallback((weekId: string, dayIndex: number, value: string) => {
+        setConsumptionHistory(prevHistory => {
+            if (!batch) return prevHistory;
+            const updatedHistory = prevHistory.map(week => {
+                if (week.id === weekId) {
+                    const newConsumption = [...week.consumption];
+                    newConsumption[dayIndex] = value;
+                    return { ...week, consumption: newConsumption };
+                }
+                return week;
+            });
+            handleHistoryChange(updatedHistory, batch);
+            return updatedHistory;
         });
-        handleHistoryChange(updatedHistory, batch);
-    }, [batch, consumptionHistory, handleHistoryChange]);
+    }, [batch, handleHistoryChange]);
 
 
     const handleFeedTypeChange = React.useCallback((weekId: string, feedType: string) => {
-        if (!batch) return;
-        const updatedHistory = consumptionHistory.map(week =>
-            week.id === weekId ? { ...week, feedType } : week
-        );
-        handleHistoryChange(updatedHistory, batch);
-    }, [batch, consumptionHistory, handleHistoryChange]);
+        setConsumptionHistory(prevHistory => {
+            if (!batch) return prevHistory;
+            const updatedHistory = prevHistory.map(week =>
+                week.id === weekId ? { ...week, feedType } : week
+            );
+            handleHistoryChange(updatedHistory, batch);
+            return updatedHistory;
+        });
+    }, [batch, handleHistoryChange]);
     
     const openEventDialog = (eventType: PreceboEventType) => {
         setSelectedEventType(eventType);
@@ -224,6 +222,10 @@ export default function LotePreceboPage() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="animalCount">Número de Animales</Label>
+                                        <Input id="animalCount" name="animalCount" type="number" placeholder="Ej: 120" required />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="dose">Dosis por Animal (ml)</Label>
@@ -306,6 +308,12 @@ export default function LotePreceboPage() {
     }
     
     const feedOptions = mockInventory.filter(p => p.category === 'alimento');
+    const daysOfWeek = (batch && isValid(parseISO(batch.creationDate))) ? (() => {
+        const startDate = parseISO(batch.creationDate);
+        const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; 
+        const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+        return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
+    })() : ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
 
     return (
@@ -388,9 +396,9 @@ export default function LotePreceboPage() {
                                 <TableRow>
                                     <TableHead className="min-w-[80px]">Semana</TableHead>
                                     <TableHead className="min-w-[150px]">Fecha</TableHead>
-                                    <TableHead className="min-w-[150px]">Alimento</TableHead>
+                                    <TableHead className="min-w-[200px]">Alimento</TableHead>
                                     {daysOfWeek.map(day => (
-                                        <TableHead key={day} className="capitalize min-w-[70px]">{day}</TableHead>
+                                        <TableHead key={day} className="capitalize min-w-[70px] text-center">{day}</TableHead>
                                     ))}
                                     <TableHead className="min-w-[120px]">Total Semana</TableHead>
                                     <TableHead className="min-w-[130px]">Total Acumulado</TableHead>
@@ -423,16 +431,16 @@ export default function LotePreceboPage() {
                                                 <Input 
                                                     type="number"
                                                     value={dayConsumption}
-                                                    onChange={(e) => updateConsumptionData(weekData.id, dayIndex, e.target.value)}
-                                                    className="w-16 text-center"
+                                                    onChange={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
+                                                    className="w-20 text-center"
                                                 />
                                             </TableCell>
                                         ))}
-                                        <TableCell className="font-medium">{weekData.totalWeek.toFixed(2)}</TableCell>
-                                        <TableCell>{weekData.totalAccumulated.toFixed(2)}</TableCell>
-                                        <TableCell className="font-bold">{weekData.inventory}</TableCell>
-                                        <TableCell>{weekData.accumulatedPerPig.toFixed(3)}</TableCell>
-                                        <TableCell>{weekData.consumptionPerPigPerDay.toFixed(3)}</TableCell>
+                                        <TableCell className="font-medium text-right">{weekData.totalWeek.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{weekData.totalAccumulated.toFixed(2)}</TableCell>
+                                        <TableCell className="font-bold text-center">{weekData.inventory}</TableCell>
+                                        <TableCell className="text-right">{weekData.accumulatedPerPig.toFixed(3)}</TableCell>
+                                        <TableCell className="text-right">{weekData.consumptionPerPigPerDay.toFixed(3)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -446,5 +454,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
-    
