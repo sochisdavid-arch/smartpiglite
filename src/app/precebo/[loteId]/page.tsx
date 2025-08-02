@@ -88,7 +88,7 @@ export default function LotePreceboPage() {
             return {
                 ...week,
                 totalWeek: weeklyConsumption,
-                inventory: currentBatch.initialPigletCount, 
+                inventory: currentBatch.initialPigletCount,
                 totalAccumulated: accumulatedFeed,
                 accumulatedPerPig,
                 consumptionPerPigPerDay,
