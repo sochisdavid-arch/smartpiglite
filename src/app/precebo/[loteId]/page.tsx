@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 interface NurseryBatch {
     id: string;
@@ -227,7 +228,7 @@ export default function LotePreceboPage() {
                                 <CardDescription>Registre el consumo de alimento del lote por semana.</CardDescription>
                             </div>
                             <DialogTrigger asChild>
-                                <Button size="sm">
+                                <Button size="sm" onClick={() => setIsConsumptionModalOpen(true)}>
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Registrar Semana
                                 </Button>
