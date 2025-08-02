@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FormDescription } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // Types specific to Lactation
@@ -33,6 +32,7 @@ interface Event {
     toSow?: string;
     fromSow?: string;
     cause?: string;
+    liveBorn?: number;
 }
 
 interface Pig {
@@ -62,7 +62,7 @@ const initialPigs: Pig[] = [
     status: 'Gestante', 
     lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' }, 
     events: [
-        { type: 'Parto', date: '2024-07-05', details: '14 nacidos vivos' },
+        { type: 'Parto', date: '2024-07-05', details: '14 nacidos vivos', liveBorn: 14 },
         { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A con semen de macho M-012.' },
     ] 
   },
@@ -196,6 +196,9 @@ export default function LactationHistoryPage() {
 
                     const newPigletsCount = Number(formData.get('weanedCount'));
                     const newTotalWeight = Number(formData.get('litterWeight'));
+                    const partoEvent = pig!.events.find(e => e.type === 'Parto');
+                    const avgAge = partoEvent ? differenceInDays(weaningDate, parseISO(partoEvent.date)) : 0;
+
 
                     if (existingBatch) {
                         existingBatch.pigletCount += newPigletsCount;
@@ -209,7 +212,7 @@ export default function LactationHistoryPage() {
                             pigletCount: newPigletsCount,
                             totalWeight: newTotalWeight,
                             avgWeight: (newTotalWeight / newPigletsCount).toFixed(2),
-                            avgAge: differenceInDays(weaningDate, parseISO(pig!.events.find(e => e.type === 'Parto')!.date)),
+                            avgAge: avgAge,
                             sows: [pig!.id],
                             status: 'Activo'
                         };
@@ -315,7 +318,7 @@ export default function LactationHistoryPage() {
                                     <div className="space-y-2">
                                         <Label htmlFor="weanedCount">Lechones Destetados</Label>
                                         <Input id="weanedCount" name="weanedCount" type="number" required value={weanedCount} onChange={e => setWeanedCount(e.target.value)} />
-                                        <FormDescription>Calculados: {calculateCurrentPiglets()}</FormDescription>
+                                        <p className="text-sm text-muted-foreground">Calculados: {calculateCurrentPiglets()}</p>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="litterWeight">Peso Total Camada (kg)</Label>
@@ -477,5 +480,3 @@ export default function LactationHistoryPage() {
         </AppLayout>
     );
 }
-
-    
