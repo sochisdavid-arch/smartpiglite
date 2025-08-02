@@ -75,7 +75,30 @@ export default function LotePreceboPage() {
     const [selectedEventType, setSelectedEventType] = React.useState<PreceboEventType | null>(null);
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
-    
+
+    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
+        let accumulatedFeed = 0;
+        const calculatedHistory = updatedHistory.map(week => {
+            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
+            accumulatedFeed += weeklyConsumption;
+            
+            const accumulatedPerPig = currentBatch.pigletCount > 0 ? accumulatedFeed / currentBatch.pigletCount : 0;
+            const consumptionPerPigPerDay = currentBatch.pigletCount > 0 ? weeklyConsumption / currentBatch.pigletCount / 7 : 0;
+
+            return {
+                ...week,
+                totalWeek: weeklyConsumption,
+                inventory: currentBatch.pigletCount, // Use the current piglet count from the batch
+                totalAccumulated: accumulatedFeed,
+                accumulatedPerPig,
+                consumptionPerPigPerDay,
+            };
+        });
+
+        setConsumptionHistory(calculatedHistory);
+        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
+    }, [getConsumptionStorageKey]);
+
     const daysOfWeek = React.useMemo(() => {
         if (!batch) return [];
         const startDate = parseISO(batch.creationDate);
@@ -85,46 +108,6 @@ export default function LotePreceboPage() {
         const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
         return [...dayNames.slice(startDayIndex), ...dayNames.slice(0, startDayIndex)];
     }, [batch]);
-
-    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
-      let accumulatedFeed = 0;
-      let previousWeekInventory = currentBatch.initialPigletCount;
-      
-      const calculatedHistory = updatedHistory.map(week => {
-          const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
-          accumulatedFeed += weeklyConsumption;
-          
-          const currentInventory = previousWeekInventory;
-          
-          const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
-          const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
-          
-          previousWeekInventory = currentInventory;
-
-          return {
-              ...week,
-              totalWeek: weeklyConsumption,
-              inventory: currentInventory,
-              totalAccumulated: accumulatedFeed,
-              accumulatedPerPig,
-              consumptionPerPigPerDay,
-          };
-      });
-
-      setConsumptionHistory(calculatedHistory);
-      localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
-
-      const finalInventory = calculatedHistory.length > 0 ? calculatedHistory[calculatedHistory.length - 1].inventory : currentBatch.initialPigletCount;
-      if(currentBatch.pigletCount !== finalInventory) {
-         setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
-         const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
-         if (storedBatches[loteId]) {
-             storedBatches[loteId].pigletCount = finalInventory;
-             localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
-         }
-      }
-    }, [getConsumptionStorageKey, loteId]);
-
 
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
@@ -170,8 +153,7 @@ export default function LotePreceboPage() {
                 handleHistoryChange(history, processedBatch);
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loteId, getConsumptionStorageKey]);
+    }, [loteId, getConsumptionStorageKey, handleHistoryChange]);
 
     const updateConsumptionData = React.useCallback((weekId: string, dayIndex: number, value: string) => {
         if (!batch) return;
@@ -254,7 +236,24 @@ export default function LotePreceboPage() {
                                 </>
                             )}
                             
-                            {['Muerte en lote', 'Venta de lote', 'Ingreso a lote'].includes(selectedEventType) && (
+                            {selectedEventType === 'Muerte en lote' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="animalCount">Número de Animales</Label>
+                                        <Input id="animalCount" name="animalCount" type="number" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="avgWeight">Peso Promedio (kg) - Opcional</Label>
+                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" placeholder="Ej. 15.5" />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="cause">Causa</Label>
+                                        <Input id="cause" name="cause" placeholder="Causa de la muerte" required />
+                                    </div>
+                                </>
+                            )}
+                            
+                            {['Venta de lote', 'Ingreso a lote'].includes(selectedEventType) && (
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="animalCount">Número de Animales</Label>
@@ -338,8 +337,8 @@ export default function LotePreceboPage() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-
-                <Card>
+                
+                 <Card>
                     <CardHeader>
                         <CardTitle>Información del Lote</CardTitle>
                     </CardHeader>
@@ -447,3 +446,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+    
