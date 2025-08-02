@@ -329,87 +329,88 @@ export default function GestationPage() {
         }
 
         return (
-             <DialogContent className="sm:max-w-3xl">
+             <DialogContent className="sm:max-w-3xl flex flex-col max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>Registrar Consumo del Lote de Reproductoras</DialogTitle>
                     <DialogDescription>
                         Registre el consumo diario de alimento para un grupo de hembras. El consumo se descontará del inventario.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="pr-6 -mr-6 max-h-[60vh]">
-                <div className="space-y-4 py-4 pr-6">
-                    <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="consumptionDate">Fecha</Label>
-                                <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sowCount">Nº de Hembras</Label>
-                                <Input id="sowCount" name="sowCount" type="number" placeholder="Ej. 25" required value={sowCount} onChange={e => setSowCount(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="quantity">Cantidad Total (kg)</Label>
-                                <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required value={totalQuantity} onChange={e => setTotalQuantity(e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                                <Label>Promedio por Animal (kg)</Label>
-                                <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{averageConsumption}</div>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <ScrollArea className="h-full pr-6">
+                        <div className="space-y-4 py-4 pr-2">
+                            <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="consumptionDate">Fecha</Label>
+                                        <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="sowCount">Nº de Hembras</Label>
+                                        <Input id="sowCount" name="sowCount" type="number" placeholder="Ej. 25" required value={sowCount} onChange={e => setSowCount(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="quantity">Cantidad Total (kg)</Label>
+                                        <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required value={totalQuantity} onChange={e => setTotalQuantity(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label>Promedio por Animal (kg)</Label>
+                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{averageConsumption}</div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                     <Label htmlFor="feedType">Tipo de Alimento</Label>
+                                     <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
+                                         <SelectTrigger>
+                                             <SelectValue placeholder="Seleccione un alimento..." />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             {feedOptions.map(option => (
+                                                 <SelectItem key={option.id} value={option.id}>
+                                                     {option.name} (Stock: {option.stock}kg)
+                                                 </SelectItem>
+                                             ))}
+                                         </SelectContent>
+                                     </Select>
+                                </div>
+                            </form>
+
+                            <Separator />
+
+                            <div>
+                                <h3 className="text-lg font-medium mb-4">Historial de Consumos</h3>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Alimento</TableHead>
+                                            <TableHead>Nº Hembras</TableHead>
+                                            <TableHead className="text-right">Total (kg)</TableHead>
+                                            <TableHead className="text-right">Promedio (kg)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {consumptionHistory.map(record => (
+                                            <TableRow key={record.id}>
+                                                <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
+                                                <TableCell>{record.feedType}</TableCell>
+                                                <TableCell>{record.sowCount}</TableCell>
+                                                <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
+                                                <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {consumptionHistory.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                             <Label htmlFor="feedType">Tipo de Alimento</Label>
-                             <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
-                                 <SelectTrigger>
-                                     <SelectValue placeholder="Seleccione un alimento..." />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                     {feedOptions.map(option => (
-                                         <SelectItem key={option.id} value={option.id}>
-                                             {option.name} (Stock: {option.stock}kg)
-                                         </SelectItem>
-                                     ))}
-                                 </SelectContent>
-                             </Select>
-                        </div>
-                    </form>
-
-                    <Separator />
-
-                    <div>
-                        <h3 className="text-lg font-medium mb-4">Historial de Consumos</h3>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead>Alimento</TableHead>
-                                    <TableHead>Nº Hembras</TableHead>
-                                    <TableHead className="text-right">Total (kg)</TableHead>
-                                    <TableHead className="text-right">Promedio (kg)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {consumptionHistory.map(record => (
-                                    <TableRow key={record.id}>
-                                        <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
-                                        <TableCell>{record.feedType}</TableCell>
-                                        <TableCell>{record.sowCount}</TableCell>
-                                        <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
-                                        <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {consumptionHistory.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    </ScrollArea>
                 </div>
-                </ScrollArea>
-
-                <DialogFooter className="border-t pt-4 -mx-6 px-6 bg-background sticky bottom-0">
+                <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background">
                     <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
                     <Button type="submit" form="consumption-form">Guardar Consumo</Button>
                 </DialogFooter>
@@ -670,5 +671,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
