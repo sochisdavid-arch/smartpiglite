@@ -90,7 +90,7 @@ export default function LotePreceboPage() {
     
     const consumptionTotals = React.useMemo(() => {
         const totalKg = consumption.reduce((acc, curr) => acc + curr.quantity, 0);
-        const daysWithConsumption = consumption.length;
+        const daysWithConsumption = new Set(consumption.map(c => c.date)).size;
         const avgDailyKg = daysWithConsumption > 0 ? totalKg / daysWithConsumption : 0;
         const avgGramsPerPig = currentPigletCount > 0 && avgDailyKg > 0 ? (avgDailyKg / currentPigletCount) * 1000 : 0;
         return { totalKg, daysWithConsumption, avgDailyKg, avgGramsPerPig };
@@ -109,7 +109,11 @@ export default function LotePreceboPage() {
                 feedType: feedType || 'Desconocido',
             };
             
-            const updatedConsumption = [...consumption, newRecord].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            const updatedConsumption = [...consumption, newRecord].sort((a, b) => {
+                if (!a.date || !b.date) return 0;
+                return new Date(a.date).getTime() - new Date(b.date).getTime()
+            });
+
             setConsumption(updatedConsumption);
             localStorage.setItem(getStorageKey('consumption'), JSON.stringify(updatedConsumption));
             
