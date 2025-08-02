@@ -315,7 +315,9 @@ export default function LotePreceboPage() {
                             </TableHeader>
                             <TableBody>
                                 {consumption.length > 0 ? consumption.map(c => {
-                                    accumulatedConsumption += c.totalWeek;
+                                    if (typeof c.totalWeek === 'number') {
+                                        accumulatedConsumption += c.totalWeek;
+                                    }
                                     return (
                                         <TableRow key={c.id}>
                                             <TableCell>{c.weekNumber}</TableCell>
@@ -327,9 +329,9 @@ export default function LotePreceboPage() {
                                             <TableCell>{c.dailyConsumption ? c.dailyConsumption.friday.toFixed(1) : '0.0'}</TableCell>
                                             <TableCell>{c.dailyConsumption ? c.dailyConsumption.saturday.toFixed(1) : '0.0'}</TableCell>
                                             <TableCell>{c.dailyConsumption ? c.dailyConsumption.sunday.toFixed(1) : '0.0'}</TableCell>
-                                            <TableCell>{c.totalWeek.toFixed(2)}</TableCell>
-                                            <TableCell>{accumulatedConsumption.toFixed(2)}</TableCell>
-                                            <TableCell>{c.avgPigPerDay.toFixed(2)}</TableCell>
+                                            <TableCell>{typeof c.totalWeek === 'number' ? c.totalWeek.toFixed(2) : '0.00'}</TableCell>
+                                            <TableCell>{typeof accumulatedConsumption === 'number' ? accumulatedConsumption.toFixed(2) : '0.00'}</TableCell>
+                                            <TableCell>{typeof c.avgPigPerDay === 'number' ? c.avgPigPerDay.toFixed(2) : '0.00'}</TableCell>
                                         </TableRow>
                                     )
                                 }) : (
@@ -399,4 +401,3 @@ export default function LotePreceboPage() {
     );
 }
 
-    
