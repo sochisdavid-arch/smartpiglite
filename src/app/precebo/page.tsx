@@ -2,10 +2,11 @@
 "use client";
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 interface NurseryBatch {
@@ -19,6 +20,7 @@ interface NurseryBatch {
 }
 
 export default function PreceboPage() {
+    const router = useRouter();
     const [batches, setBatches] = React.useState<NurseryBatch[]>([]);
 
     React.useEffect(() => {
@@ -29,6 +31,10 @@ export default function PreceboPage() {
             setBatches(batchArray.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()));
         }
     }, []);
+
+    const handleRowClick = (batchId: string) => {
+        router.push(`/precebo/${batchId}`);
+    };
 
     return (
         <AppLayout>
@@ -41,7 +47,7 @@ export default function PreceboPage() {
                     <CardHeader>
                         <CardTitle>Lotes Activos en Precebo</CardTitle>
                         <CardDescription>
-                            Lotes de lechones actualmente en la fase de precebo, creados automáticamente a partir de los destetes registrados.
+                            Lotes de lechones actualmente en la fase de precebo. Haga clic en un lote para ver sus detalles y registrar datos.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -59,9 +65,9 @@ export default function PreceboPage() {
                             </TableHeader>
                             <TableBody>
                                 {batches.length > 0 ? batches.map(batch => (
-                                    <TableRow key={batch.id}>
+                                    <TableRow key={batch.id} onClick={() => handleRowClick(batch.id)} className="cursor-pointer hover:bg-muted/50">
                                         <TableCell className="font-medium">{batch.id}</TableCell>
-                                        <TableCell>{format(parseISO(batch.creationDate), 'dd/MM/yyyy')}</TableCell>
+                                        <TableCell>{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'Fecha Inválida'}</TableCell>
                                         <TableCell>{batch.pigletCount}</TableCell>
                                         <TableCell>{batch.avgAge}</TableCell>
                                         <TableCell>{batch.avgWeight}</TableCell>
@@ -73,7 +79,7 @@ export default function PreceboPage() {
                                         <TableCell>{batch.sows.join(', ')}</TableCell>
                                     </TableRow>
                                 )) : (
-                                        <TableRow>
+                                    <TableRow>
                                         <TableCell colSpan={7} className="h-24 text-center">
                                             No hay lotes activos en precebo.
                                         </TableCell>
