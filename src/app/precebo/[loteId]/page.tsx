@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 interface NurseryBatch {
     id: string;
@@ -260,7 +261,7 @@ export default function LotePreceboPage() {
                                 <TableBody>
                                     {consumption.length > 0 ? consumption.map(c => (
                                         <TableRow key={c.id}>
-                                            <TableCell className="font-medium">{isValid(parseISO(c.date)) ? format(parseISO(c.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{c.date && isValid(parseISO(c.date)) ? format(parseISO(c.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                             <TableCell>{c.feedType}</TableCell>
                                             <TableCell className="text-right">{c.quantity.toFixed(2)}</TableCell>
                                         </TableRow>
