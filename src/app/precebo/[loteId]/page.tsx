@@ -6,11 +6,56 @@ import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { format, parseISO, isValid } from 'date-fns';
+import { Label } from '@/components/ui/label';
+
+interface NurseryBatch {
+    id: string;
+    creationDate: string;
+    pigletCount: number;
+    initialPigletCount: number; // Campo añadido para el número inicial
+    totalWeight: number;
+    avgWeight: number;
+    avgAge: number;
+    sows: string[];
+    status: 'Activo' | 'Finalizado';
+    module?: string; // Módulo de precebo
+}
+
 
 export default function LotePreceboPage() {
     const router = useRouter();
     const params = useParams();
     const loteId = params.loteId as string;
+    const [batch, setBatch] = React.useState<NurseryBatch | null>(null);
+
+    React.useEffect(() => {
+        const storedBatches = localStorage.getItem('nurseryBatches');
+        if (storedBatches) {
+            const batchData = JSON.parse(storedBatches);
+            const foundBatch = batchData[loteId];
+            if (foundBatch) {
+                // Asegurarse de que los valores numéricos sean números
+                foundBatch.pigletCount = Number(foundBatch.pigletCount);
+                foundBatch.initialPigletCount = Number(foundBatch.initialPigletCount || foundBatch.pigletCount); // Fallback por si no existe
+                foundBatch.totalWeight = Number(foundBatch.totalWeight);
+                foundBatch.avgWeight = Number(foundBatch.avgWeight);
+                foundBatch.avgAge = Number(foundBatch.avgAge);
+                setBatch(foundBatch);
+            }
+        }
+    }, [loteId]);
+
+    if (!batch) {
+        return (
+            <AppLayout>
+                <div className="flex justify-center items-center h-full">
+                    <p>Cargando datos del lote...</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout>
@@ -21,7 +66,48 @@ export default function LotePreceboPage() {
                     </Button>
                     <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
                 </div>
-                {/* El contenido ha sido eliminado según la solicitud. */}
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Información del Lote</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Lote N°</p>
+                            <p className="font-semibold text-lg">{batch.id}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Módulo Precebo</p>
+                            <p className="font-semibold text-lg">{batch.module || 'PRE-01'}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Fecha Ingreso</p>
+                            <p className="font-semibold text-lg">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
+                            <p className="font-semibold text-lg">{batch.initialPigletCount}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">N° Actual</p>
+                            <p className="font-semibold text-lg">{batch.pigletCount}</p>
+                        </div>
+                         <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Peso Total (kg)</p>
+                            <p className="font-semibold text-lg">{batch.totalWeight.toFixed(2)}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Peso Prom. (kg)</p>
+                            <p className="font-semibold text-lg">{batch.avgWeight.toFixed(2)}</p>
+                        </div>
+                        <div className="space-y-1 rounded-md border p-3">
+                            <p className="text-sm font-medium text-muted-foreground">Edad Inicial (días)</p>
+                            <p className="font-semibold text-lg">{batch.avgAge}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                 {/* Aquí irá la tabla de consumo */}
             </div>
         </AppLayout>
     );
