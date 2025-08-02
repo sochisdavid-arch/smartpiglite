@@ -135,7 +135,7 @@ export default function LactationHistoryPage() {
             const partoEvent = pig.events.find(e => e.type === 'Parto');
             if (!partoEvent) return 0;
             
-            const liveBorn = partoEvent.liveBorn || (parseInt(partoEvent.details?.match(/\d+/)?.[0] || '0'));
+            const liveBorn = partoEvent.liveBorn || 0;
             
             const deaths = pig.events.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
             const adoptions = pig.events.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
