@@ -93,6 +93,9 @@ export default function LotePreceboPage() {
         const newConsumption = [...consumption];
         const week = newConsumption[weekIndex];
         
+        if (!week.dailyConsumption) {
+            week.dailyConsumption = { saturday: '', sunday: '', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' };
+        }
         week.dailyConsumption[day] = value;
 
         // Recalculate totals
@@ -189,13 +192,20 @@ export default function LotePreceboPage() {
 
                 <Card>
                     <CardHeader>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-center">
-                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Corral/Sitio</Label><p className="font-semibold text-lg">Precebo</p></div>
-                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Fecha Ingreso</Label><p className="font-semibold text-lg">{startDate ? format(startDate, 'dd/MM/yyyy') : 'N/A'}</p></div>
-                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Fecha Salida</Label><p className="font-semibold text-lg">{endDate ? format(endDate, 'dd/MM/yyyy') : 'N/A'}</p></div>
-                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>N° de Días</Label><p className="font-semibold text-lg">{DAYS_IN_PRECEBO}</p></div>
-                            <div className="space-y-1 p-2 bg-muted rounded-md"><Label>N° Actual</Label><p className="font-semibold text-lg text-primary">{currentPigletCount}</p></div>
-                        </div>
+                        <CardTitle>Información General</CardTitle>
+                        <CardDescription>Resumen del estado actual del lote.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+                         <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Lechones Iniciales</Label><p className="font-semibold text-lg">{lote.pigletCount}</p></div>
+                         <div className="space-y-1 p-2 bg-muted rounded-md"><Label>Bajas</Label><p className="font-semibold text-lg text-red-600">{totalDeaths}</p></div>
+                         <div className="space-y-1 p-2 bg-muted rounded-md"><Label>N° Actual</Label><p className="font-semibold text-lg text-primary">{currentPigletCount}</p></div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Registro de Consumo</CardTitle>
+                        <CardDescription>Introduzca los kilos de alimento consumidos directamente en la tabla. Los cálculos se actualizan automáticamente.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
@@ -235,9 +245,9 @@ export default function LotePreceboPage() {
                                                         />
                                                     </TableCell>
                                                 ))}
-                                                <TableCell className="text-right font-semibold">{c.totalWeek ? c.totalWeek.toFixed(2) : '0.00'}</TableCell>
-                                                <TableCell className="text-right">{accumulatedConsumption ? accumulatedConsumption.toFixed(2) : '0.00'}</TableCell>
-                                                <TableCell className="text-right">{c.avgPigPerDay ? c.avgPigPerDay.toFixed(0) : '0'}</TableCell>
+                                                <TableCell className="text-right font-semibold">{(c.totalWeek ?? 0).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right">{(accumulatedConsumption ?? 0).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right">{(c.avgPigPerDay ?? 0).toFixed(0)}</TableCell>
                                             </TableRow>
                                         )
                                     })}
