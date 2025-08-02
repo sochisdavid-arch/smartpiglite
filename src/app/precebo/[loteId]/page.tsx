@@ -13,6 +13,8 @@ import { ArrowLeft, PlusCircle, MinusCircle } from 'lucide-react';
 import { format, parseISO, isValid, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockInventory } from '@/lib/mock-data';
 
 // --- Types ---
 interface DailyConsumption {
@@ -56,6 +58,7 @@ interface NurseryBatch {
 
 
 const daysOfWeek: (keyof DailyConsumption)[] = ["saturday", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday"];
+const feedOptions = mockInventory.filter(p => p.category === 'alimento');
 
 export default function LotePreceboPage() {
     const router = useRouter();
@@ -122,7 +125,7 @@ export default function LotePreceboPage() {
     const updateConsumption = (updatedConsumption: WeeklyConsumption[]) => {
         let accumulatedConsumption = 0;
         const recalculated = updatedConsumption.map(week => {
-            const newTotalWeek = Object.values(week.dailyConsumption).reduce((sum, val) => sum + Number(val || 0), 0);
+            const newTotalWeek = Object.values(week.dailyConsumption || {}).reduce((sum, val) => sum + Number(val || 0), 0);
             accumulatedConsumption += newTotalWeek;
             const newAvgPigPerDay = currentAnimalCount > 0 ? (newTotalWeek / 7) / currentAnimalCount : 0;
             return { 
@@ -139,7 +142,7 @@ export default function LotePreceboPage() {
         const numericValue = parseFloat(value) || 0;
         const updated = consumption.map(week => 
             week.id === weekId 
-            ? { ...week, dailyConsumption: { ...week.dailyConsumption, [day]: numericValue } }
+            ? { ...week, dailyConsumption: { ...(week.dailyConsumption || {}), [day]: numericValue } }
             : week
         );
         updateConsumption(updated);
@@ -158,7 +161,7 @@ export default function LotePreceboPage() {
         if (!batch) return;
 
         const newWeekNumber = lastWeek ? lastWeek.weekNumber + 1 : 1;
-        const newStartDate = lastWeek ? addDays(parseISO(lastWeek.startDate), 7) : parseISO(batch.creationDate);
+        const newStartDate = lastWeek && lastWeek.startDate ? addDays(parseISO(lastWeek.startDate), 7) : parseISO(batch.creationDate);
         
         const newWeek: WeeklyConsumption = {
             id: `week-${newWeekNumber}`,
@@ -242,20 +245,20 @@ export default function LotePreceboPage() {
                             <p className="font-semibold">{exitDate}</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">N° Animales</p>
+                            <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
                             <p className="font-semibold">{Number(batch.pigletCount)}</p>
                         </div>
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">N° Días</p>
-                            <p className="font-semibold">{batch.daysInPrecebo}</p>
+                         <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">N° Actual</p>
+                            <p className="font-semibold">{currentAnimalCount}</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">Peso Prom. (kg)</p>
-                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)}</p>
+                            <p className="text-sm font-medium text-muted-foreground">Peso Prom. Inicial</p>
+                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)} kg</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">Edad Prom. (días)</p>
-                            <p className="font-semibold">{Number(batch.avgAge)}</p>
+                            <p className="text-sm font-medium text-muted-foreground">Edad Inicial</p>
+                            <p className="font-semibold">{Number(batch.avgAge)} días</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -286,12 +289,16 @@ export default function LotePreceboPage() {
                                                 <TableCell>{weekData.weekNumber}</TableCell>
                                                 <TableCell>{weekData.startDate && isValid(parseISO(weekData.startDate)) ? format(parseISO(weekData.startDate), 'dd/MM') : 'N/A'}</TableCell>
                                                 <TableCell className="p-1">
-                                                    <Input
-                                                        className="h-8 w-24"
-                                                        value={weekData.feedType}
-                                                        onChange={(e) => handleFeedTypeChange(weekData.id, e.target.value)}
-                                                        placeholder="Tipo"
-                                                    />
+                                                     <Select value={weekData.feedType} onValueChange={(value) => handleFeedTypeChange(weekData.id, value)}>
+                                                         <SelectTrigger className="h-8 w-40">
+                                                             <SelectValue placeholder="Seleccionar" />
+                                                         </SelectTrigger>
+                                                         <SelectContent>
+                                                             {feedOptions.map(option => (
+                                                                 <SelectItem key={option.id} value={option.id}>{option.name} ({option.stock}kg)</SelectItem>
+                                                             ))}
+                                                         </SelectContent>
+                                                     </Select>
                                                 </TableCell>
                                                 {daysOfWeek.map(day => (
                                                     <TableCell key={day} className="p-1">
@@ -360,4 +367,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-

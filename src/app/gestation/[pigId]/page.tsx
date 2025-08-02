@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { mockInventory } from '@/lib/mock-data';
 
 
 // Mock data - in a real app, this would come from an API
@@ -67,18 +68,6 @@ const initialPigs: Pig[] = [
   },
   { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' }, events: [{ type: 'Celo no Servido', date: '2024-07-01', details: 'Baja condición corporal.' }] },
   { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' }, events: [{ type: 'Parto', date: '2024-05-20', details: '12 nacidos vivos.' }] },
-];
-
-const mockInventory = [
-    { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
-    { id: 'MED-02', name: 'Amoxicilina 15%', category: 'medicamento', stock: 12 },
-    { id: 'MED-03', name: 'Ivermectina 1%', category: 'medicamento', stock: 8 },
-    { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
-    { id: 'VAC-02', name: 'Vacuna Mycoplasma', category: 'vacuna', stock: 100 },
-    { id: 'VAC-03', name: 'Vacuna Parvovirus/Leptospira', category: 'vacuna', stock: 25 },
-    { id: 'FEED-01', name: 'Alimento Gestación 1', category: 'alimento', stock: 500 },
-    { id: 'FEED-02', name: 'Alimento Gestación 2', category: 'alimento', stock: 800 },
-    { id: 'FEED-03', name: 'Alimento Lactancia', category: 'alimento', stock: 650 },
 ];
 
 const calculateAge = (birthDate: string) => {

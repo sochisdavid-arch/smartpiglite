@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { mockInventory } from '@/lib/mock-data';
 
 // Types specific to Lactation
 type LactationEventType = "Tratamiento" | "Vacunación" | "Muerte de Lechón" | "Adopción de Lechón" | "Donación de Lechón" | "Destete" | "Venta" | "Muerte";
@@ -75,14 +76,6 @@ const initialPigs: Pig[] = [
         { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A con semen de macho M-012.' },
     ] 
   },
-];
-
-const mockInventory = [
-    { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
-    { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
-    { id: 'FEED-01', name: 'Alimento Gestación 1', category: 'alimento', stock: 500 },
-    { id: 'FEED-02', name: 'Alimento Gestación 2', category: 'alimento', stock: 800 },
-    { id: 'FEED-03', name: 'Alimento Lactancia', category: 'alimento', stock: 650 },
 ];
 
 const calculateAge = (birthDate: string) => {
