@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { format, parseISO, isValid } from 'date-fns';
-import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface NurseryBatch {
     id: string;
@@ -71,41 +71,89 @@ export default function LotePreceboPage() {
                     <CardHeader>
                         <CardTitle>Información del Lote</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Lote N°</span>
-                                <span className="font-semibold">{batch.id}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Módulo Precebo</span>
-                                <span className="font-semibold">{batch.module || 'PRE-01'}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Fecha Ingreso</span>
-                                <span className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</span>
-                            </div>
-                             <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Edad Inicial</span>
-                                <span className="font-semibold">{batch.avgAge} días</span>
-                            </div>
-                             <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">N° Inicial</span>
-                                <span className="font-semibold">{batch.initialPigletCount}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">N° Actual</span>
-                                <span className="font-semibold">{batch.pigletCount}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Peso Total</span>
-                                <span className="font-semibold">{Number(batch.totalWeight).toFixed(2)} kg</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-muted-foreground">Peso Promedio</span>
-                                <span className="font-semibold">{Number(batch.avgWeight).toFixed(2)} kg</span>
-                            </div>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Lote N°</p>
+                            <p className="font-semibold">{batch.id}</p>
                         </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Módulo Precebo</p>
+                            <p className="font-semibold">{batch.module || 'PRE-01'}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Fecha Ingreso</p>
+                            <p className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</p>
+                        </div>
+                         <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">N° Inicial</p>
+                            <p className="font-semibold">{Number(batch.initialPigletCount).toFixed(0)}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">N° Actual</p>
+                            <p className="font-semibold">{Number(batch.pigletCount).toFixed(0)}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Peso Total (kg)</p>
+                            <p className="font-semibold">{Number(batch.totalWeight).toFixed(2)} kg</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Peso Prom. (kg)</p>
+                            <p className="font-semibold">{Number(batch.avgWeight).toFixed(2)} kg</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-medium text-muted-foreground">Edad Inicial (días)</p>
+                            <p className="font-semibold">{batch.avgAge}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Registro de Consumo Semanal</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Semana</TableHead>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Alimento</TableHead>
+                                    <TableHead>Sábado</TableHead>
+                                    <TableHead>Domingo</TableHead>
+                                    <TableHead>Lunes</TableHead>
+                                    <TableHead>Martes</TableHead>
+                                    <TableHead>Miércoles</TableHead>
+                                    <TableHead>Jueves</TableHead>
+                                    <TableHead>Viernes</TableHead>
+                                    <TableHead>Total Semana</TableHead>
+                                    <TableHead>Total Acumulado</TableHead>
+                                    <TableHead>Inventario</TableHead>
+                                    <TableHead>Acumulado/Cerdo</TableHead>
+                                    <TableHead>Consumo Cerdo/Día</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {Array.from({ length: 8 }).map((_, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>dd/mm - dd/mm</TableCell>
+                                        <TableCell>Alimento X</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                        <TableCell>0</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
             </div>
