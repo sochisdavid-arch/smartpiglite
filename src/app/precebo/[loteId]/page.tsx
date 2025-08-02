@@ -182,22 +182,20 @@ export default function LotePreceboPage() {
         return Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(baseDate, i);
             return {
-                dayIndex: day.getDay(),
+                dayIndex: i, // Use index 0-6 instead of getDay()
                 label: format(day, 'EEE', { locale: es }),
             };
         });
     };
     
-    const exitDate = isValid(parseISO(batch.creationDate)) ? format(addDays(parseISO(batch.creationDate), batch.daysInPrecebo), 'dd/MM/yyyy') : 'N/A';
-    
-    const weekDayHeaders = getWeekDayHeaders(batch.creationDate);
-
     const formatWeekRange = (startDateString: string) => {
         if (!startDateString || !isValid(parseISO(startDateString))) return 'N/A';
         const startDate = parseISO(startDateString);
         const endDate = addDays(startDate, 6);
         return `${format(startDate, 'dd/MMM', { locale: es })} al ${format(endDate, 'dd/MMM', { locale: es })}`;
     };
+    
+    const weekDayHeaders = getWeekDayHeaders(batch.creationDate);
     
     let accumulatedConsumption = 0;
 
@@ -232,7 +230,7 @@ export default function LotePreceboPage() {
                         </div>
                          <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Fecha Salida</p>
-                            <p className="font-semibold">{exitDate}</p>
+                            <p className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(addDays(parseISO(batch.creationDate), batch.daysInPrecebo), 'dd/MM/yyyy') : 'N/A'}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
@@ -364,5 +362,3 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
-
-    
