@@ -87,7 +87,7 @@ export default function LactationPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
     
-    const loadPigs = () => {
+    const loadPigs = React.useCallback(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
         if (pigsFromStorage) {
             const allPigsData: Pig[] = JSON.parse(pigsFromStorage);
@@ -96,11 +96,21 @@ export default function LactationPage() {
             const lactating = processedPigs.filter(p => p.status === 'Lactante');
             setLactatingSows(lactating);
         }
-    };
+    }, []);
 
     React.useEffect(() => {
         loadPigs();
-    }, []);
+        
+        const handleStorageChange = () => {
+            loadPigs();
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [loadPigs]);
 
     const getParity = (pig: Pig) => {
         return pig.events.filter(e => e.type === 'Parto').length;
