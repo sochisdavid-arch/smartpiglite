@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, PlusCircle, MinusCircle } from 'lucide-react';
-import { format, parseISO, isValid, addDays } from 'date-fns';
+import { format, parseISO, isValid, addDays, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -75,10 +75,10 @@ export default function LotePreceboPage() {
             const foundBatch = Object.values(batchData).find((b: any) => b.id === loteId);
             if (foundBatch) {
                 currentBatch = foundBatch as NurseryBatch;
-                currentBatch.pigletCount = Number(currentBatch.pigletCount);
-                currentBatch.avgWeight = Number(currentBatch.avgWeight);
-                currentBatch.avgAge = Number(currentBatch.avgAge);
-                currentBatch.daysInPrecebo = currentBatch.daysInPrecebo || 42;
+                 currentBatch.pigletCount = Number(currentBatch.pigletCount);
+                 currentBatch.avgWeight = Number(currentBatch.avgWeight);
+                 currentBatch.avgAge = Number(currentBatch.avgAge);
+                 currentBatch.daysInPrecebo = currentBatch.daysInPrecebo || 42;
             }
         }
         setBatch(currentBatch);
@@ -88,21 +88,22 @@ export default function LotePreceboPage() {
             if (storedConsumption) {
                 setConsumption(JSON.parse(storedConsumption));
             } else {
-                const batchStartDate = currentBatch.creationDate;
-                const initialWeeks = Array.from({ length: 8 }, (_, i) => {
-                    const weekNumber = i + 1;
-                    const startDate = addDays(parseISO(batchStartDate), i * 7);
-                    return {
-                        id: `week-${weekNumber}`,
-                        weekNumber,
-                        startDate: format(startDate, 'yyyy-MM-dd'),
-                        feedType: '',
-                        dailyConsumption: {},
-                        totalWeek: 0,
-                        avgPigPerDay: 0
-                    };
-                });
-                setConsumption(initialWeeks);
+                 const batchStartDate = currentBatch.creationDate;
+                 // Initialize with 8 weeks by default
+                 const initialWeeks = Array.from({ length: 8 }, (_, i) => {
+                     const weekNumber = i + 1;
+                     const startDate = addDays(parseISO(batchStartDate), i * 7);
+                     return {
+                         id: `week-${weekNumber}`,
+                         weekNumber,
+                         startDate: format(startDate, 'yyyy-MM-dd'),
+                         feedType: '',
+                         dailyConsumption: {},
+                         totalWeek: 0,
+                         avgPigPerDay: 0
+                     };
+                 });
+                 setConsumption(initialWeeks);
             }
 
             const storedMortality = localStorage.getItem(getStorageKey('mortality'));
@@ -150,25 +151,6 @@ export default function LotePreceboPage() {
         localStorage.setItem(getStorageKey('consumption'), JSON.stringify(updated));
     }
 
-    const handleAddWeek = () => {
-        const lastWeek = consumption[consumption.length - 1];
-        if (!batch) return;
-
-        const newWeekNumber = lastWeek ? lastWeek.weekNumber + 1 : 1;
-        const newStartDate = lastWeek && lastWeek.startDate ? addDays(parseISO(lastWeek.startDate), 7) : parseISO(batch.creationDate);
-        
-        const newWeek: WeeklyConsumption = {
-            id: `week-${newWeekNumber}`,
-            weekNumber: newWeekNumber,
-            startDate: format(newStartDate, 'yyyy-MM-dd'),
-            feedType: '',
-            dailyConsumption: {},
-            totalWeek: 0,
-            avgPigPerDay: 0,
-        };
-        updateConsumption([...consumption, newWeek]);
-    };
-
     const handleMortalitySubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -207,9 +189,8 @@ export default function LotePreceboPage() {
         return Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(baseDate, i);
             return {
-                dayIndex: day.getDay(), // 0 for Sunday, 1 for Monday...
+                dayIndex: day.getDay(),
                 label: format(day, 'EEE', { locale: es }),
-                date: format(day, 'd'),
             };
         });
     };
@@ -217,6 +198,13 @@ export default function LotePreceboPage() {
     const exitDate = isValid(parseISO(batch.creationDate)) ? format(addDays(parseISO(batch.creationDate), batch.daysInPrecebo), 'dd/MM/yyyy') : 'N/A';
     
     const weekDayHeaders = getWeekDayHeaders(batch.creationDate);
+
+    const formatWeekRange = (startDateString: string) => {
+        if (!startDateString || !isValid(parseISO(startDateString))) return 'N/A';
+        const startDate = parseISO(startDateString);
+        const endDate = addDays(startDate, 6);
+        return `${format(startDate, 'dd/MMM', { locale: es })} al ${format(endDate, 'dd/MMM', { locale: es })}`;
+    };
 
     return (
         <AppLayout>
@@ -286,10 +274,11 @@ export default function LotePreceboPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Sem</TableHead>
+                                        <TableHead>Fecha</TableHead>
                                         <TableHead>Alimento</TableHead>
                                         {weekDayHeaders.map(h => (
                                             <TableHead key={h.dayIndex} className="capitalize text-center">
-                                                {h.label}<br/>{h.date}
+                                                {h.label}
                                             </TableHead>
                                         ))}
                                         <TableHead>Total Semana</TableHead>
@@ -306,6 +295,7 @@ export default function LotePreceboPage() {
                                         return (
                                             <TableRow key={weekData.id}>
                                                 <TableCell>{weekData.weekNumber}</TableCell>
+                                                <TableCell>{formatWeekRange(weekData.startDate)}</TableCell>
                                                 <TableCell className="p-1">
                                                      <Select value={weekData.feedType} onValueChange={(value) => handleFeedTypeChange(weekData.id, value)}>
                                                          <SelectTrigger className="h-8 w-40">
@@ -342,12 +332,6 @@ export default function LotePreceboPage() {
                             </Table>
                         </div>
                     </CardContent>
-                    <CardFooter className="p-2 justify-center">
-                         <Button variant="outline" onClick={handleAddWeek}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Semana
-                        </Button>
-                    </CardFooter>
                 </Card>
             </div>
 
@@ -385,3 +369,6 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+
+    
