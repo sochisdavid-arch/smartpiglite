@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, parseISO, isValid, addDays, getDay, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, isValid, addDays, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -33,9 +33,9 @@ interface ConsumptionRecord {
     startDate: string;
     endDate: string;
     feedType: string;
-    consumption: (number | string)[];
     deaths: number | string;
     sales: number | string;
+    consumption: (number | string)[];
     inventory: number;
     totalWeek: number;
     totalAccumulated: number;
@@ -56,6 +56,7 @@ export default function LotePreceboPage() {
     const daysOfWeek = React.useMemo(() => {
         if (!batch) return [];
         const startDate = parseISO(batch.creationDate);
+        if (!isValid(startDate)) return [];
         const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; 
         
         const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
@@ -63,43 +64,6 @@ export default function LotePreceboPage() {
         return rotatedDays;
     }, [batch]);
     
-    const updateConsumption = React.useCallback((history: ConsumptionRecord[], currentBatch: NurseryBatch) => {
-        let accumulatedFeed = 0;
-        let previousWeekInventory = currentBatch.initialPigletCount;
-
-        const newHistory = history.map(week => {
-            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
-            accumulatedFeed += weeklyConsumption;
-            
-            const deaths = Number(week.deaths || 0);
-            const sales = Number(week.sales || 0);
-            const currentInventory = previousWeekInventory - deaths - sales;
-            
-            const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
-            const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
-            
-            previousWeekInventory = currentInventory;
-
-            return {
-                ...week,
-                totalWeek: weeklyConsumption,
-                inventory: currentInventory,
-                totalAccumulated: accumulatedFeed,
-                accumulatedPerPig: accumulatedPerPig,
-                consumptionPerPigPerDay: consumptionPerPigPerDay,
-            };
-        });
-
-        setConsumptionHistory(newHistory);
-        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(newHistory));
-        
-        const finalInventory = newHistory[newHistory.length - 1]?.inventory ?? currentBatch.initialPigletCount;
-        if(batch && batch.pigletCount !== finalInventory) {
-            setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
-        }
-
-    }, [loteId, batch]);
-
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
         if (storedBatches) {
@@ -148,16 +112,48 @@ export default function LotePreceboPage() {
         }
     }, [loteId, getConsumptionStorageKey]);
 
-    React.useEffect(() => {
-        if (batch && consumptionHistory.length > 0) {
-            updateConsumption(consumptionHistory, batch);
-        }
-    }, [batch, consumptionHistory, updateConsumption]);
-
 
     const handleHistoryChange = (updatedHistory: ConsumptionRecord[]) => {
-        if(batch) {
-            updateConsumption(updatedHistory, batch);
+        if (!batch) return;
+
+        let accumulatedFeed = 0;
+        let previousWeekInventory = batch.initialPigletCount;
+        
+        const calculatedHistory = updatedHistory.map(week => {
+            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
+            accumulatedFeed += weeklyConsumption;
+            
+            const deaths = Number(week.deaths || 0);
+            const sales = Number(week.sales || 0);
+            const currentInventory = previousWeekInventory - deaths - sales;
+            
+            const accumulatedPerPig = currentInventory > 0 ? accumulatedFeed / currentInventory : 0;
+            const consumptionPerPigPerDay = currentInventory > 0 ? weeklyConsumption / currentInventory / 7 : 0;
+            
+            previousWeekInventory = currentInventory;
+
+            return {
+                ...week,
+                totalWeek: weeklyConsumption,
+                inventory: currentInventory,
+                totalAccumulated: accumulatedFeed,
+                accumulatedPerPig,
+                consumptionPerPigPerDay,
+            };
+        });
+
+        setConsumptionHistory(calculatedHistory);
+        localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
+
+        const finalInventory = calculatedHistory[calculatedHistory.length - 1]?.inventory ?? batch.initialPigletCount;
+        if(batch.pigletCount !== finalInventory) {
+           setBatch(prev => prev ? {...prev, pigletCount: finalInventory} : null);
+           // Also update the main batch record in localStorage if needed
+           const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
+           if (storedBatches[loteId]) {
+               storedBatches[loteId].pigletCount = finalInventory;
+               localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
+           }
         }
     };
 
@@ -191,7 +187,6 @@ export default function LotePreceboPage() {
         handleHistoryChange(updatedHistory);
     }
 
-
     if (!batch) {
         return (
             <AppLayout>
@@ -215,7 +210,7 @@ export default function LotePreceboPage() {
                         </Button>
                         <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
                     </div>
-                    <Button>
+                     <Button>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Agregar Evento
                     </Button>
