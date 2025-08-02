@@ -66,6 +66,23 @@ export default function LotePreceboPage() {
 
     const getStorageKey = React.useCallback((type: 'consumption' | 'mortality') => `precebo_${loteId}_${type}`, [loteId]);
     
+    const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
+    const currentAnimalCount = batch ? Number(batch.pigletCount) - totalMortality : 0;
+
+    const updateConsumptionStateAndStorage = (updatedConsumption: WeeklyConsumption[]) => {
+        const recalculated = updatedConsumption.map(week => {
+            const newTotalWeek = Object.values(week.dailyConsumption || {}).reduce((sum, val) => sum + Number(val || 0), 0);
+            const newAvgPigPerDay = currentAnimalCount > 0 ? (newTotalWeek / 7) / currentAnimalCount : 0;
+            return { 
+                ...week, 
+                totalWeek: newTotalWeek, 
+                avgPigPerDay: newAvgPigPerDay 
+            };
+        });
+        setConsumption(recalculated);
+        localStorage.setItem(getStorageKey('consumption'), JSON.stringify(recalculated));
+    }
+    
     React.useEffect(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
         let currentBatch: NurseryBatch | null = null;
@@ -83,14 +100,23 @@ export default function LotePreceboPage() {
         setBatch(currentBatch);
 
         if (currentBatch && isValid(parseISO(currentBatch.creationDate))) {
+            const storedMortality = localStorage.getItem(getStorageKey('mortality'));
+            if (storedMortality) {
+                setMortality(JSON.parse(storedMortality));
+            }
+
             const storedConsumption = localStorage.getItem(getStorageKey('consumption'));
-            if (storedConsumption) {
-                setConsumption(JSON.parse(storedConsumption));
-            } else {
+            let consumptionData: WeeklyConsumption[] = storedConsumption ? JSON.parse(storedConsumption) : [];
+
+            if (consumptionData.length < 8) {
                  const batchStartDate = currentBatch.creationDate;
-                 const initialWeeks = Array.from({ length: 8 }, (_, i) => {
-                     const weekNumber = i + 1;
-                     const startDate = addDays(parseISO(batchStartDate), i * 7);
+                 const existingWeeks = consumptionData.length;
+                 const weeksToAdd = 8 - existingWeeks;
+                 
+                 const newWeeks = Array.from({ length: weeksToAdd }, (_, i) => {
+                     const weekIndex = existingWeeks + i;
+                     const weekNumber = weekIndex + 1;
+                     const startDate = addDays(parseISO(batchStartDate), weekIndex * 7);
                      return {
                          id: `week-${weekNumber}`,
                          weekNumber,
@@ -101,33 +127,12 @@ export default function LotePreceboPage() {
                          avgPigPerDay: 0
                      };
                  });
-                 setConsumption(initialWeeks);
+                 consumptionData = [...consumptionData, ...newWeeks];
             }
-
-            const storedMortality = localStorage.getItem(getStorageKey('mortality'));
-            if (storedMortality) {
-                setMortality(JSON.parse(storedMortality));
-            }
+            updateConsumptionStateAndStorage(consumptionData);
         }
     }, [loteId, getStorageKey]);
 
-    const totalMortality = React.useMemo(() => mortality.reduce((sum, record) => sum + record.quantity, 0), [mortality]);
-    const currentAnimalCount = batch ? Number(batch.pigletCount) - totalMortality : 0;
-    
-    const updateConsumption = (updatedConsumption: WeeklyConsumption[]) => {
-        const recalculated = updatedConsumption.map(week => {
-            const newTotalWeek = Object.values(week.dailyConsumption || {}).reduce((sum, val) => sum + Number(val || 0), 0);
-            const newAvgPigPerDay = currentAnimalCount > 0 ? (newTotalWeek / 7) / currentAnimalCount : 0;
-            return { 
-                ...week, 
-                totalWeek: newTotalWeek, 
-                avgPigPerDay: newAvgPigPerDay 
-            };
-        });
-        setConsumption(recalculated);
-        localStorage.setItem(getStorageKey('consumption'), JSON.stringify(recalculated));
-    }
-    
     const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
         const numericValue = parseFloat(value) || 0;
         const updated = consumption.map(week => 
@@ -135,15 +140,14 @@ export default function LotePreceboPage() {
             ? { ...week, dailyConsumption: { ...(week.dailyConsumption || {}), [dayIndex]: numericValue } }
             : week
         );
-        updateConsumption(updated);
+        updateConsumptionStateAndStorage(updated);
     };
 
     const handleFeedTypeChange = (weekId: string, value: string) => {
         const updated = consumption.map(week => 
             week.id === weekId ? { ...week, feedType: value } : week
         );
-        setConsumption(updated);
-        localStorage.setItem(getStorageKey('consumption'), JSON.stringify(updated));
+        updateConsumptionStateAndStorage(updated);
     }
 
     const handleMortalitySubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -159,7 +163,9 @@ export default function LotePreceboPage() {
         const updatedMortality = [...mortality, newRecord];
         setMortality(updatedMortality);
         localStorage.setItem(getStorageKey('mortality'), JSON.stringify(updatedMortality));
-        updateConsumption(consumption);
+        
+        // Recalculate consumption averages after mortality update
+        updateConsumptionStateAndStorage(consumption);
 
         toast({
             title: "Baja Registrada",
@@ -182,7 +188,7 @@ export default function LotePreceboPage() {
         return Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(baseDate, i);
             return {
-                dayIndex: i, // Use index 0-6 instead of getDay()
+                dayIndex: i,
                 label: format(day, 'EEE', { locale: es }),
             };
         });
@@ -215,7 +221,7 @@ export default function LotePreceboPage() {
                     <CardHeader>
                         <CardTitle>Información General</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
+                    <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center">
                          <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Lote N°</p>
                             <p className="font-semibold">{batch.id}</p>
@@ -228,17 +234,13 @@ export default function LotePreceboPage() {
                             <p className="text-sm font-medium text-muted-foreground">Fecha Ingreso</p>
                             <p className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</p>
                         </div>
-                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">Fecha Salida</p>
-                            <p className="font-semibold">{isValid(parseISO(batch.creationDate)) ? format(addDays(parseISO(batch.creationDate), batch.daysInPrecebo), 'dd/MM/yyyy') : 'N/A'}</p>
-                        </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">N° Inicial</p>
                             <p className="font-semibold">{batch.pigletCount}</p>
                         </div>
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">N° Días</p>
-                            <p className="font-semibold">{batch.daysInPrecebo}</p>
+                         <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">N° Actual</p>
+                            <p className="font-semibold">{currentAnimalCount}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">Peso Prom. Inicial</p>
@@ -266,11 +268,11 @@ export default function LotePreceboPage() {
                             <Table className="min-w-full">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Sem</TableHead>
+                                        <TableHead>Semana</TableHead>
                                         <TableHead>Fecha</TableHead>
                                         <TableHead>Alimento</TableHead>
                                         {weekDayHeaders.map(h => (
-                                            <TableHead key={h.dayIndex} className="capitalize text-center">
+                                            <TableHead key={h.label} className="capitalize text-center">
                                                 {h.label}
                                             </TableHead>
                                         ))}
@@ -362,3 +364,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+    
