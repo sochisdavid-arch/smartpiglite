@@ -28,6 +28,7 @@ interface Event {
     date: string;
     inseminationGroup?: string;
     details?: string;
+    liveBorn?: number;
 }
 
 interface Pig {
@@ -182,6 +183,14 @@ export default function PigHistoryPage() {
             };
 
             let updatedPig = { ...pig! };
+
+            if (selectedEventType === 'Parto') {
+                const liveBornCount = Number(formData.get('liveBorn'));
+                newEvent.liveBorn = liveBornCount;
+                newEvent.details = `${liveBornCount} lechones vivos. Peso camada: ${formData.get('litterWeight')}kg.`;
+            }
+
+
             updatedPig.events.unshift(newEvent); // Add to the beginning
             updatedPig.lastEvent = newEvent;
 
@@ -208,7 +217,7 @@ export default function PigHistoryPage() {
                     title: "¡Estado Actualizado!",
                     description: `La cerda ${pig!.id} ha sido movida a Lactancia.`,
                 });
-                router.push('/lactation');
+                router.push(`/lactation/${pig!.id}`);
             }
         }
         
