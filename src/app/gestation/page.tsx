@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -31,13 +31,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -63,15 +60,6 @@ interface Pig {
     events: Event[];
 }
 
-interface ConsumptionRecord {
-    id: string;
-    date: string;
-    totalQuantity: number;
-    feedType: string;
-    sowCount: number;
-    averageConsumption: number;
-}
-
 const initialPigs: Pig[] = [
   { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' }, events: [{ type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A.' }] },
   { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' }, events: [{ type: 'Celo no Servido', date: '2024-07-01', details: 'Baja condición corporal.' }] },
@@ -88,18 +76,6 @@ const pigBreeds = [
   "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   // Otras
   "Otro"
-];
-
-const mockInventory = [
-    { id: 'MED-01', name: 'Oxitetraciclina 200 LA', category: 'medicamento', stock: 5 },
-    { id: 'MED-02', name: 'Amoxicilina 15%', category: 'medicamento', stock: 12 },
-    { id: 'MED-03', name: 'Ivermectina 1%', category: 'medicamento', stock: 8 },
-    { id: 'VAC-01', name: 'Vacuna Circovirus', category: 'vacuna', stock: 50 },
-    { id: 'VAC-02', name: 'Vacuna Mycoplasma', category: 'vacuna', stock: 100 },
-    { id: 'VAC-03', name: 'Vacuna Parvovirus/Leptospira', category: 'vacuna', stock: 25 },
-    { id: 'FEED-01', name: 'Alimento Gestación 1', category: 'alimento', stock: 500 },
-    { id: 'FEED-02', name: 'Alimento Gestación 2', category: 'alimento', stock: 800 },
-    { id: 'FEED-03', name: 'Alimento Lactancia', category: 'alimento', stock: 650 },
 ];
 
 const calculateAge = (birthDate: string) => {
@@ -125,11 +101,9 @@ export default function GestationPage() {
   const { toast } = useToast();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
-  const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
 
   // States for filters
   const [filterId, setFilterId] = React.useState('');
@@ -147,12 +121,6 @@ export default function GestationPage() {
     setPigs(processedPigs);
     if (!pigsFromStorage) {
         localStorage.setItem('pigs', JSON.stringify(initialPigs));
-    }
-
-    // Load consumption history from localStorage
-    const historyFromStorage = localStorage.getItem('consumptionHistory');
-    if (historyFromStorage) {
-        setConsumptionHistory(JSON.parse(historyFromStorage));
     }
   }, []);
 
@@ -276,149 +244,6 @@ export default function GestationPage() {
     }
   };
 
-   const ConsumptionForm = () => {
-        const [selectedFeed, setSelectedFeed] = React.useState<string>();
-        const [totalQuantity, setTotalQuantity] = React.useState<number | string>('');
-        const [sowCount, setSowCount] = React.useState<number | string>('');
-        const feedOptions = mockInventory.filter(p => p.category === 'alimento');
-
-        const averageConsumption = React.useMemo(() => {
-            const numTotalQuantity = Number(totalQuantity);
-            const numSowCount = Number(sowCount);
-            if (numTotalQuantity > 0 && numSowCount > 0) {
-                return (numTotalQuantity / numSowCount).toFixed(2);
-            }
-            return '0.00';
-        }, [totalQuantity, sowCount]);
-
-
-        const handleSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            
-            if (!selectedFeed) {
-                toast({
-                    variant: "destructive",
-                    title: "Campo requerido",
-                    description: "Por favor, seleccione un tipo de alimento.",
-                });
-                return;
-            }
-
-            const foundFeed = feedOptions.find(o => o.id === selectedFeed);
-            if (!foundFeed) return;
-
-            const newRecord: ConsumptionRecord = {
-                id: new Date().toISOString(),
-                date: (document.getElementById('consumptionDate') as HTMLInputElement).value,
-                totalQuantity: Number(totalQuantity),
-                feedType: foundFeed.name,
-                sowCount: Number(sowCount),
-                averageConsumption: Number(averageConsumption),
-            };
-
-            const updatedHistory = [newRecord, ...consumptionHistory];
-            setConsumptionHistory(updatedHistory);
-            localStorage.setItem('consumptionHistory', JSON.stringify(updatedHistory));
-            
-            toast({
-                title: "¡Consumo de Lote Registrado!",
-                description: `${totalQuantity}kg de ${foundFeed.name} registrado para ${sowCount} hembras.`,
-            });
-            
-            setIsConsumptionFormOpen(false);
-        }
-
-        return (
-             <DialogContent className="sm:max-w-3xl flex flex-col max-h-[90vh]">
-                <DialogHeader>
-                    <DialogTitle>Registrar Consumo del Lote de Reproductoras</DialogTitle>
-                    <DialogDescription>
-                        Registre el consumo diario de alimento para un grupo de hembras. El consumo se descontará del inventario.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 overflow-y-auto -mx-6 px-6">
-                    <ScrollArea className="h-full pr-6">
-                        <div className="space-y-4 py-4 pr-2">
-                            <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="consumptionDate">Fecha</Label>
-                                        <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sowCount">Nº de Hembras</Label>
-                                        <Input id="sowCount" name="sowCount" type="number" placeholder="Ej. 25" required value={sowCount} onChange={e => setSowCount(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="quantity">Cantidad Total (kg)</Label>
-                                        <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 180.5" required value={totalQuantity} onChange={e => setTotalQuantity(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label>Promedio por Animal (kg)</Label>
-                                        <div className="text-lg font-semibold p-2 border rounded-md bg-muted h-10 flex items-center">{averageConsumption}</div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                     <Label htmlFor="feedType">Tipo de Alimento</Label>
-                                     <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
-                                         <SelectTrigger>
-                                             <SelectValue placeholder="Seleccione un alimento..." />
-                                         </SelectTrigger>
-                                         <SelectContent>
-                                             {feedOptions.map(option => (
-                                                 <SelectItem key={option.id} value={option.id}>
-                                                     {option.name} (Stock: {option.stock}kg)
-                                                 </SelectItem>
-                                             ))}
-                                         </SelectContent>
-                                     </Select>
-                                </div>
-                            </form>
-
-                            <Separator />
-
-                            <div>
-                                <h3 className="text-lg font-medium mb-4">Historial de Consumos</h3>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Fecha</TableHead>
-                                            <TableHead>Alimento</TableHead>
-                                            <TableHead>Nº Hembras</TableHead>
-                                            <TableHead className="text-right">Total (kg)</TableHead>
-                                            <TableHead className="text-right">Promedio (kg)</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {consumptionHistory.map(record => (
-                                            <TableRow key={record.id}>
-                                                <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
-                                                <TableCell>{record.feedType}</TableCell>
-                                                <TableCell>{record.sowCount}</TableCell>
-                                                <TableCell className="text-right">{record.totalQuantity.toFixed(1)}</TableCell>
-                                                <TableCell className="text-right">{record.averageConsumption.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {consumptionHistory.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </div>
-                    </ScrollArea>
-                </div>
-                <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background">
-                    <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
-                    <Button type="submit" form="consumption-form">Guardar Consumo</Button>
-                </DialogFooter>
-            </DialogContent>
-        )
-    }
-
-
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
@@ -434,10 +259,6 @@ export default function GestationPage() {
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
                 <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
-                        <Wheat className="mr-2 h-4 w-4" />
-                        Registrar Consumo de Lote
-                    </Button>
                     <Button onClick={openAddDialog}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Añadir Animal
@@ -504,9 +325,6 @@ export default function GestationPage() {
                     </DialogFooter>
                   </form>
                 </DialogContent>
-            </Dialog>
-            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
-                <ConsumptionForm />
             </Dialog>
 
             <Card>
