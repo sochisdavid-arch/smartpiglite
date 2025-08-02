@@ -320,13 +320,13 @@ export default function LotePreceboPage() {
                                         <TableRow key={c.id}>
                                             <TableCell>{c.weekNumber}</TableCell>
                                             <TableCell>{c.feedType}</TableCell>
-                                            <TableCell>{c.dailyConsumption.monday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.tuesday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.wednesday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.thursday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.friday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.saturday.toFixed(1)}</TableCell>
-                                            <TableCell>{c.dailyConsumption.sunday.toFixed(1)}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.monday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.tuesday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.wednesday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.thursday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.friday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.saturday.toFixed(1) : '0.0'}</TableCell>
+                                            <TableCell>{c.dailyConsumption ? c.dailyConsumption.sunday.toFixed(1) : '0.0'}</TableCell>
                                             <TableCell>{c.totalWeek.toFixed(2)}</TableCell>
                                             <TableCell>{accumulatedConsumption.toFixed(2)}</TableCell>
                                             <TableCell>{c.avgPigPerDay.toFixed(2)}</TableCell>
@@ -371,7 +371,7 @@ export default function LotePreceboPage() {
                                     <TableRow key={m.id}>
                                         <TableCell>{m.date && isValid(parseISO(m.date)) ? format(parseISO(m.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                         <TableCell>{m.count}</TableCell>
-                                        <TableCell>{m.weight.toFixed(2)}</TableCell>
+                                        <TableCell>{m.weight ? m.weight.toFixed(2) : '0.00'}</TableCell>
                                         <TableCell>{m.cause}</TableCell>
                                         <TableCell>{m.observations}</TableCell>
                                     </TableRow>
@@ -398,3 +398,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+    
