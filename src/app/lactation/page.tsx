@@ -64,6 +64,42 @@ interface Pig {
     events: Event[];
 }
 
+const initialPigs: Pig[] = [
+    { 
+        id: 'PIG-001', 
+        breed: 'Duroc', 
+        birthDate: '2023-04-15', 
+        arrivalDate: '2023-05-01', 
+        weight: 190, 
+        gender: 'Hembra', 
+        purchaseValue: 150, 
+        age: 0, 
+        status: 'Lactante', 
+        lastEvent: { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' }, 
+        events: [
+            { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0 },
+            { type: 'Inseminación', date: '2024-03-17', inseminationGroup: 'SEMANA-12' },
+        ] 
+    },
+    { 
+        id: 'PIG-002', 
+        breed: 'Landrace', 
+        birthDate: '2023-02-26', 
+        arrivalDate: '2023-03-15', 
+        weight: 210, 
+        gender: 'Hembra', 
+        purchaseValue: 155, 
+        age: 0, 
+        status: 'Lactante', 
+        lastEvent: { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' }, 
+        events: [
+            { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0 },
+            { type: 'Muerte de Lechón', date: '2024-07-12', pigletCount: 1, details: 'Aplastamiento' },
+            { type: 'Inseminación', date: '2024-03-19', inseminationGroup: 'SEMANA-12' },
+        ] 
+    },
+];
+
 const pigBreeds = [
   // Razas Puras
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
@@ -81,24 +117,32 @@ const calculateAge = (birthDate: string) => {
 }
 
 const getParityData = (pig: Pig) => {
-    const partoEvent = pig.events.find(e => e.type === 'Parto' && pig.lastEvent.date === e.date);
-    const liveBorn = partoEvent?.liveBorn ?? 0;
-    const stillborn = partoEvent?.stillborn ?? 0;
-    const mummified = partoEvent?.mummified ?? 0;
+    const partoEvents = pig.events.filter(e => e.type === 'Parto');
+    const lastPartoEvent = partoEvents.length > 0 ? partoEvents[0] : null;
+
+    if (!lastPartoEvent) {
+        return { farrowingDate: null, liveBorn: 0, stillborn: 0, mummified: 0, currentPiglets: 0, parity: 0 };
+    }
+
+    const liveBorn = lastPartoEvent.liveBorn ?? 0;
+    const stillborn = lastPartoEvent.stillborn ?? 0;
+    const mummified = lastPartoEvent.mummified ?? 0;
+
+    const lactationEvents = pig.events.slice(0, pig.events.indexOf(lastPartoEvent));
     
-    const deaths = pig.events.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
-    const adoptions = pig.events.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
-    const donations = pig.events.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    const deaths = lactationEvents.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    const adoptions = lactationEvents.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+    const donations = lactationEvents.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
     
     const currentPiglets = liveBorn - deaths + adoptions - donations;
     
     return {
-        farrowingDate: partoEvent?.date,
+        farrowingDate: lastPartoEvent?.date,
         liveBorn: liveBorn,
         stillborn: stillborn,
         mummified: mummified,
         currentPiglets: currentPiglets,
-        parity: pig.events.filter(e => e.type === 'Parto').length,
+        parity: partoEvents.length,
     };
 };
 
@@ -116,13 +160,16 @@ export default function LactationPage() {
     
     const loadPigs = React.useCallback(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
-        if (pigsFromStorage) {
-            const allPigsData: Pig[] = JSON.parse(pigsFromStorage);
-            const processedPigs = allPigsData.map(p => ({...p, age: calculateAge(p.birthDate)}));
-            setAllPigs(processedPigs);
-            const lactating = processedPigs.filter(p => p.status === 'Lactante');
-            setLactatingSows(lactating);
+        const allPigsData: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+        
+        if (!pigsFromStorage) {
+            localStorage.setItem('pigs', JSON.stringify(initialPigs));
         }
+
+        const processedPigs = allPigsData.map(p => ({...p, age: calculateAge(p.birthDate)}));
+        setAllPigs(processedPigs);
+        const lactating = processedPigs.filter(p => p.status === 'Lactante');
+        setLactatingSows(lactating);
     }, []);
 
     React.useEffect(() => {
@@ -423,5 +470,7 @@ export default function LactationPage() {
         </AppLayout>
     );
 }
+
+    
 
     

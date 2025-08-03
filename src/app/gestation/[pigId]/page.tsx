@@ -21,7 +21,7 @@ import { mockInventory } from '@/lib/mock-data';
 
 
 // Mock data - in a real app, this would come from an API
-type GestationEventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
+type GestationEventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte" | "Destete";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Event {
@@ -169,6 +169,7 @@ const eventIcons: { [key in GestationEventType]: React.ReactElement } = {
     "Venta": <XCircle className="h-5 w-5" />,
     "Descarte": <XCircle className="h-5 w-5" />,
     "Muerte": <XCircle className="h-5 w-5" />,
+    "Destete": <XCircle className="h-5 w-5 text-orange-500" />,
 };
 
 const allEventTypes: GestationEventType[] = ["Celo", "Celo no Servido", "Inseminación", "Parto", "Aborto", "Tratamiento", "Vacunación", "Venta", "Descarte", "Muerte"];
@@ -556,5 +557,7 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
+
+    
 
     
