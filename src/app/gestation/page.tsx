@@ -36,7 +36,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
-type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte";
+type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte" | "Destete";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Event {
@@ -44,6 +44,9 @@ interface Event {
     date: string;
     inseminationGroup?: string;
     details?: string;
+    liveBorn?: number;
+    stillborn?: number;
+    mummified?: number;
 }
 
 interface Pig {
@@ -61,12 +64,82 @@ interface Pig {
 }
 
 const initialPigs: Pig[] = [
-  { id: 'PIG-001', breed: 'Duroc', birthDate: '2024-04-15', arrivalDate: '2024-05-01', weight: 85, gender: 'Hembra', purchaseValue: 150, age: 0, status: 'Gestante', lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' }, events: [{ type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A.' }] },
-  { id: 'PIG-002', breed: 'Yorkshire', birthDate: '2024-05-13', arrivalDate: '2024-06-01', weight: 60, gender: 'Hembra', purchaseValue: 160, age: 0, status: 'Vacia', lastEvent: { type: 'Celo no Servido', date: '2024-07-01' }, events: [{ type: 'Celo no Servido', date: '2024-07-01', details: 'Baja condición corporal.' }] },
-  { id: 'PIG-003', breed: 'Landrace', birthDate: '2024-02-26', arrivalDate: '2024-03-15', weight: 110, gender: 'Hembra', purchaseValue: 155, age: 0, status: 'Destetada', lastEvent: { type: 'Parto', date: '2024-05-20' }, events: [{ type: 'Parto', date: '2024-05-20', details: '12 nacidos vivos.' }] },
-  { id: 'PIG-004', breed: 'Duroc', birthDate: '2024-06-10', arrivalDate: '2024-06-25', weight: 25, gender: 'Macho', purchaseValue: 120, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
-  { id: 'PIG-005', breed: 'Yorkshire', birthDate: '2024-03-25', arrivalDate: '2024-04-10', weight: 95, gender: 'Hembra', purchaseValue: 165, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
-  { id: 'PIG-006', breed: 'Landrace', birthDate: '2024-02-12', arrivalDate: '2024-03-01', weight: 115, gender: 'Macho', purchaseValue: 145, age: 0, status: 'Remplazo', lastEvent: { type: 'Ninguno', date: '' }, events: [] },
+    { 
+        id: 'PIG-001', 
+        breed: 'Duroc', 
+        birthDate: '2023-04-15', 
+        arrivalDate: '2023-05-01', 
+        weight: 190, 
+        gender: 'Hembra', 
+        purchaseValue: 150, 
+        age: 0, 
+        status: 'Lactante', 
+        lastEvent: { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' }, 
+        events: [
+            { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' },
+            { type: 'Inseminación', date: '2024-03-17', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario A con semen de macho M-012.' },
+        ] 
+    },
+    { 
+        id: 'PIG-002', 
+        breed: 'Landrace', 
+        birthDate: '2023-02-26', 
+        arrivalDate: '2023-03-15', 
+        weight: 210, 
+        gender: 'Hembra', 
+        purchaseValue: 155, 
+        age: 0, 
+        status: 'Lactante', 
+        lastEvent: { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' }, 
+        events: [
+            { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' },
+            { type: 'Inseminación', date: '2024-03-19', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario B.' },
+        ] 
+    },
+    { 
+        id: 'PIG-003', 
+        breed: 'Yorkshire', 
+        birthDate: '2023-05-13', 
+        arrivalDate: '2023-06-01', 
+        weight: 180, 
+        gender: 'Hembra', 
+        purchaseValue: 160, 
+        age: 0, 
+        status: 'Gestante', 
+        lastEvent: { type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21' }, 
+        events: [
+            { type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21', details: 'Inseminado por Operario A.' }
+        ] 
+    },
+    { 
+        id: 'PIG-004', 
+        breed: 'Duroc', 
+        birthDate: '2024-01-10', 
+        arrivalDate: '2024-02-25', 
+        weight: 120, 
+        gender: 'Macho', 
+        purchaseValue: 120, 
+        age: 0, 
+        status: 'Remplazo', 
+        lastEvent: { type: 'Ninguno', date: '' }, 
+        events: [] 
+    },
+    { 
+        id: 'PIG-005', 
+        breed: 'Pietrain', 
+        birthDate: '2023-03-25', 
+        arrivalDate: '2023-04-10', 
+        weight: 185, 
+        gender: 'Hembra', 
+        purchaseValue: 165, 
+        age: 0, 
+        status: 'Destetada', 
+        lastEvent: { type: 'Destete', date: '2024-06-25' }, 
+        events: [
+            { type: 'Destete', date: '2024-06-25', details: 'Destetados 11 lechones.' },
+            { type: 'Parto', date: '2024-05-28', details: '11 nacidos vivos, 2 mortinatos.' }
+        ] 
+    },
 ];
 
 const pigBreeds = [

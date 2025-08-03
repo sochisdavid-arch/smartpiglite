@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, getWeek } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 interface NurseryBatch {
@@ -29,6 +29,36 @@ export default function PreceboPage() {
             const batchData = JSON.parse(storedBatches);
             const batchArray = Object.values(batchData) as NurseryBatch[];
             setBatches(batchArray.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()));
+        } else {
+            // Create a mock batch if none exists
+            const pigsFromStorage = localStorage.getItem('pigs');
+            if (pigsFromStorage) {
+                const allPigs = JSON.parse(pigsFromStorage);
+                const lactatingSows = allPigs.filter((p: any) => p.status === 'Lactante');
+                if (lactatingSows.length > 0) {
+                    const firstSow = lactatingSows[0];
+                    const partoEvent = firstSow.events.find((e: any) => e.type === 'Parto');
+                    if (partoEvent) {
+                        const weaningDate = new Date(); // Mock weaning today
+                        const weekNumber = getWeek(weaningDate);
+                        const year = weaningDate.getFullYear();
+                        const batchId = `PRECEBO-${year}-${weekNumber}`;
+                        
+                        const newBatch: NurseryBatch = {
+                            id: batchId,
+                            creationDate: weaningDate.toISOString().substring(0,10),
+                            pigletCount: (partoEvent.liveBorn || 12) - 1,
+                            avgWeight: 6.5,
+                            avgAge: 21,
+                            sows: lactatingSows.map((p: any) => p.id),
+                            status: 'Activo'
+                        };
+                        const newBatchData = { [batchId]: newBatch };
+                        localStorage.setItem('nurseryBatches', JSON.stringify(newBatchData));
+                        setBatches([newBatch]);
+                    }
+                }
+            }
         }
     }, []);
 
