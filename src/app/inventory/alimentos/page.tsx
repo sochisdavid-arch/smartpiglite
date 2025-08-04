@@ -232,7 +232,7 @@ export default function AlimentosPage() {
                                 </div>
                             </form>
                         </ScrollArea>
-                        <DialogFooter className="flex-shrink-0 border-t pt-4 bg-background">
+                        <DialogFooter className="flex-shrink-0 border-t pt-4 bg-background -mx-6 px-6 sm:justify-end sm:space-x-2">
                             <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                             <Button type="submit" form="add-food-form">Guardar Ingreso</Button>
                         </DialogFooter>
@@ -242,5 +242,3 @@ export default function AlimentosPage() {
         </AppLayout>
     );
 }
-
-    
