@@ -46,7 +46,14 @@ export default function PreceboPage() {
         const storedBatches = localStorage.getItem('nurseryBatches');
         if (storedBatches) {
             const batchData = JSON.parse(storedBatches);
-            const batchArray = Object.values(batchData) as NurseryBatch[];
+            const batchArray = Object.values(batchData).map(batch => ({
+                ...(batch as NurseryBatch),
+                pigletCount: Number((batch as NurseryBatch).pigletCount),
+                initialPigletCount: Number((batch as NurseryBatch).initialPigletCount),
+                totalWeight: Number((batch as NurseryBatch).totalWeight),
+                avgWeight: Number((batch as NurseryBatch).avgWeight),
+                avgAge: Number((batch as NurseryBatch).avgAge),
+            })) as NurseryBatch[];
             setBatches(batchArray.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()));
         } else {
              const exampleBatchId = 'PRECEBO-2024-28';
@@ -166,7 +173,7 @@ export default function PreceboPage() {
                                         <TableCell>{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'Fecha Inválida'}</TableCell>
                                         <TableCell>{batch.pigletCount}</TableCell>
                                         <TableCell>{batch.avgAge}</TableCell>
-                                        <TableCell>{batch.avgWeight.toFixed(2)}</TableCell>
+                                        <TableCell>{Number(batch.avgWeight).toFixed(2)}</TableCell>
                                         <TableCell>
                                             <Badge variant={batch.status === 'Activo' ? 'default' : 'secondary'}>
                                                 {batch.status}
