@@ -115,7 +115,7 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                  <CardHeader className="flex flex-row justify-between items-start">
                     <div>
                         <CardTitle>Informe Final de Lote de Precebo: {reportData.batchId}</CardTitle>
-                        <CardDescription>Generado el {format(parseISO(reportData.generationDate), 'dd/MM/yyyy HH:mm')}</CardDescription>
+                        <CardDescription>Generado el {isValid(parseISO(reportData.generationDate)) ? format(parseISO(reportData.generationDate), 'dd/MM/yyyy HH:mm') : 'N/A'}</CardDescription>
                     </div>
                      <Button variant="outline" onClick={handlePrint} className="no-print">
                         <Printer className="mr-2 h-4 w-4"/> Imprimir
@@ -126,30 +126,30 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                         <Card>
                             <CardHeader><CardTitle className="text-base">Resumen General</CardTitle></CardHeader>
                             <CardContent>
-                                <ReportMetric label="Motivo Liquidación" value={reportData.liquidationReason} />
+                                <ReportMetric label="Motivo Liquidación" value={reportData.liquidationReason || 'N/A'} />
                                 <ReportMetric label="Fecha Inicio" value={isValid(parseISO(reportData.startDate)) ? format(parseISO(reportData.startDate), 'dd/MM/yyyy') : 'N/A'} />
                                 <ReportMetric label="Fecha Fin" value={isValid(parseISO(reportData.endDate)) ? format(parseISO(reportData.endDate), 'dd/MM/yyyy') : 'N/A'} />
-                                <ReportMetric label="Días en Precebo" value={reportData.daysInPrecebo} unit="días"/>
+                                <ReportMetric label="Días en Precebo" value={reportData.daysInPrecebo || 0} unit="días"/>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader><CardTitle className="text-base">Población</CardTitle></CardHeader>
                             <CardContent>
-                                <ReportMetric label="Nº Inicial" value={reportData.initialCount} unit="lechones"/>
-                                <ReportMetric label="Nº Final" value={reportData.finalCount} unit="lechones"/>
-                                <ReportMetric label="Nº Muertes" value={reportData.totalDeaths} unit="lechones"/>
-                                <ReportMetric label="Mortalidad" value={`${reportData.mortalityRate.toFixed(2)}%`} isBad={reportData.mortalityRate > 5} />
-                                <ReportMetric label="Edad Inicial" value={reportData.initialAge} unit="días"/>
-                                <ReportMetric label="Edad Final" value={reportData.finalAge} unit="días"/>
+                                <ReportMetric label="Nº Inicial" value={reportData.initialCount || 0} unit="lechones"/>
+                                <ReportMetric label="Nº Final" value={reportData.finalCount || 0} unit="lechones"/>
+                                <ReportMetric label="Nº Muertes" value={reportData.totalDeaths || 0} unit="lechones"/>
+                                <ReportMetric label="Mortalidad" value={`${(reportData.mortalityRate || 0).toFixed(2)}%`} isBad={(reportData.mortalityRate || 0) > 5} />
+                                <ReportMetric label="Edad Inicial" value={reportData.initialAge || 0} unit="días"/>
+                                <ReportMetric label="Edad Final" value={reportData.finalAge || 0} unit="días"/>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader><CardTitle className="text-base">Peso y Ganancia</CardTitle></CardHeader>
                             <CardContent>
-                                <ReportMetric label="Peso Prom. Inicial" value={reportData.initialAvgWeight.toFixed(2)} unit="kg"/>
-                                <ReportMetric label="Peso Prom. Final" value={reportData.finalAvgWeight.toFixed(2)} unit="kg"/>
-                                <ReportMetric label="Ganancia por Animal" value={reportData.animalWeightGain.toFixed(2)} unit="kg"/>
-                                <ReportMetric label="Ganancia Diaria" value={reportData.dailyWeightGain.toFixed(0)} unit="g/día" isGood={reportData.dailyWeightGain >= DAILY_GAIN_TARGET} isBad={reportData.dailyWeightGain < (DAILY_GAIN_TARGET * 0.8)}/>
+                                <ReportMetric label="Peso Prom. Inicial" value={(reportData.initialAvgWeight || 0).toFixed(2)} unit="kg"/>
+                                <ReportMetric label="Peso Prom. Final" value={(reportData.finalAvgWeight || 0).toFixed(2)} unit="kg"/>
+                                <ReportMetric label="Ganancia por Animal" value={(reportData.animalWeightGain || 0).toFixed(2)} unit="kg"/>
+                                <ReportMetric label="Ganancia Diaria" value={(reportData.dailyWeightGain || 0).toFixed(0)} unit="g/día" isGood={(reportData.dailyWeightGain || 0) >= DAILY_GAIN_TARGET} isBad={(reportData.dailyWeightGain || 0) < (DAILY_GAIN_TARGET * 0.8)}/>
                             </CardContent>
                         </Card>
                     </div>
@@ -161,17 +161,17 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <Card className="bg-muted/40">
                                 <CardContent className="pt-6">
-                                    <ReportMetric label="Alimento Total Consumido" value={reportData.totalFeedConsumed.toFixed(2)} unit="kg"/>
+                                    <ReportMetric label="Alimento Total Consumido" value={(reportData.totalFeedConsumed || 0).toFixed(2)} unit="kg"/>
                                 </CardContent>
                             </Card>
                              <Card className="bg-muted/40">
                                 <CardContent className="pt-6">
-                                    <ReportMetric label="Consumo Diario / Animal" value={reportData.dailyAnimalConsumption.toFixed(3)} unit="kg" isGood={reportData.dailyAnimalConsumption >= DAILY_CONSUMPTION_TARGET} isBad={reportData.dailyAnimalConsumption < (DAILY_CONSUMPTION_TARGET*0.9)} />
+                                    <ReportMetric label="Consumo Diario / Animal" value={(reportData.dailyAnimalConsumption || 0).toFixed(3)} unit="kg" isGood={(reportData.dailyAnimalConsumption || 0) >= DAILY_CONSUMPTION_TARGET} isBad={(reportData.dailyAnimalConsumption || 0) < (DAILY_CONSUMPTION_TARGET*0.9)} />
                                 </CardContent>
                             </Card>
                             <Card className="bg-muted/40">
                                 <CardContent className="pt-6">
-                                    <ReportMetric label="Conversión Alimenticia" value={reportData.feedConversion.toFixed(2)} isGood={reportData.feedConversion <= FEED_CONVERSION_TARGET} isBad={reportData.feedConversion > (FEED_CONVERSION_TARGET * 1.1)} />
+                                    <ReportMetric label="Conversión Alimenticia" value={(reportData.feedConversion || 0).toFixed(2)} isGood={(reportData.feedConversion || 0) <= FEED_CONVERSION_TARGET && (reportData.feedConversion || 0) > 0} isBad={(reportData.feedConversion || 0) > (FEED_CONVERSION_TARGET * 1.1)} />
                                 </CardContent>
                             </Card>
                         </div>
@@ -191,7 +191,7 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {reportData.healthRecords.length > 0 ? reportData.healthRecords.map((record, index) => (
+                                {reportData.healthRecords && reportData.healthRecords.length > 0 ? reportData.healthRecords.map((record, index) => (
                                     <TableRow key={index}>
                                         <TableCell>{isValid(parseISO(record.date)) ? format(parseISO(record.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                         <TableCell>{record.type}</TableCell>
