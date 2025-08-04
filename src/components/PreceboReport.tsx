@@ -69,9 +69,10 @@ const ReportMetric: React.FC<ReportMetricProps> = ({ label, value, unit, isGood,
 export function PreceboReport({ reportData }: { reportData: PreceboReportData }) {
     
     // Performance thresholds (example values, should be configurable)
-    const DAILY_GAIN_TARGET = 450; // grams
-    const FEED_CONVERSION_TARGET = 1.6;
-    const DAILY_CONSUMPTION_TARGET = 0.7; // kg
+    const isCeba = reportData.batchId.includes('CEBA');
+    const DAILY_GAIN_TARGET = isCeba ? 800 : 450; // grams
+    const FEED_CONVERSION_TARGET = isCeba ? 2.8 : 1.6;
+    const DAILY_CONSUMPTION_TARGET = isCeba ? 2.5 : 0.7; // kg
 
     const handlePrint = () => {
         const printContent = document.getElementById('report-to-print');
@@ -114,7 +115,9 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
             <Card className="shadow-none border-none">
                  <CardHeader className="flex flex-row justify-between items-start">
                     <div>
-                        <CardTitle>Informe Final de Lote de Precebo: {reportData.batchId}</CardTitle>
+                        <CardTitle>
+                            {isCeba ? `Informe Final de Lote de Ceba: ${reportData.batchId}` : `Informe Final de Lote de Precebo: ${reportData.batchId}`}
+                        </CardTitle>
                         <CardDescription>Generado el {isValid(parseISO(reportData.generationDate)) ? format(parseISO(reportData.generationDate), 'dd/MM/yyyy HH:mm') : 'N/A'}</CardDescription>
                     </div>
                      <Button variant="outline" onClick={handlePrint} className="no-print">
@@ -129,15 +132,15 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                                 <ReportMetric label="Motivo Liquidación" value={reportData.liquidationReason || 'N/A'} />
                                 <ReportMetric label="Fecha Inicio" value={isValid(parseISO(reportData.startDate)) ? format(parseISO(reportData.startDate), 'dd/MM/yyyy') : 'N/A'} />
                                 <ReportMetric label="Fecha Fin" value={isValid(parseISO(reportData.endDate)) ? format(parseISO(reportData.endDate), 'dd/MM/yyyy') : 'N/A'} />
-                                <ReportMetric label="Días en Precebo" value={reportData.daysInPrecebo || 0} unit="días"/>
+                                <ReportMetric label={isCeba ? "Días en Ceba" : "Días en Precebo"} value={reportData.daysInPrecebo || 0} unit="días"/>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader><CardTitle className="text-base">Población</CardTitle></CardHeader>
                             <CardContent>
-                                <ReportMetric label="Nº Inicial" value={reportData.initialCount || 0} unit="lechones"/>
-                                <ReportMetric label="Nº Final" value={reportData.finalCount || 0} unit="lechones"/>
-                                <ReportMetric label="Nº Muertes" value={reportData.totalDeaths || 0} unit="lechones"/>
+                                <ReportMetric label="Nº Inicial" value={reportData.initialCount || 0} unit="animales"/>
+                                <ReportMetric label="Nº Final" value={reportData.finalCount || 0} unit="animales"/>
+                                <ReportMetric label="Nº Muertes" value={reportData.totalDeaths || 0} unit="animales"/>
                                 <ReportMetric label="Mortalidad" value={`${(reportData.mortalityRate || 0).toFixed(2)}%`} isBad={(reportData.mortalityRate || 0) > 5} />
                                 <ReportMetric label="Edad Inicial" value={reportData.initialAge || 0} unit="días"/>
                                 <ReportMetric label="Edad Final" value={reportData.finalAge || 0} unit="días"/>
