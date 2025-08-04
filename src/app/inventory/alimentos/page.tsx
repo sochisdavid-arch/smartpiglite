@@ -187,13 +187,15 @@ export default function AlimentosPage() {
                         </DialogHeader>
                         <ScrollArea className="flex-1 -mx-6">
                             <form onSubmit={handleAddSubmit} id="add-food-form" className="space-y-4 px-6 py-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="entryDate">Fecha de Ingreso</Label>
-                                    <Input id="entryDate" name="entryDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="productName">Nombre del Alimento</Label>
-                                    <Input id="productName" name="productName" type="text" placeholder="Ej: Precebo Fase 1" required />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="entryDate">Fecha de Ingreso</Label>
+                                        <Input id="entryDate" name="entryDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="productName">Nombre del Alimento</Label>
+                                        <Input id="productName" name="productName" type="text" placeholder="Ej: Precebo Fase 1" required />
+                                    </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -218,7 +220,7 @@ export default function AlimentosPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Precio / Kilo ($)</Label>
-                                        <Input value={pricePerKg > 0 ? pricePerKg.toFixed(2) : '0.00'} readOnly className="font-semibold bg-muted" />
+                                        <Input value={pricePerKg > 0 ? pricePerKg.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} readOnly className="font-semibold bg-muted" />
                                     </div>
                                 </div>
                                 
@@ -242,3 +244,5 @@ export default function AlimentosPage() {
         </AppLayout>
     );
 }
+
+    
