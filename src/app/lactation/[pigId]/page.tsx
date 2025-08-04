@@ -637,7 +637,7 @@ export default function LactationHistoryPage() {
                             
                             <div className="space-y-8">
                                 {pig.events.filter(e => allLactationEventTypes.includes(e.type as LactationEventType)).map((event, index) => (
-                                    <div key={event.id} className="flex gap-4 items-start relative">
+                                    <div key={`${event.id}-${index}`} className="flex gap-4 items-start relative">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
                                             {eventIcons[event.type as LactationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
