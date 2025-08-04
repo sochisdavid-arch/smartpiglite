@@ -26,7 +26,7 @@ export default function FinancePage() {
                 </div>
 
                 <Tabs defaultValue="dashboard" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:grid-cols-10">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:grid-cols-9">
                         <TabsTrigger value="dashboard">Resumen</TabsTrigger>
                         <TabsTrigger value="income">Ingresos</TabsTrigger>
                         <TabsTrigger value="expenses">Egresos</TabsTrigger>
@@ -55,7 +55,7 @@ export default function FinancePage() {
                             <CardHeader>
                                 <CardTitle>Registro de Ingresos</CardTitle>
                                 <CardDescription>Añada cualquier ingreso monetario a la granja.</CardDescription>
-                            </Header>
+                            </CardHeader>
                             <CardContent>
                                <Alert><TrendingUp className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de ingresos estará disponible próximamente.</AlertDescription></Alert>
                             </CardContent>
