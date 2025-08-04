@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { mockInventory } from '@/lib/mock-data';
+import { deductFromStock, getInventory } from '@/lib/inventory';
 
 
 // Mock data - in a real app, this would come from an API
@@ -34,6 +35,8 @@ interface Event {
     liveBorn?: number;
     stillborn?: number;
     mummified?: number;
+    product?: string;
+    dose?: number;
 }
 
 interface Pig {
@@ -263,6 +266,26 @@ export default function PigHistoryPage() {
                 eventData.details = `${liveBornCount} lechones vivos. Peso camada: ${formData.get('litterWeight')}kg.`;
             }
 
+            if (['Tratamiento', 'Vacunación'].includes(selectedEventType)) {
+                eventData.product = formData.get('product') as string;
+                eventData.dose = Number(formData.get('dose'));
+
+                if (!editingEvent && eventData.product && eventData.dose) {
+                    const result = deductFromStock(eventData.product, eventData.dose);
+                    if (result.success) {
+                        toast({
+                            title: "Stock Actualizado",
+                            description: `Se descontaron ${eventData.dose.toFixed(2)}ml. Stock restante: ${result.newStock?.toFixed(2)}ml`,
+                        });
+                    } else {
+                        toast({ variant: "destructive", title: "Error de Stock", description: result.message });
+                        return;
+                    }
+                }
+                eventData.details = `${formData.get('details')} - Dosis: ${eventData.dose}ml.`;
+            }
+
+
             if (editingEvent) {
                 updatedPig.events = updatedPig.events.map(ev => ev.id === editingEvent.id ? eventData : ev);
             } else {
@@ -410,42 +433,42 @@ export default function PigHistoryPage() {
                         {selectedEventType === 'Tratamiento' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="treatmentProduct">Producto</Label>
-                                     <Select name="treatmentProduct" required>
+                                    <Label htmlFor="product">Producto</Label>
+                                     <Select name="product" required>
                                         <SelectTrigger><SelectValue placeholder="Seleccionar medicamento"/></SelectTrigger>
                                         <SelectContent>
-                                            {mockInventory.filter(p => p.category === 'medicamento').map(item => (
+                                            {getInventory().filter(p => p.category === 'medicamento').map(item => (
                                                 <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="treatmentDose">Dosis (ml)</Label>
-                                    <Input id="treatmentDose" name="treatmentDose" type="number" step="0.1" placeholder="Ej. 2.5" required />
+                                    <Label htmlFor="dose">Dosis (ml)</Label>
+                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.5" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="treatmentReason">Motivo</Label>
-                                    <Input id="treatmentReason" name="treatmentReason" placeholder="Ej: Tratamiento para cojera" required/>
+                                    <Label htmlFor="details">Motivo</Label>
+                                    <Input id="details" name="details" placeholder="Ej: Tratamiento para cojera" required defaultValue={editingEvent?.details}/>
                                 </div>
                             </>
                         )}
                         {selectedEventType === 'Vacunación' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="vaccine">Vacuna / Producto</Label>
-                                     <Select name="vaccineProduct" required>
+                                    <Label htmlFor="product">Vacuna / Producto</Label>
+                                     <Select name="product" required>
                                         <SelectTrigger><SelectValue placeholder="Seleccionar vacuna"/></SelectTrigger>
                                         <SelectContent>
-                                            {mockInventory.filter(p => p.category === 'vacuna').map(item => (
+                                            {getInventory().filter(p => p.category === 'vacuna').map(item => (
                                                 <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="vaccineDose">Dosis (ml)</Label>
-                                    <Input id="vaccineDose" name="vaccineDose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                    <Label htmlFor="dose">Dosis (ml)</Label>
+                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required />
                                 </div>
                              </>
                         )}

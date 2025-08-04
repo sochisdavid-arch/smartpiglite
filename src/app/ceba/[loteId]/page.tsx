@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PreceboReportData } from '@/components/PreceboReport'; 
+import { deductFromStock, getInventory } from '@/lib/inventory';
 
 
 interface CebaBatch {
@@ -174,6 +175,18 @@ export default function LoteCebaPage() {
         if (!batch) return;
         const updatedHistory = consumptionHistory.map(week => {
             if (week.id === weekId) {
+                const oldConsumptionValue = Number(week.consumption[dayIndex] || 0);
+                const newConsumptionValue = Number(value || 0);
+                const consumptionDifference = newConsumptionValue - oldConsumptionValue;
+
+                if (week.feedType && consumptionDifference !== 0) {
+                    deductFromStock(week.feedType, consumptionDifference);
+                    toast({
+                        title: "Stock Actualizado",
+                        description: `Se han descontado ${consumptionDifference.toFixed(2)}kg de ${mockInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
+                    });
+                }
+
                 const newConsumption = [...week.consumption];
                 newConsumption[dayIndex] = value;
                 return { ...week, consumption: newConsumption };
@@ -305,6 +318,22 @@ export default function LoteCebaPage() {
                 updatedBatch.events = updatedBatch.events.map(ev => ev.id === editingEvent.id ? newEvent : ev);
             } else {
                  updatedBatch.events = [...updatedBatch.events, newEvent];
+                 if (['Tratamiento', 'Vacunación'].includes(newEvent.type) && newEvent.product && newEvent.dose && newEvent.animalCount) {
+                    const totalDose = newEvent.dose * newEvent.animalCount;
+                    const result = deductFromStock(newEvent.product, totalDose);
+                    if(result.success) {
+                        toast({
+                            title: "Stock Actualizado",
+                            description: `Se descontaron ${totalDose}ml del producto. Stock restante: ${result.newStock?.toFixed(2)}`,
+                        });
+                    } else {
+                         toast({
+                            variant: "destructive",
+                            title: "Error de Stock",
+                            description: result.message,
+                        });
+                    }
+                }
             }
 
 
@@ -364,7 +393,7 @@ export default function LoteCebaPage() {
                                         <Select name="product" required defaultValue={editingEvent?.product}>
                                             <SelectTrigger><SelectValue placeholder={`Seleccionar ${selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna'}`} /></SelectTrigger>
                                             <SelectContent>
-                                                {mockInventory.filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
+                                                {getInventory().filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
                                                     <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -471,7 +500,7 @@ export default function LoteCebaPage() {
         );
     }
     
-    const feedOptions = mockInventory.filter(p => p.category === 'alimento');
+    const feedOptions = getInventory().filter(p => p.category === 'alimento');
     const daysOfWeek = (batch && isValid(parseISO(batch.creationDate))) ? (() => {
         const startDate = parseISO(batch.creationDate);
         const startDayIndex = getDay(startDate) === 0 ? 6 : getDay(startDate) - 1; 
@@ -594,7 +623,7 @@ export default function LoteCebaPage() {
                                                 <Input 
                                                     type="number"
                                                     value={dayConsumption}
-                                                    onChange={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
+                                                    onBlur={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
                                                     className="w-20 text-center"
                                                 />
                                             </TableCell>
@@ -686,5 +715,3 @@ export default function LoteCebaPage() {
         </AppLayout>
     );
 }
-
-    

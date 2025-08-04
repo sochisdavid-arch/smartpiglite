@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { mockInventory } from '@/lib/mock-data';
+import { deductFromStock, getInventory } from '@/lib/inventory';
 
 // Types specific to Lactation
 type LactationEventType = "Tratamiento" | "Vacunación" | "Muerte de Lechón" | "Adopción de Lechón" | "Donación de Lechón" | "Destete" | "Venta" | "Muerte";
@@ -40,6 +41,7 @@ interface Event {
     cause?: string;
     liveBorn?: number;
     product?: string;
+    dose?: number;
 }
 
 interface Pig {
@@ -61,6 +63,7 @@ interface ConsumptionRecord {
     date: string;
     quantity: number;
     feedType: string;
+    productId: string;
 }
 
 const initialPigs: Pig[] = [
@@ -161,33 +164,41 @@ export default function LactationHistoryPage() {
      const ConsumptionForm = () => {
         const [selectedFeed, setSelectedFeed] = React.useState<string>();
         const [quantity, setQuantity] = React.useState<number | string>('');
-        const feedOptions = mockInventory.filter(p => p.category === 'alimento');
+        const feedOptions = getInventory().filter(p => p.category === 'alimento');
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
             
-            if (!selectedFeed) {
-                toast({ variant: "destructive", title: "Campo requerido", description: "Por favor, seleccione un tipo de alimento." });
+            if (!selectedFeed || !quantity) {
+                toast({ variant: "destructive", title: "Campos requeridos", description: "Por favor, seleccione un alimento y una cantidad." });
                 return;
             }
 
             const foundFeed = feedOptions.find(o => o.id === selectedFeed);
             if (!foundFeed) return;
+            
+            const quantityNumber = Number(quantity);
+            const result = deductFromStock(foundFeed.id, quantityNumber);
+
+            if (!result.success) {
+                toast({ variant: "destructive", title: "Error de Stock", description: result.message });
+                return;
+            }
 
             const newRecord: ConsumptionRecord = {
                 id: new Date().toISOString(),
                 date: (document.getElementById('consumptionDate') as HTMLInputElement).value,
-                quantity: Number(quantity),
+                quantity: quantityNumber,
                 feedType: foundFeed.name,
+                productId: foundFeed.id,
             };
 
             const updatedHistory = [newRecord, ...consumptionHistory];
             setConsumptionHistory(updatedHistory);
             localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(updatedHistory));
             
-            toast({ title: "¡Consumo Registrado!", description: `${quantity}kg de ${foundFeed.name} registrado para la cerda ${pigId}.` });
+            toast({ title: "¡Consumo Registrado!", description: `${quantity}kg de ${foundFeed.name} registrado. Stock restante: ${result.newStock?.toFixed(2)}kg` });
             
-            // Reset form fields
             setSelectedFeed(undefined);
             setQuantity('');
         }
@@ -197,7 +208,7 @@ export default function LactationHistoryPage() {
                 <DialogHeader>
                     <DialogTitle>Registrar Consumo Individual</DialogTitle>
                     <DialogDescription>
-                        Registre el consumo diario de alimento para la cerda {pigId}.
+                        Registre el consumo diario de alimento para la cerda {pigId}. El stock se descontará automáticamente.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto -mx-6 px-6">
@@ -301,6 +312,7 @@ export default function LactationHistoryPage() {
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
+            if (!pig) return;
             const formData = new FormData(e.target as HTMLFormElement);
             const eventDate = formData.get('eventDate') as string;
             
@@ -311,13 +323,31 @@ export default function LactationHistoryPage() {
                 details: formData.get('details') as string || `${selectedEventType} registrado.`,
             };
 
-            let updatedPig = { ...pig! };
+            let updatedPig = { ...pig };
 
             // Specific event logic
             if (['Tratamiento', 'Vacunación'].includes(selectedEventType)) {
                 newEvent.target = formData.get('target') as 'madre' | 'lechones';
                 newEvent.product = formData.get('product') as string;
-                newEvent.details = `${newEvent.product} aplicado a ${newEvent.target}.`;
+                newEvent.dose = Number(formData.get('dose'));
+                
+                const animalCount = newEvent.target === 'madre' ? 1 : calculateCurrentPiglets();
+                const totalDose = newEvent.dose * animalCount;
+
+                if (!editingEvent && newEvent.product) {
+                    const result = deductFromStock(newEvent.product, totalDose);
+                    if (result.success) {
+                        toast({
+                            title: "Stock Actualizado",
+                            description: `Se descontaron ${totalDose.toFixed(2)}ml. Stock restante: ${result.newStock?.toFixed(2)}ml`,
+                        });
+                    } else {
+                        toast({ variant: "destructive", title: "Error de Stock", description: result.message });
+                        return; // Prevent saving event if not enough stock
+                    }
+                }
+                
+                newEvent.details = `${formData.get('details')} - Dosis: ${newEvent.dose}ml - Aplicado a ${animalCount} ${newEvent.target === 'madre' ? 'madre' : 'lechones'}.`;
             }
             if (selectedEventType === 'Muerte de Lechón') {
                 newEvent.pigletCount = Number(formData.get('pigletCount'));
@@ -358,14 +388,16 @@ export default function LactationHistoryPage() {
                     const partoEvent = pig!.events.find(e => e.type === 'Parto');
                     const avgAge = partoEvent ? differenceInDays(weaningDate, parseISO(partoEvent.date)) : 0;
                     
-                    const healthEventsForPiglets = pig!.events.filter(e => e.target === 'lechones');
+                    const healthEventsForPiglets = pig!.events
+                        .filter(e => e.target === 'lechones' && e.date >= partoEvent.date && e.date <= eventDate)
+                        .map(e => ({...e, type: e.type, details: e.details, animalCount: newPigletsCount})); // Carry over health events
 
 
                     if (existingBatch) {
                         existingBatch.pigletCount += newPigletsCount;
                         existingBatch.totalWeight += newTotalWeight;
                         existingBatch.sows.push(pig!.id);
-                        existingBatch.avgWeight = (existingBatch.totalWeight / existingBatch.pigletCount).toFixed(2);
+                        existingBatch.avgWeight = (existingBatch.totalWeight / existingBatch.pigletCount);
                         existingBatch.events.push(...healthEventsForPiglets);
                     } else {
                         nurseryBatches[batchId] = {
@@ -374,7 +406,7 @@ export default function LactationHistoryPage() {
                             pigletCount: newPigletsCount,
                             initialPigletCount: newPigletsCount,
                             totalWeight: newTotalWeight,
-                            avgWeight: (newTotalWeight / newPigletsCount).toFixed(2),
+                            avgWeight: (newTotalWeight / newPigletsCount),
                             avgAge: avgAge,
                             sows: [pig!.id],
                             status: 'Activo',
@@ -444,7 +476,7 @@ localStorage.setItem('pigs', JSON.stringify(pigs));
                                     <Select name="product" required defaultValue={editingEvent?.product}>
                                         <SelectTrigger><SelectValue placeholder={`Seleccionar ${selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna'}`} /></SelectTrigger>
                                         <SelectContent>
-                                            {mockInventory.filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
+                                            {getInventory().filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
                                                 <SelectItem key={item.id} value={item.id}>{item.name} (Stock: {item.stock})</SelectItem>
                                             ))}
                                         </SelectContent>
@@ -452,7 +484,11 @@ localStorage.setItem('pigs', JSON.stringify(pigs));
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="dose">Dosis (ml)</Label>
-                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required defaultValue={editingEvent?.dose} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="details">Motivo / Notas</Label>
+                                    <Input id="details" name="details" placeholder="Motivo del tratamiento o nota" required defaultValue={editingEvent?.details}/>
                                 </div>
                             </>
                         )}
@@ -543,7 +579,7 @@ localStorage.setItem('pigs', JSON.stringify(pigs));
                             </div>
                         )}
                         
-                         {selectedEventType !== 'Muerte de Lechón' && selectedEventType !== 'Destete' && (
+                         {selectedEventType !== 'Muerte de Lechón' && selectedEventType !== 'Destete' && !(['Tratamiento', 'Vacunación'].includes(selectedEventType)) && (
                             <div className="space-y-2">
                                 <Label htmlFor="details">Notas Adicionales</Label>
                                 <Textarea id="details" name="details" placeholder="Cualquier nota adicional relevante para este evento." defaultValue={editingEvent?.details}/>
@@ -718,5 +754,3 @@ localStorage.setItem('pigs', JSON.stringify(pigs));
         </AppLayout>
     );
 }
-
-    
