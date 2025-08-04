@@ -366,16 +366,19 @@ export default function LotePreceboPage() {
         const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
         const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
         
-        const finalCount = finalBatch.initialPigletCount - totalDeaths;
+        const finalCount = (finalEvent.animalCount || finalBatch.pigletCount);
         const daysInPrecebo = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
         const finalAge = finalBatch.avgAge + daysInPrecebo;
         const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
         
-        const finalWeightEvent = finalEvent.type === 'Traslado de lote' || finalEvent.type === 'Venta de lote' ? finalEvent : null;
-        const finalAvgWeight = finalWeightEvent?.avgWeight || 0;
+        const finalAvgWeight = finalEvent.avgWeight || 0;
         const finalTotalWeight = finalAvgWeight * finalCount;
         const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
 
+        const animalWeightGain = finalCount > 0 ? totalWeightGain / finalCount : 0;
+        const dailyWeightGain = finalCount > 0 && daysInPrecebo > 0 ? animalWeightGain / daysInPrecebo * 1000 : 0; // in grams
+        const feedConversion = totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0;
+        
         const report: PreceboReportData = {
             batchId: finalBatch.id,
             generationDate: new Date().toISOString(),
@@ -396,11 +399,11 @@ export default function LotePreceboPage() {
             initialAvgWeight: finalBatch.avgWeight,
             finalAvgWeight: finalAvgWeight,
             totalWeightGain: totalWeightGain,
-            animalWeightGain: finalCount > 0 ? totalWeightGain / finalCount : 0,
-            dailyWeightGain: finalCount > 0 && daysInPrecebo > 0 ? (totalWeightGain / finalCount) / daysInPrecebo * 1000 : 0, // in grams
+            animalWeightGain: animalWeightGain,
+            dailyWeightGain: dailyWeightGain,
             totalFeedConsumed: totalFeedConsumed,
             dailyAnimalConsumption: finalCount > 0 && daysInPrecebo > 0 ? (totalFeedConsumed / finalCount) / daysInPrecebo : 0,
-            feedConversion: totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0,
+            feedConversion: feedConversion,
             healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
                 date: e.date,
                 type: e.type,
