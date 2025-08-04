@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PreceboReportData } from '@/components/PreceboReport'; // Re-using for now, may need a CebaReportData
+import { PreceboReportData } from '@/components/PreceboReport'; 
 
 
 interface CebaBatch {
@@ -190,6 +190,62 @@ export default function LoteCebaPage() {
         setIsEventFormOpen(true);
     };
 
+    const generateLiquidationReport = (finalBatch: CebaBatch, finalEvent: BatchEvent) => {
+        const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
+        const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
+        
+        const finalCount = (finalEvent.animalCount || finalBatch.pigletCount);
+        const daysInCeba = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
+        const finalAge = finalBatch.avgAge + daysInCeba;
+        const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
+        
+        const finalAvgWeight = finalEvent.avgWeight || 0;
+        const finalTotalWeight = finalAvgWeight * finalCount;
+        const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
+
+        const animalWeightGain = finalCount > 0 ? totalWeightGain / finalCount : 0;
+        const dailyWeightGain = finalCount > 0 && daysInCeba > 0 ? (totalWeightGain / finalCount) / daysInCeba * 1000 : 0; // in grams
+        const feedConversion = totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0;
+        
+        const report: PreceboReportData = {
+            batchId: finalBatch.id,
+            generationDate: new Date().toISOString(),
+            liquidationReason: finalEvent.type,
+            startDate: finalBatch.creationDate,
+            endDate: finalEvent.date,
+            initialCount: finalBatch.initialPigletCount,
+            finalCount: finalCount,
+            initialAge: finalBatch.avgAge,
+            finalAge: finalAge,
+            daysInPrecebo: daysInCeba,
+            weeksOfLife: Math.floor(finalAge / 7),
+            totalDeaths: totalDeaths,
+            mortalityRate: finalBatch.initialPigletCount > 0 ? (totalDeaths / finalBatch.initialPigletCount) * 100 : 0,
+            avgMortalityAge: 0, 
+            initialTotalWeight: finalBatch.totalWeight,
+            finalTotalWeight: finalTotalWeight,
+            initialAvgWeight: finalBatch.avgWeight,
+            finalAvgWeight: finalAvgWeight,
+            totalWeightGain: totalWeightGain,
+            animalWeightGain: animalWeightGain,
+            dailyWeightGain: dailyWeightGain,
+            totalFeedConsumed: totalFeedConsumed,
+            dailyAnimalConsumption: finalCount > 0 && daysInCeba > 0 ? (totalFeedConsumed / finalCount) / daysInCeba : 0,
+            feedConversion: feedConversion,
+            healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
+                date: e.date,
+                type: e.type,
+                product: mockInventory.find(p => p.id === e.product)?.name || e.product || 'N/A',
+                details: e.details || `Aplicado a ${e.animalCount} animales.`
+            })),
+        };
+
+        const existingReports = JSON.parse(localStorage.getItem('liquidatedCebaReports') || '[]');
+        existingReports.push(report);
+        localStorage.setItem('liquidatedCebaReports', JSON.stringify(existingReports));
+    };
+
+
     const EventForm = () => {
         if (!selectedEventType || !batch) return null;
 
@@ -217,7 +273,7 @@ export default function LoteCebaPage() {
 
             if (selectedEventType === 'Venta de lote') {
                 updatedBatch.status = 'Finalizado';
-                // TODO: Generate Ceba liquidation report
+                generateLiquidationReport(updatedBatch, newEvent);
                 toast({
                     title: "¡Lote Finalizado!",
                     description: `El lote de ceba ${loteId} ha sido marcado como finalizado.`,

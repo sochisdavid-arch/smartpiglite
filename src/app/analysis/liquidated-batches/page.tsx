@@ -20,12 +20,17 @@ import { format, parseISO, isValid } from 'date-fns';
 
 export default function LiquidatedBatchesPage() {
     const [liquidatedPrecebo, setLiquidatedPrecebo] = React.useState<PreceboReportData[]>([]);
+    const [liquidatedCeba, setLiquidatedCeba] = React.useState<PreceboReportData[]>([]);
     const [selectedReport, setSelectedReport] = React.useState<PreceboReportData | null>(null);
 
     React.useEffect(() => {
-        const storedReports = localStorage.getItem('liquidatedPreceboReports');
-        if (storedReports) {
-            setLiquidatedPrecebo(JSON.parse(storedReports));
+        const storedPreceboReports = localStorage.getItem('liquidatedPreceboReports');
+        if (storedPreceboReports) {
+            setLiquidatedPrecebo(JSON.parse(storedPreceboReports));
+        }
+        const storedCebaReports = localStorage.getItem('liquidatedCebaReports');
+        if (storedCebaReports) {
+            setLiquidatedCeba(JSON.parse(storedCebaReports));
         }
     }, []);
    
@@ -67,14 +72,14 @@ export default function LiquidatedBatchesPage() {
                                                 <TableCell>{isValid(parseISO(report.endDate)) ? format(parseISO(report.endDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                                 <TableCell>{report.liquidationReason}</TableCell>
                                                 <TableCell>{report.finalCount}</TableCell>
-                                                <TableCell>{report.feedConversion.toFixed(2)}</TableCell>
+                                                <TableCell>{(report.feedConversion || 0).toFixed(2)}</TableCell>
                                                 <TableCell>
                                                     <Button variant="outline" size="sm" onClick={() => setSelectedReport(report)}>Ver Informe</Button>
                                                 </TableCell>
                                             </TableRow>
                                         )) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="h-24 text-center">No hay informes de lotes liquidados.</TableCell>
+                                                <TableCell colSpan={6} className="h-24 text-center">No hay informes de lotes de precebo liquidados.</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -87,10 +92,39 @@ export default function LiquidatedBatchesPage() {
                          <Card>
                             <CardHeader>
                                 <CardTitle>Informes de Lotes de Ceba</CardTitle>
-                                 <CardDescription>Funcionalidad en desarrollo. Próximamente podrá ver los informes de lotes de ceba finalizados.</CardDescription>
+                                 <CardDescription>Aquí se listan todos los lotes de ceba que han sido finalizados (vendidos).</CardDescription>
                             </CardHeader>
                             <CardContent>
-                               <p className="text-muted-foreground">En desarrollo.</p>
+                               <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>ID Lote</TableHead>
+                                            <TableHead>Fecha Finalización</TableHead>
+                                            <TableHead>Motivo</TableHead>
+                                            <TableHead>Nº Final</TableHead>
+                                            <TableHead>Conversión</TableHead>
+                                            <TableHead>Acciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {liquidatedCeba.length > 0 ? liquidatedCeba.map((report) => (
+                                            <TableRow key={report.batchId}>
+                                                <TableCell className="font-medium">{report.batchId}</TableCell>
+                                                <TableCell>{isValid(parseISO(report.endDate)) ? format(parseISO(report.endDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                                <TableCell>{report.liquidationReason}</TableCell>
+                                                <TableCell>{report.finalCount}</TableCell>
+                                                <TableCell>{(report.feedConversion || 0).toFixed(2)}</TableCell>
+                                                <TableCell>
+                                                    <Button variant="outline" size="sm" onClick={() => setSelectedReport(report)}>Ver Informe</Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-24 text-center">No hay informes de lotes de ceba liquidados.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -99,7 +133,7 @@ export default function LiquidatedBatchesPage() {
                 <Dialog open={!!selectedReport} onOpenChange={(isOpen) => !isOpen && setSelectedReport(null)}>
                     <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
-                            <DialogTitle>Informe de Liquidación de Lote de Precebo: {selectedReport?.batchId}</DialogTitle>
+                            <DialogTitle>Informe de Liquidación de Lote: {selectedReport?.batchId}</DialogTitle>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto pr-2">
                            {selectedReport && <PreceboReport reportData={selectedReport} />}
