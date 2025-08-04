@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { format, parseISO, isValid } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -77,15 +76,37 @@ export default function AlimentosPage() {
     const handleAddSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const productId = formData.get('productId') as string;
-        const productName = alimentos.find(a => a.id === productId)?.name || 'Alimento Desconocido';
+        const productName = formData.get('productName') as string;
         
-        if (!productId || totalWeight <= 0) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, seleccione un alimento y complete los detalles de la compra.' });
+        if (!productName || totalWeight <= 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, complete el nombre del alimento y los detalles de la compra.' });
             return;
         }
 
-        // 1. Create the purchase record
+        const inventory = getInventory();
+        let product = inventory.find(item => item.name.toLowerCase() === productName.toLowerCase() && item.category === 'alimento');
+        let productId;
+
+        if (product) {
+            // Product exists, update stock
+            product.stock += totalWeight;
+            productId = product.id;
+        } else {
+            // Product doesn't exist, create it
+            productId = `ALIMENTO-${productName.toUpperCase().replace(/\s+/g, '-')}-${Date.now()}`;
+            const newItem: InventoryItem = {
+                id: productId,
+                name: productName,
+                category: 'alimento',
+                stock: totalWeight,
+            };
+            inventory.push(newItem);
+        }
+        
+        updateInventory(inventory);
+
+
+        // Create the purchase record
         const newPurchase: FoodPurchase = {
             id: `purchase-${Date.now()}`,
             purchaseDate: formData.get('purchaseDate') as string,
@@ -100,26 +121,15 @@ export default function AlimentosPage() {
             notes: formData.get('notes') as string | undefined
         };
 
-        // 2. Update purchase history
+        // Update purchase history
         const updatedHistory = [newPurchase, ...purchaseHistory];
         localStorage.setItem('foodPurchaseHistory', JSON.stringify(updatedHistory));
         setPurchaseHistory(updatedHistory);
-
-        // 3. Update inventory stock
-        const inventory = getInventory();
-        const productIndex = inventory.findIndex(item => item.id === productId);
-
-        if (productIndex !== -1) {
-            inventory[productIndex].stock += totalWeight;
-        } else {
-            // This case is for adding a new food type, which we can handle if needed.
-            // For now, we assume selection from existing foods.
-        }
-        updateInventory(inventory);
         
         toast({ title: 'Compra Registrada', description: `${totalWeight}kg de ${productName} han sido añadidos al stock.` });
         
         setIsFormOpen(false);
+        (event.target as HTMLFormElement).reset();
         // Reset form fields
         setBags('');
         setWeightPerBag(40);
@@ -139,7 +149,7 @@ export default function AlimentosPage() {
                     </div>
                      <Button onClick={() => setIsFormOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Registrar Compra de Alimento
+                        Registrar Ingreso de Alimento
                     </Button>
                 </div>
 
@@ -172,7 +182,7 @@ export default function AlimentosPage() {
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Historial de Compras de Alimentos</CardTitle>
+                        <CardTitle>Historial de Ingresos de Alimentos</CardTitle>
                         <CardDescription>Registro de todas las entradas de alimento al inventario.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -208,24 +218,19 @@ export default function AlimentosPage() {
                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
                         <DialogHeader>
-                            <DialogTitle>Registrar Compra de Alimento</DialogTitle>
-                            <DialogDescription>Complete los datos de la compra. El stock se actualizará automáticamente.</DialogDescription>
+                            <DialogTitle>Registrar Ingreso de Alimento</DialogTitle>
+                            <DialogDescription>Complete los datos del ingreso. El stock se actualizará automáticamente.</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="flex-1 -mx-6 px-6">
                             <form onSubmit={handleAddSubmit} id="add-item-form" className="space-y-4 py-4 pr-6">
                                 <div className="grid grid-cols-2 gap-4">
                                    <div className="space-y-2">
-                                        <Label htmlFor="purchaseDate">Fecha de Compra</Label>
+                                        <Label htmlFor="purchaseDate">Fecha de Ingreso</Label>
                                         <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="productId">Nombre del Alimento</Label>
-                                        <Select name="productId" required>
-                                            <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                                            <SelectContent>
-                                                {alimentos.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                        <Label htmlFor="productName">Nombre del Alimento</Label>
+                                        <Input id="productName" name="productName" type="text" placeholder="Ej: Ceba Engorde Plus" required />
                                     </div>
                                 </div>
                                  <div className="grid grid-cols-3 gap-4">
@@ -264,7 +269,7 @@ export default function AlimentosPage() {
                         </ScrollArea>
                         <DialogFooter className="flex-shrink-0 border-t pt-4 -mx-6 px-6 bg-background">
                             <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                            <Button type="submit" form="add-item-form">Guardar Compra</Button>
+                            <Button type="submit" form="add-item-form">Guardar Ingreso</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -272,4 +277,3 @@ export default function AlimentosPage() {
         </AppLayout>
     );
 }
-
