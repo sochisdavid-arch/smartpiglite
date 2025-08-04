@@ -175,6 +175,11 @@ export default function AlimentosPage() {
                                         <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
+                                {alimentos.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">No hay alimentos en el inventario.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
