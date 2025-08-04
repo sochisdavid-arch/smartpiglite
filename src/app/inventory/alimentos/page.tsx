@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { format, parseISO, isValid } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface FoodPurchase {
     id: string;
@@ -76,32 +77,23 @@ export default function AlimentosPage() {
     const handleAddSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const productName = formData.get('productName') as string;
+        const productId = formData.get('productId') as string;
         
-        if (!productName || totalWeight <= 0) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, complete el nombre del alimento y los detalles de la compra.' });
+        if (!productId || totalWeight <= 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, seleccione un alimento y complete los detalles de la compra.' });
             return;
         }
 
         const inventory = getInventory();
-        let product = inventory.find(item => item.name.toLowerCase() === productName.toLowerCase() && item.category === 'alimento');
-        let productId;
+        const productIndex = inventory.findIndex(item => item.id === productId);
 
-        if (product) {
-            // Product exists, update stock
-            product.stock += totalWeight;
-            productId = product.id;
-        } else {
-            // Product doesn't exist, create it
-            productId = `ALIMENTO-${productName.toUpperCase().replace(/\s+/g, '-')}-${Date.now()}`;
-            const newItem: InventoryItem = {
-                id: productId,
-                name: productName,
-                category: 'alimento',
-                stock: totalWeight,
-            };
-            inventory.push(newItem);
+        if (productIndex === -1) {
+             toast({ variant: 'destructive', title: 'Error', description: 'El producto seleccionado no fue encontrado.' });
+            return;
         }
+
+        inventory[productIndex].stock += totalWeight;
+        const productName = inventory[productIndex].name;
         
         updateInventory(inventory);
 
@@ -234,8 +226,15 @@ export default function AlimentosPage() {
                                         <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="productName">Nombre del Alimento</Label>
-                                        <Input id="productName" name="productName" type="text" placeholder="Ej: Ceba Engorde Plus" required />
+                                        <Label htmlFor="productId">Nombre del Alimento</Label>
+                                         <Select name="productId" required>
+                                            <SelectTrigger><SelectValue placeholder="Seleccionar alimento..."/></SelectTrigger>
+                                            <SelectContent>
+                                                {alimentos.map(item => (
+                                                    <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
                                  <div className="grid grid-cols-3 gap-4">
