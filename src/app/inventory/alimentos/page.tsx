@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { format, parseISO, isValid } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FoodPurchase {
     id: string;
@@ -205,61 +206,63 @@ export default function AlimentosPage() {
                 </Card>
 
                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="sm:max-w-lg">
+                    <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
                         <DialogHeader>
                             <DialogTitle>Registrar Compra de Alimento</DialogTitle>
                             <DialogDescription>Complete los datos de la compra. El stock se actualizará automáticamente.</DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleAddSubmit} id="add-item-form" className="space-y-4 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                               <div className="space-y-2">
-                                    <Label htmlFor="purchaseDate">Fecha de Compra</Label>
-                                    <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
+                        <ScrollArea className="flex-1 -mx-6 px-6">
+                            <form onSubmit={handleAddSubmit} id="add-item-form" className="space-y-4 py-4 pr-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                   <div className="space-y-2">
+                                        <Label htmlFor="purchaseDate">Fecha de Compra</Label>
+                                        <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="productId">Nombre del Alimento</Label>
+                                        <Select name="productId" required>
+                                            <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                            <SelectContent>
+                                                {alimentos.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                 <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bags">Nº Bultos</Label>
+                                        <Input id="bags" name="bags" type="number" required value={bags} onChange={e => setBags(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="weightPerBag">Kilos / Bulto</Label>
+                                        <Input id="weightPerBag" name="weightPerBag" type="number" required value={weightPerBag} onChange={e => setWeightPerBag(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Kilos Totales</Label>
+                                        <Input value={totalWeight.toFixed(2)} readOnly className="font-semibold bg-muted"/>
+                                    </div>
+                                </div>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="totalValue">Valor Total Compra ($)</Label>
+                                        <Input id="totalValue" name="totalValue" type="number" step="100" required value={totalValue} onChange={e => setTotalValue(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Precio / Kilo ($)</Label>
+                                        <Input value={pricePerKg.toFixed(2)} readOnly className="font-semibold bg-muted"/>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="productId">Nombre del Alimento</Label>
-                                    <Select name="productId" required>
-                                        <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                                        <SelectContent>
-                                            {alimentos.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                             <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="bags">Nº Bultos</Label>
-                                    <Input id="bags" name="bags" type="number" required value={bags} onChange={e => setBags(e.target.value)} />
+                                    <Label htmlFor="batchNumber">Número de Lote del Alimento</Label>
+                                    <Input id="batchNumber" name="batchNumber" type="text" placeholder="Opcional" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="weightPerBag">Kilos / Bulto</Label>
-                                    <Input id="weightPerBag" name="weightPerBag" type="number" required value={weightPerBag} onChange={e => setWeightPerBag(e.target.value)} />
+                                    <Label htmlFor="notes">Observaciones o Notas</Label>
+                                    <Textarea id="notes" name="notes" placeholder="Cualquier detalle adicional de la compra..." />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Kilos Totales</Label>
-                                    <Input value={totalWeight.toFixed(2)} readOnly className="font-semibold bg-muted"/>
-                                </div>
-                            </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="totalValue">Valor Total Compra ($)</Label>
-                                    <Input id="totalValue" name="totalValue" type="number" step="100" required value={totalValue} onChange={e => setTotalValue(e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Precio / Kilo ($)</Label>
-                                    <Input value={pricePerKg.toFixed(2)} readOnly className="font-semibold bg-muted"/>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="batchNumber">Número de Lote del Alimento</Label>
-                                <Input id="batchNumber" name="batchNumber" type="text" placeholder="Opcional" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="notes">Observaciones o Notas</Label>
-                                <Textarea id="notes" name="notes" placeholder="Cualquier detalle adicional de la compra..." />
-                            </div>
-                        </form>
-                        <DialogFooter>
+                            </form>
+                        </ScrollArea>
+                        <DialogFooter className="flex-shrink-0 border-t pt-4 -mx-6 px-6 bg-background">
                             <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                             <Button type="submit" form="add-item-form">Guardar Compra</Button>
                         </DialogFooter>
