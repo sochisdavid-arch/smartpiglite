@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO, isValid } from 'date-fns';
-import { PlusCircle, User, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, User, MoreHorizontal, DollarSign } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,8 @@ interface Personnel {
     email: string;
     hireDate: string;
     status: 'Activo' | 'Inactivo';
+    salary?: number;
+    bonus?: number;
 }
 
 const PERSONNEL_STORAGE_KEY = 'personnelList';
@@ -57,6 +59,8 @@ export default function PersonnelPage() {
             email: formData.get('email') as string,
             hireDate: formData.get('hireDate') as string,
             status: 'Activo', // Default status
+            salary: Number(formData.get('salary')) || undefined,
+            bonus: Number(formData.get('bonus')) || undefined,
         };
 
         const currentList = JSON.parse(localStorage.getItem(PERSONNEL_STORAGE_KEY) || '[]');
@@ -97,6 +101,10 @@ export default function PersonnelPage() {
         setIsFormOpen(true);
     };
 
+    const formatCurrency = (value?: number) => {
+        if (value === undefined || value === null) return 'N/A';
+        return value.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+    }
 
     return (
         <AppLayout>
@@ -117,54 +125,59 @@ export default function PersonnelPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead>Cédula</TableHead>
-                                    <TableHead>Cargo</TableHead>
-                                    <TableHead>Teléfono</TableHead>
-                                    <TableHead>Estado</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {personnelList.length > 0 ? personnelList.map(person => (
-                                    <TableRow key={person.id}>
-                                        <TableCell className="font-medium">{person.name}</TableCell>
-                                        <TableCell>{person.id}</TableCell>
-                                        <TableCell>{person.role}</TableCell>
-                                        <TableCell>{person.phone}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={person.status === 'Activo' ? 'default' : 'secondary'}>
-                                                {person.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => openEditDialog(person)}>Editar</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
-                                            No hay personal registrado.
-                                        </TableCell>
+                                        <TableHead>Nombre</TableHead>
+                                        <TableHead>Cargo</TableHead>
+                                        <TableHead>Sueldo</TableHead>
+                                        <TableHead>Bonificaciones</TableHead>
+                                        <TableHead>Estado</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {personnelList.length > 0 ? personnelList.map(person => (
+                                        <TableRow key={person.id}>
+                                            <TableCell className="font-medium">
+                                                <div>{person.name}</div>
+                                                <div className="text-xs text-muted-foreground">{person.id}</div>
+                                            </TableCell>
+                                            <TableCell>{person.role}</TableCell>
+                                            <TableCell>{formatCurrency(person.salary)}</TableCell>
+                                            <TableCell>{formatCurrency(person.bonus)}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={person.status === 'Activo' ? 'default' : 'secondary'}>
+                                                    {person.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onSelect={() => openEditDialog(person)}>Editar</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center">
+                                                No hay personal registrado.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
 
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>{editingPersonnel ? 'Editar' : 'Agregar Nuevo'} Personal</DialogTitle>
                             <DialogDescription>
@@ -172,19 +185,21 @@ export default function PersonnelPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleFormSubmit} id="personnel-form" className="space-y-4 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Nombre Completo</Label>
+                                    <Input id="name" name="name" type="text" placeholder="Nombre y Apellido" required defaultValue={editingPersonnel?.name} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="id">Cédula / Documento</Label>
+                                    <Input id="id" name="id" type="text" placeholder="Número de documento" required defaultValue={editingPersonnel?.id} disabled={!!editingPersonnel} />
+                                </div>
+                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nombre Completo</Label>
-                                <Input id="name" name="name" type="text" placeholder="Nombre y Apellido" required defaultValue={editingPersonnel?.name} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="id">Cédula / Documento</Label>
-                                <Input id="id" name="id" type="text" placeholder="Número de documento" required defaultValue={editingPersonnel?.id} disabled={!!editingPersonnel} />
-                            </div>
-                             <div className="space-y-2">
                                 <Label htmlFor="role">Cargo</Label>
                                 <Input id="role" name="role" type="text" placeholder="Ej: Operario, Veterinario" required defaultValue={editingPersonnel?.role}/>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Teléfono</Label>
                                     <Input id="phone" name="phone" type="tel" required defaultValue={editingPersonnel?.phone} />
@@ -194,9 +209,19 @@ export default function PersonnelPage() {
                                     <Input id="hireDate" name="hireDate" type="date" required defaultValue={editingPersonnel?.hireDate} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="email">Correo Electrónico</Label>
                                 <Input id="email" name="email" type="email" placeholder="correo@ejemplo.com" required defaultValue={editingPersonnel?.email}/>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="salary">Sueldo Base ($)</Label>
+                                    <Input id="salary" name="salary" type="number" step="1000" placeholder="Ej: 1500000" defaultValue={editingPersonnel?.salary} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="bonus">Bonificaciones ($)</Label>
+                                    <Input id="bonus" name="bonus" type="number" step="1000" placeholder="Opcional" defaultValue={editingPersonnel?.bonus} />
+                                </div>
                             </div>
                         </form>
                         <DialogFooter>
