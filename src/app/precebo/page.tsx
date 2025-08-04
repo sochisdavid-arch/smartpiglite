@@ -48,6 +48,24 @@ export default function PreceboPage() {
             const batchData = JSON.parse(storedBatches);
             const batchArray = Object.values(batchData) as NurseryBatch[];
             setBatches(batchArray.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()));
+        } else {
+             const exampleBatchId = 'PRECEBO-2024-28';
+             const exampleBatch = {
+                [exampleBatchId]: {
+                    id: exampleBatchId,
+                    creationDate: '2024-07-12',
+                    pigletCount: 25,
+                    initialPigletCount: 25,
+                    totalWeight: 150,
+                    avgWeight: 6,
+                    avgAge: 21,
+                    sows: ['PIG-001', 'PIG-002'],
+                    status: 'Activo',
+                    events: [],
+                }
+             };
+             localStorage.setItem('nurseryBatches', JSON.stringify(exampleBatch));
+             setBatches(Object.values(exampleBatch));
         }
 
         const storedPigs = localStorage.getItem('pigs');
@@ -69,15 +87,11 @@ export default function PreceboPage() {
     const handleAddBatchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
+        const batchId = formData.get('batchId') as string;
         const creationDate = formData.get('creationDate') as string;
         const pigletCount = Number(formData.get('pigletCount'));
         const avgWeight = Number(formData.get('avgWeight'));
         
-        const date = parseISO(creationDate);
-        const weekNumber = getWeek(date);
-        const year = date.getFullYear();
-        const batchId = `PRECEBO-${year}-${weekNumber}`;
-
         const newBatch: NurseryBatch = {
             id: batchId,
             creationDate: creationDate,
@@ -177,10 +191,14 @@ export default function PreceboPage() {
                         <DialogHeader>
                             <DialogTitle>Agregar Nuevo Lote de Precebo</DialogTitle>
                             <DialogDescription>
-                                Complete los datos para crear un nuevo lote manualmente. El ID se generará automáticamente.
+                                Complete los datos para crear un nuevo lote manualmente.
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleAddBatchSubmit} id="add-batch-form" className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="batchId">ID del Lote</Label>
+                                <Input id="batchId" name="batchId" type="text" placeholder="Ej: PRECEBO-24-01" required />
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="creationDate">Fecha de Creación (Ingreso)</Label>
                                 <Input id="creationDate" name="creationDate" type="date" required />
