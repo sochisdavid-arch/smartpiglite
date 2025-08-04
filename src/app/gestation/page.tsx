@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, PlusCircle, MoreHorizontal, X } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -35,6 +35,7 @@ import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { deductFromStock, getInventory } from '@/lib/inventory';
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte" | "Destete";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -174,6 +175,7 @@ export default function GestationPage() {
   const { toast } = useToast();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
   const [editingPig, setEditingPig] = React.useState<Pig | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [pigToDelete, setPigToDelete] = React.useState<Pig | null>(null);
@@ -290,6 +292,32 @@ export default function GestationPage() {
     closeFormDialog();
     (event.target as HTMLFormElement).reset();
   };
+
+  const handleConsumptionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const productId = formData.get('feedType') as string;
+    const quantity = Number(formData.get('quantity'));
+    const consumptionDate = formData.get('consumptionDate') as string;
+    const foundFeed = getInventory().find(i => i.id === productId);
+
+    if (!productId || !quantity || !consumptionDate || !foundFeed) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Por favor complete todos los campos.'});
+        return;
+    }
+
+    const result = deductFromStock(productId, quantity, 'Área de Gestación', consumptionDate);
+
+    if (result.success) {
+        toast({
+            title: '¡Consumo Registrado!',
+            description: `${quantity}kg de ${foundFeed.name} descontados del stock.`
+        });
+        setIsConsumptionFormOpen(false);
+    } else {
+        toast({ variant: 'destructive', title: 'Error de Stock', description: result.message });
+    }
+  };
   
   const handleDeleteConfirm = () => {
     if (pigToDelete) {
@@ -332,12 +360,52 @@ export default function GestationPage() {
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
                 <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
+                        <Wheat className="mr-2 h-4 w-4" />
+                        Registrar Consumo
+                    </Button>
                     <Button onClick={openAddDialog}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Añadir Animal
                     </Button>
                 </div>
             </div>
+
+            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Registrar Consumo de Alimento (Gestación)</DialogTitle>
+                        <DialogDescription>
+                            Registre el consumo total para el grupo de animales en gestación para una fecha específica.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleConsumptionSubmit} id="consumption-form" className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="consumptionDate">Fecha</Label>
+                            <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="feedType">Tipo de Alimento</Label>
+                            <Select name="feedType" required>
+                                <SelectTrigger><SelectValue placeholder="Seleccione un alimento..." /></SelectTrigger>
+                                <SelectContent>
+                                    {getInventory().filter(p => p.category === 'alimento').map(option => (
+                                        <SelectItem key={option.id} value={option.id}>{option.name} (Stock: {option.stock}kg)</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="quantity">Cantidad Total Consumida (kg)</Label>
+                            <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej: 80.5" required />
+                        </div>
+                    </form>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cancelar</Button>
+                        <Button type="submit" form="consumption-form">Guardar Consumo</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent className="sm:max-w-md">
@@ -562,5 +630,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
