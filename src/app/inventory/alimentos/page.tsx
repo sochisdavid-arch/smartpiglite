@@ -243,6 +243,5 @@ export default function AlimentosPage() {
             </div>
         </AppLayout>
     );
-}
 
     
