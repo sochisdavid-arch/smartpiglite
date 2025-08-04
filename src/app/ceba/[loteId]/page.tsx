@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, PlusCircle, Syringe, Move, Banknote, PackagePlus, ShieldPlus, Skull } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Syringe, Banknote, Skull, ShieldPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO, isValid, addDays, getDay, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,10 +19,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PreceboReportData } from '@/components/PreceboReport';
+import { PreceboReportData } from '@/components/PreceboReport'; // Re-using for now, may need a CebaReportData
 
 
-interface NurseryBatch {
+interface CebaBatch {
     id: string;
     creationDate: string;
     pigletCount: number;
@@ -49,10 +49,10 @@ interface ConsumptionRecord {
     consumptionPerPigPerDay: number;
 }
 
-type PreceboEventType = "Muerte en lote" | "Traslado de lote" | "Venta de lote" | "Ingreso a lote" | "Tratamiento" | "Vacunación";
+type CebaEventType = "Muerte en lote" | "Venta de lote" | "Tratamiento" | "Vacunación";
 
 interface BatchEvent {
-    type: PreceboEventType;
+    type: CebaEventType;
     date: string;
     details?: string;
     animalCount?: number;
@@ -60,42 +60,39 @@ interface BatchEvent {
     cause?: string;
     product?: string;
     dose?: number;
-    destination?: string;
     saleValue?: number;
 }
 
-const eventIcons: { [key in PreceboEventType]: React.ReactElement } = {
+const eventIcons: { [key in CebaEventType]: React.ReactElement } = {
     "Muerte en lote": <Skull className="h-5 w-5 text-destructive" />,
-    "Traslado de lote": <Move className="h-5 w-5 text-blue-500" />,
     "Venta de lote": <Banknote className="h-5 w-5 text-green-500" />,
-    "Ingreso a lote": <PackagePlus className="h-5 w-5 text-purple-500" />,
     "Tratamiento": <Syringe className="h-5 w-5 text-red-500" />,
     "Vacunación": <ShieldPlus className="h-5 w-5 text-green-500" />,
 };
 
-const allEventTypes: PreceboEventType[] = ["Muerte en lote", "Traslado de lote", "Venta de lote", "Ingreso a lote", "Tratamiento", "Vacunación"];
+const allEventTypes: CebaEventType[] = ["Muerte en lote", "Venta de lote", "Tratamiento", "Vacunación"];
 
-export default function LotePreceboPage() {
+export default function LoteCebaPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
     const loteId = params.loteId as string;
     
-    const [batch, setBatch] = React.useState<NurseryBatch | null>(null);
+    const [batch, setBatch] = React.useState<CebaBatch | null>(null);
     const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
     
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
-    const [selectedEventType, setSelectedEventType] = React.useState<PreceboEventType | null>(null);
+    const [selectedEventType, setSelectedEventType] = React.useState<CebaEventType | null>(null);
 
-    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
+    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_ceba_${loteId}`, [loteId]);
     
     const loadData = React.useCallback(() => {
-        const storedBatches = localStorage.getItem('nurseryBatches');
+        const storedBatches = localStorage.getItem('cebaBatches');
         if (storedBatches) {
             const batchData = JSON.parse(storedBatches);
             const foundBatch = batchData[loteId];
             if (foundBatch) {
-                const processedBatch: NurseryBatch = {
+                const processedBatch: CebaBatch = {
                     ...foundBatch,
                     pigletCount: Number(foundBatch.pigletCount),
                     initialPigletCount: Number(foundBatch.initialPigletCount || foundBatch.pigletCount),
@@ -110,8 +107,8 @@ export default function LotePreceboPage() {
                 const storedConsumption = localStorage.getItem(storageKey);
                 let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
                 
-                if (history.length < 8 && foundBatch.creationDate) {
-                    const additionalWeeks = Array.from({ length: 8 - history.length }).map((_, weekIndex) => {
+                if (history.length < 15 && foundBatch.creationDate) {
+                    const additionalWeeks = Array.from({ length: 15 - history.length }).map((_, weekIndex) => {
                         const currentWeekIndex = history.length + weekIndex;
                         const weekStartDate = addDays(parseISO(foundBatch.creationDate), currentWeekIndex * 7);
                         const weekEndDate = addDays(weekStartDate, 6);
@@ -138,8 +135,8 @@ export default function LotePreceboPage() {
     React.useEffect(() => {
         loadData();
     }, [loadData]);
-
-    const calculateConsumption = (history: ConsumptionRecord[], currentBatch: NurseryBatch) => {
+    
+    const calculateConsumption = (history: ConsumptionRecord[], currentBatch: CebaBatch) => {
         let accumulatedFeed = 0;
         const deaths = currentBatch.events.filter(e => e.type === 'Muerte en lote').reduce((sum, e) => sum + (e.animalCount || 0), 0);
         const currentAnimalCount = currentBatch.initialPigletCount - deaths;
@@ -188,7 +185,7 @@ export default function LotePreceboPage() {
         calculateConsumption(updatedHistory, batch);
     };
     
-    const openEventDialog = (eventType: PreceboEventType) => {
+    const openEventDialog = (eventType: CebaEventType) => {
         setSelectedEventType(eventType);
         setIsEventFormOpen(true);
     };
@@ -209,7 +206,6 @@ export default function LotePreceboPage() {
                 cause: formData.get('cause') as string || undefined,
                 product: formData.get('product') as string || undefined,
                 dose: Number(formData.get('dose')) || undefined,
-                destination: formData.get('destination') as string || undefined,
                 saleValue: Number(formData.get('saleValue')) || undefined,
             };
             
@@ -219,17 +215,12 @@ export default function LotePreceboPage() {
                 updatedBatch.pigletCount -= newEvent.animalCount;
             }
 
-            if (['Traslado de lote', 'Venta de lote'].includes(selectedEventType)) {
+            if (selectedEventType === 'Venta de lote') {
                 updatedBatch.status = 'Finalizado';
-                generateLiquidationReport(updatedBatch, newEvent);
-                
-                if (selectedEventType === 'Traslado de lote') {
-                    createCebaBatch(updatedBatch, newEvent);
-                }
-
+                // TODO: Generate Ceba liquidation report
                 toast({
                     title: "¡Lote Finalizado!",
-                    description: `El lote ${loteId} ha sido marcado como finalizado. Se ha generado un informe de liquidación.`,
+                    description: `El lote de ceba ${loteId} ha sido marcado como finalizado.`,
                 });
                 router.push('/analysis/liquidated-batches');
             } else {
@@ -240,10 +231,10 @@ export default function LotePreceboPage() {
             }
 
             setBatch(updatedBatch);
-            const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
+            const storedBatches = JSON.parse(localStorage.getItem('cebaBatches') || '{}');
             storedBatches[loteId] = updatedBatch;
-            localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
-
+            localStorage.setItem('cebaBatches', JSON.stringify(storedBatches));
+            
             calculateConsumption(consumptionHistory, updatedBatch);
             
             setIsEventFormOpen(false);
@@ -252,7 +243,7 @@ export default function LotePreceboPage() {
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
+                    <DialogTitle>Registrar Evento de Ceba: {selectedEventType}</DialogTitle>
                     <DialogDescription>
                         Complete la información del evento para el lote {loteId}.
                     </DialogDescription>
@@ -310,43 +301,23 @@ export default function LotePreceboPage() {
                                 </>
                             )}
                             
-                            {['Venta de lote', 'Ingreso a lote'].includes(selectedEventType) && (
+                            {selectedEventType === 'Venta de lote' && (
                                 <>
                                     <div className="space-y-2">
-                                        <Label htmlFor="animalCount">Número de Animales</Label>
+                                        <Label htmlFor="animalCount">Número de Animales Vendidos</Label>
                                         <Input id="animalCount" name="animalCount" type="number" required />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="avgWeight">Peso Promedio (kg)</Label>
+                                        <Label htmlFor="avgWeight">Peso Promedio Final (kg)</Label>
                                         <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="saleValue">Valor Total de Venta ($)</Label>
+                                        <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Valor total"/>
                                     </div>
                                 </>
                             )}
                             
-                            {selectedEventType === 'Venta de lote' && (
-                                 <div className="space-y-2">
-                                    <Label htmlFor="saleValue">Valor Total de Venta ($)</Label>
-                                    <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Valor total"/>
-                                </div>
-                            )}
-
-                            {selectedEventType === 'Traslado de lote' && (
-                                 <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="animalCount">Número de Animales Trasladados</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" defaultValue={batch.pigletCount} required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="avgWeight">Peso Promedio de Traslado (kg)</Label>
-                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="destination">Destino del Lote</Label>
-                                        <Input id="destination" name="destination" placeholder="Ej: Módulo de Ceba 1" required />
-                                    </div>
-                                 </>
-                            )}
-
                             <div className="space-y-2">
                                 <Label htmlFor="eventNotes">Notas Adicionales</Label>
                                 <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
@@ -362,92 +333,11 @@ export default function LotePreceboPage() {
         )
     }
 
-     const generateLiquidationReport = (finalBatch: NurseryBatch, finalEvent: BatchEvent) => {
-        const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
-        const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
-        
-        const finalCount = finalBatch.initialPigletCount - totalDeaths;
-        const daysInPrecebo = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
-        const finalAge = finalBatch.avgAge + daysInPrecebo;
-        const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
-        
-        const finalWeightEvent = finalEvent.type === 'Traslado de lote' || finalEvent.type === 'Venta de lote' ? finalEvent : null;
-        const finalAvgWeight = finalWeightEvent?.avgWeight || 0;
-        const finalTotalWeight = finalAvgWeight * finalCount;
-        const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
-
-        const report: PreceboReportData = {
-            batchId: finalBatch.id,
-            generationDate: new Date().toISOString(),
-            liquidationReason: finalEvent.type,
-            startDate: finalBatch.creationDate,
-            endDate: finalEvent.date,
-            initialCount: finalBatch.initialPigletCount,
-            finalCount: finalCount,
-            initialAge: finalBatch.avgAge,
-            finalAge: finalAge,
-            daysInPrecebo: daysInPrecebo,
-            weeksOfLife: Math.floor(finalAge / 7),
-            totalDeaths: totalDeaths,
-            mortalityRate: finalBatch.initialPigletCount > 0 ? (totalDeaths / finalBatch.initialPigletCount) * 100 : 0,
-            avgMortalityAge: 0, // Needs logic to be calculated
-            initialTotalWeight: finalBatch.totalWeight,
-            finalTotalWeight: finalTotalWeight,
-            initialAvgWeight: finalBatch.avgWeight,
-            finalAvgWeight: finalAvgWeight,
-            totalWeightGain: totalWeightGain,
-            animalWeightGain: finalCount > 0 ? totalWeightGain / finalCount : 0,
-            dailyWeightGain: finalCount > 0 && daysInPrecebo > 0 ? (totalWeightGain / finalCount) / daysInPrecebo * 1000 : 0, // in grams
-            totalFeedConsumed: totalFeedConsumed,
-            dailyAnimalConsumption: finalCount > 0 && daysInPrecebo > 0 ? (totalFeedConsumed / finalCount) / daysInPrecebo : 0,
-            feedConversion: totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0,
-            healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
-                date: e.date,
-                type: e.type,
-                product: mockInventory.find(p => p.id === e.product)?.name || e.product || 'N/A',
-                details: e.details || `Aplicado a ${e.animalCount} animales.`
-            })),
-        };
-
-        const existingReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
-        existingReports.push(report);
-        localStorage.setItem('liquidatedPreceboReports', JSON.stringify(existingReports));
-    };
-
-    const createCebaBatch = (preceboBatch: NurseryBatch, transferEvent: BatchEvent) => {
-        const cebaBatches = JSON.parse(localStorage.getItem('cebaBatches') || '{}');
-        const newCebaId = preceboBatch.id.replace('PRECEBO', 'CEBA');
-        const daysInPrecebo = differenceInDays(parseISO(transferEvent.date), parseISO(preceboBatch.creationDate));
-
-        const newCebaBatch = {
-            id: newCebaId,
-            creationDate: transferEvent.date,
-            pigletCount: transferEvent.animalCount,
-            initialPigletCount: transferEvent.animalCount,
-            avgWeight: transferEvent.avgWeight,
-            totalWeight: (transferEvent.animalCount || 0) * (transferEvent.avgWeight || 0),
-            avgAge: preceboBatch.avgAge + daysInPrecebo,
-            sows: preceboBatch.sows,
-            status: 'Activo',
-            events: [],
-            originBatchId: preceboBatch.id,
-            module: transferEvent.destination || 'CEBA-01'
-        };
-
-        cebaBatches[newCebaId] = newCebaBatch;
-        localStorage.setItem('cebaBatches', JSON.stringify(cebaBatches));
-
-        toast({
-            title: "¡Lote Transferido a Ceba!",
-            description: `El lote ${newCebaId} ha sido creado en el módulo de ceba.`,
-        });
-    };
-
     if (!batch) {
         return (
             <AppLayout>
                 <div className="flex justify-center items-center h-full">
-                    <p>Cargando datos del lote...</p>
+                    <p>Cargando datos del lote de ceba...</p>
                 </div>
             </AppLayout>
         );
@@ -467,14 +357,14 @@ export default function LotePreceboPage() {
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="outline" size="icon" onClick={() => router.push('/precebo')}>
+                        <Button variant="outline" size="icon" onClick={() => router.push('/ceba')}>
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <h1 className="text-2xl font-bold tracking-tight">Registro de Consumo del Lote: {loteId}</h1>
                     </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button disabled={batch.status === 'Finalizado'}>
+                            <Button>
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Agregar Evento
                             </Button>
@@ -494,7 +384,7 @@ export default function LotePreceboPage() {
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Información del Lote</CardTitle>
+                        <CardTitle>Información del Lote de Ceba</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-sm">
                         <div className="flex flex-col gap-1">
@@ -502,8 +392,8 @@ export default function LotePreceboPage() {
                             <span className="font-semibold">{batch.id}</span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-muted-foreground">Módulo Precebo</span>
-                            <span className="font-semibold">{batch.module || 'PRE-01'}</span>
+                            <span className="text-muted-foreground">Módulo Ceba</span>
+                            <span className="font-semibold">{batch.module || 'CEBA-01'}</span>
                         </div>
                         <div className="flex flex-col gap-1">
                             <span className="text-muted-foreground">Fecha Ingreso</span>
@@ -526,7 +416,7 @@ export default function LotePreceboPage() {
                             <span className="font-semibold">{Number(batch.avgWeight).toFixed(2)}</span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-muted-foreground">Edad Inicial (días)</span>
+                            <span className="text-muted-foreground">Edad Ingreso (días)</span>
                             <span className="font-semibold">{batch.avgAge}</span>
                         </div>
                     </CardContent>
@@ -578,7 +468,6 @@ export default function LotePreceboPage() {
                                                     value={dayConsumption}
                                                     onChange={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
                                                     className="w-20 text-center"
-                                                    disabled={batch.status === 'Finalizado'}
                                                 />
                                             </TableCell>
                                         ))}
