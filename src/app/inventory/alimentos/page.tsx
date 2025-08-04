@@ -165,7 +165,7 @@ export default function AlimentosPage() {
                                         <TableCell>{item.lotNumber || 'N/A'}</TableCell>
                                         <TableCell className="text-right">{item.totalKilos.toFixed(2)} kg</TableCell>
                                         <TableCell className="text-right">${(item.totalValue || 0).toLocaleString('es-CO')}</TableCell>
-                                        <TableCell className="text-right">${(item.pricePerKg || 0).toLocaleString('es-CO')}</TableCell>
+                                        <TableCell className="text-right">${(item.pricePerKg || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
@@ -178,7 +178,7 @@ export default function AlimentosPage() {
                 </Card>
 
                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
+                    <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
                         <DialogHeader>
                             <DialogTitle>Registrar Ingreso de Alimento</DialogTitle>
                              <DialogDescription>
