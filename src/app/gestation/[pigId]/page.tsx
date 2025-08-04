@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, MoreHorizontal, Wheat } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { mockInventory } from '@/lib/mock-data';
 import { deductFromStock, getInventory } from '@/lib/inventory';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 
 // Mock data - in a real app, this would come from an API
@@ -52,6 +54,15 @@ interface Pig {
     lastEvent: Event;
     events: Event[];
 }
+
+interface ConsumptionRecord {
+    id: string;
+    date: string;
+    quantity: number;
+    feedType: string;
+    productId: string;
+}
+
 
 const initialPigs: Pig[] = [
     { 
@@ -191,16 +202,30 @@ export default function PigHistoryPage() {
     const [editingEvent, setEditingEvent] = React.useState<Event | null>(null);
     const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+    const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
+    const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
 
+    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_gestacion_${pigId}`, [pigId]);
 
-    React.useEffect(() => {
+    const loadData = React.useCallback(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
         const pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
         const foundPig = pigs.find((p: Pig) => p.id === pigId);
         if (foundPig) {
             setPig({...foundPig, age: calculateAge(foundPig.birthDate)});
         }
-    }, [pigId]);
+        
+        const historyFromStorage = localStorage.getItem(getConsumptionStorageKey());
+        if (historyFromStorage) {
+            setConsumptionHistory(JSON.parse(historyFromStorage));
+        }
+
+    }, [pigId, getConsumptionStorageKey]);
+
+
+    React.useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const openEventDialog = (eventType: GestationEventType) => {
         setSelectedEventType(eventType);
@@ -218,6 +243,123 @@ export default function PigHistoryPage() {
         setEventToDelete(event);
         setIsDeleteDialogOpen(true);
     };
+
+    const ConsumptionForm = () => {
+        const [selectedFeed, setSelectedFeed] = React.useState<string>();
+        const [quantity, setQuantity] = React.useState<number | string>('');
+        const feedOptions = getInventory().filter(p => p.category === 'alimento');
+
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            
+            if (!selectedFeed || !quantity) {
+                toast({ variant: "destructive", title: "Campos requeridos", description: "Por favor, seleccione un alimento y una cantidad." });
+                return;
+            }
+
+            const foundFeed = feedOptions.find(o => o.id === selectedFeed);
+            if (!foundFeed) return;
+            
+            const quantityNumber = Number(quantity);
+            const consumptionDate = (document.getElementById('consumptionDate') as HTMLInputElement).value;
+            const result = deductFromStock(foundFeed.id, quantityNumber, `Gestación Cerda ${pigId}`, consumptionDate);
+
+            if (!result.success) {
+                toast({ variant: "destructive", title: "Error de Stock", description: result.message });
+                return;
+            }
+
+            const newRecord: ConsumptionRecord = {
+                id: new Date().toISOString(),
+                date: consumptionDate,
+                quantity: quantityNumber,
+                feedType: foundFeed.name,
+                productId: foundFeed.id,
+            };
+
+            const updatedHistory = [newRecord, ...consumptionHistory];
+            setConsumptionHistory(updatedHistory);
+            localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(updatedHistory));
+            
+            toast({ title: "¡Consumo Registrado!", description: `${quantity}kg de ${foundFeed.name} registrado. Stock restante: ${result.newStock?.toFixed(2)}kg` });
+            
+            setSelectedFeed(undefined);
+            setQuantity('');
+        }
+
+        return (
+             <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle>Registrar Consumo Individual</DialogTitle>
+                    <DialogDescription>
+                        Registre el consumo diario de alimento para la cerda {pigId}. El stock se descontará automáticamente.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                    <ScrollArea className="h-full pr-6">
+                        <div className="space-y-4 py-4 pr-2">
+                            <form onSubmit={handleSubmit} id="consumption-form" className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="consumptionDate">Fecha</Label>
+                                        <Input id="consumptionDate" name="consumptionDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                                    </div>
+                                    <div className="space-y-2 col-span-2">
+                                        <Label htmlFor="feedType">Tipo de Alimento</Label>
+                                         <Select name="feedType" onValueChange={setSelectedFeed} value={selectedFeed}>
+                                             <SelectTrigger><SelectValue placeholder="Seleccione un alimento..." /></SelectTrigger>
+                                             <SelectContent>
+                                                 {feedOptions.map(option => (
+                                                     <SelectItem key={option.id} value={option.id}>{option.name} (Stock: {option.stock}kg)</SelectItem>
+                                                 ))}
+                                             </SelectContent>
+                                         </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="quantity">Cantidad Consumida (kg)</Label>
+                                    <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej. 2.5" required value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                </div>
+                                 <Button type="submit" className="w-full">Guardar Consumo</Button>
+                            </form>
+
+                            <Separator />
+
+                            <div>
+                                <h3 className="text-lg font-medium mb-4">Historial de Consumos de la Cerda</h3>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Alimento</TableHead>
+                                            <TableHead className="text-right">Cantidad (kg)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {consumptionHistory.map(record => (
+                                            <TableRow key={record.id}>
+                                                <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
+                                                <TableCell>{record.feedType}</TableCell>
+                                                <TableCell className="text-right">{record.quantity.toFixed(1)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {consumptionHistory.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground">No hay registros de consumo.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    </ScrollArea>
+                </div>
+                <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background -mx-6 px-6">
+                    <Button type="button" variant="ghost" onClick={() => setIsConsumptionFormOpen(false)}>Cerrar</Button>
+                </DialogFooter>
+            </DialogContent>
+        )
+    }
 
     const EventForm = () => {
         if (!selectedEventType) return null;
@@ -547,6 +689,10 @@ export default function PigHistoryPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Hoja de Vida: {pig.id}</h1>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
+                            <Wheat className="mr-2 h-4 w-4" />
+                            Registrar Consumo
+                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button>
@@ -612,7 +758,7 @@ export default function PigHistoryPage() {
                                         </div>
                                         <div className="flex-grow pt-2">
                                             <p className="font-semibold">{event.type}</p>
-                                            <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'dd/MM/yyyy')}</p>
+                                            <p className="text-sm text-muted-foreground">{isValid(parseISO(event.date)) ? format(parseISO(event.date), 'dd/MM/yyyy') : 'N/A'}</p>
                                             {event.details && <p className="text-sm mt-1">{event.details}</p>}
                                             {event.inseminationGroup && <Badge variant="outline" className="mt-1">Grupo: {event.inseminationGroup}</Badge>}
                                         </div>
@@ -646,6 +792,9 @@ export default function PigHistoryPage() {
                 setIsEventFormOpen(isOpen);
             }}>
                 <EventForm />
+            </Dialog>
+            <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
+                <ConsumptionForm />
             </Dialog>
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
