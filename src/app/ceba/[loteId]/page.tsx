@@ -5,8 +5,8 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, PlusCircle, Syringe, Banknote, Skull, ShieldPlus } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, PlusCircle, Syringe, Banknote, Skull, ShieldPlus, MoreHorizontal } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, parseISO, isValid, addDays, getDay, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { mockInventory } from '@/lib/mock-data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +53,7 @@ interface ConsumptionRecord {
 type CebaEventType = "Muerte en lote" | "Venta de lote" | "Tratamiento" | "Vacunación";
 
 interface BatchEvent {
+    id: string;
     type: CebaEventType;
     date: string;
     details?: string;
@@ -83,6 +85,9 @@ export default function LoteCebaPage() {
     
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<CebaEventType | null>(null);
+    const [editingEvent, setEditingEvent] = React.useState<BatchEvent | null>(null);
+    const [eventToDelete, setEventToDelete] = React.useState<BatchEvent | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_ceba_${loteId}`, [loteId]);
     
@@ -187,7 +192,19 @@ export default function LoteCebaPage() {
     
     const openEventDialog = (eventType: CebaEventType) => {
         setSelectedEventType(eventType);
+        setEditingEvent(null);
         setIsEventFormOpen(true);
+    };
+
+     const openEditEventDialog = (event: BatchEvent) => {
+        setSelectedEventType(event.type);
+        setEditingEvent(event);
+        setIsEventFormOpen(true);
+    };
+
+    const openDeleteEventDialog = (event: BatchEvent) => {
+        setEventToDelete(event);
+        setIsDeleteDialogOpen(true);
     };
 
     const generateLiquidationReport = (finalBatch: CebaBatch, finalEvent: BatchEvent) => {
@@ -254,6 +271,7 @@ export default function LoteCebaPage() {
             const formData = new FormData(e.target as HTMLFormElement);
 
             const newEvent: BatchEvent = {
+                id: editingEvent ? editingEvent.id : `evt-ceba-${Date.now()}`,
                 type: selectedEventType,
                 date: formData.get('eventDate') as string,
                 details: formData.get('eventNotes') as string || undefined,
@@ -265,10 +283,19 @@ export default function LoteCebaPage() {
                 saleValue: Number(formData.get('saleValue')) || undefined,
             };
             
-            let updatedBatch = { ...batch, events: [...batch.events, newEvent] };
+            let updatedBatch = { ...batch };
+            if (editingEvent) {
+                updatedBatch.events = updatedBatch.events.map(ev => ev.id === editingEvent.id ? newEvent : ev);
+            } else {
+                 updatedBatch.events = [...updatedBatch.events, newEvent];
+            }
 
-            if(newEvent.type === 'Muerte en lote' && newEvent.animalCount) {
-                updatedBatch.pigletCount -= newEvent.animalCount;
+
+            if(newEvent.type === 'Muerte en lote') {
+                 const totalDeaths = updatedBatch.events
+                    .filter(ev => ev.type === 'Muerte en lote')
+                    .reduce((sum, current) => sum + (current.animalCount || 0), 0);
+                updatedBatch.pigletCount = updatedBatch.initialPigletCount - totalDeaths;
             }
 
             if (selectedEventType === 'Venta de lote') {
@@ -281,8 +308,8 @@ export default function LoteCebaPage() {
                 router.push('/analysis/liquidated-batches');
             } else {
                  toast({
-                    title: "¡Evento Registrado!",
-                    description: `El evento "${selectedEventType}" ha sido registrado para el lote ${loteId}.`,
+                    title: `¡Evento ${editingEvent ? 'Actualizado' : 'Registrado'}!`,
+                    description: `El evento "${selectedEventType}" ha sido ${editingEvent ? 'actualizado' : 'registrado'} para el lote ${loteId}.`,
                 });
             }
 
@@ -294,12 +321,13 @@ export default function LoteCebaPage() {
             calculateConsumption(consumptionHistory, updatedBatch);
             
             setIsEventFormOpen(false);
+            setEditingEvent(null);
         }
         
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Registrar Evento de Ceba: {selectedEventType}</DialogTitle>
+                    <DialogTitle>{editingEvent ? 'Editar' : 'Registrar'} Evento de Ceba: {selectedEventType}</DialogTitle>
                     <DialogDescription>
                         Complete la información del evento para el lote {loteId}.
                     </DialogDescription>
@@ -309,14 +337,14 @@ export default function LoteCebaPage() {
                         <form onSubmit={handleSubmit} id="event-form" className="space-y-4 pt-2 pb-6">
                             <div className="space-y-2">
                                 <Label htmlFor="eventDate">Fecha del Evento</Label>
-                                <Input id="eventDate" name="eventDate" type="date" required />
+                                <Input id="eventDate" name="eventDate" type="date" required defaultValue={editingEvent?.date} />
                             </div>
 
                             {['Tratamiento', 'Vacunación'].includes(selectedEventType) && (
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="product">Producto</Label>
-                                        <Select name="product" required>
+                                        <Select name="product" required defaultValue={editingEvent?.product}>
                                             <SelectTrigger><SelectValue placeholder={`Seleccionar ${selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna'}`} /></SelectTrigger>
                                             <SelectContent>
                                                 {mockInventory.filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
@@ -327,15 +355,15 @@ export default function LoteCebaPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="animalCount">Número de Animales</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" placeholder="Ej: 120" required />
+                                        <Input id="animalCount" name="animalCount" type="number" placeholder="Ej: 120" required defaultValue={editingEvent?.animalCount}/>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="dose">Dosis por Animal (ml)</Label>
-                                        <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required />
+                                        <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej. 2.0" required defaultValue={editingEvent?.dose}/>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="treatmentReason">Motivo / Enfermedad</Label>
-                                        <Input id="treatmentReason" name="treatmentReason" placeholder="Ej: Preventivo, tratamiento para diarrea" required/>
+                                        <Input id="treatmentReason" name="treatmentReason" placeholder="Ej: Preventivo, tratamiento para diarrea" required defaultValue={editingEvent?.details}/>
                                     </div>
                                 </>
                             )}
@@ -344,15 +372,15 @@ export default function LoteCebaPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="animalCount">Número de Animales</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" required />
+                                        <Input id="animalCount" name="animalCount" type="number" required defaultValue={editingEvent?.animalCount}/>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="avgWeight">Peso Promedio (kg) - Opcional</Label>
-                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" placeholder="Ej. 15.5" />
+                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" placeholder="Ej. 15.5" defaultValue={editingEvent?.avgWeight}/>
                                     </div>
                                      <div className="space-y-2">
                                         <Label htmlFor="cause">Causa</Label>
-                                        <Input id="cause" name="cause" placeholder="Causa de la muerte" required />
+                                        <Input id="cause" name="cause" placeholder="Causa de la muerte" required defaultValue={editingEvent?.cause}/>
                                     </div>
                                 </>
                             )}
@@ -361,33 +389,56 @@ export default function LoteCebaPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="animalCount">Número de Animales Vendidos</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" required />
+                                        <Input id="animalCount" name="animalCount" type="number" required defaultValue={editingEvent?.animalCount}/>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="avgWeight">Peso Promedio Final (kg)</Label>
-                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required />
+                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required defaultValue={editingEvent?.avgWeight}/>
                                     </div>
                                      <div className="space-y-2">
                                         <Label htmlFor="saleValue">Valor Total de Venta ($)</Label>
-                                        <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Valor total"/>
+                                        <Input id="saleValue" name="saleValue" type="number" step="0.01" placeholder="Valor total" defaultValue={editingEvent?.saleValue}/>
                                     </div>
                                 </>
                             )}
                             
                             <div className="space-y-2">
                                 <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                                <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                                <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento." defaultValue={editingEvent?.details}/>
                             </div>
                         </form>
                     </ScrollArea>
                 </div>
                 <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
-                    <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
+                    <Button type="button" variant="ghost" onClick={() => {setIsEventFormOpen(false); setEditingEvent(null);}}>Cancelar</Button>
                     <Button type="submit" form="event-form">Guardar Evento</Button>
                 </DialogFooter>
             </DialogContent>
         )
     }
+
+    const handleDeleteEvent = () => {
+        if (!eventToDelete || !batch) return;
+
+        const updatedBatch = {
+            ...batch,
+            events: batch.events.filter(ev => ev.id !== eventToDelete.id)
+        };
+        
+        setBatch(updatedBatch);
+        
+        const storedBatches = JSON.parse(localStorage.getItem('cebaBatches') || '{}');
+        storedBatches[loteId] = updatedBatch;
+        localStorage.setItem('cebaBatches', JSON.stringify(storedBatches));
+        
+        toast({
+            title: "Evento Eliminado",
+            description: `El evento "${eventToDelete.type}" ha sido eliminado.`,
+        });
+
+        setIsDeleteDialogOpen(false);
+        setEventToDelete(null);
+    };
 
     if (!batch) {
         return (
@@ -537,10 +588,78 @@ export default function LoteCebaPage() {
                         </Table>
                     </CardContent>
                 </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Historial de Eventos del Lote de Ceba</CardTitle>
+                        <CardDescription>Eventos registrados para este lote.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Tipo de Evento</TableHead>
+                                    <TableHead>Detalles</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {batch.events.length > 0 ? batch.events.map(event => (
+                                    <TableRow key={event.id}>
+                                        <TableCell>{isValid(parseISO(event.date)) ? format(parseISO(event.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {eventIcons[event.type]}
+                                                <span>{event.type}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{event.details || `Animales: ${event.animalCount}, Causa: ${event.cause || 'N/A'}`}</TableCell>
+                                        <TableCell className="text-right">
+                                             <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => openEditEventDialog(event)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openDeleteEventDialog(event)} className="text-destructive">Eliminar</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">No hay eventos registrados para este lote.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                       </Table>
+                    </CardContent>
+                </Card>
+
             </div>
-             <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+             <Dialog open={isEventFormOpen} onOpenChange={(isOpen) => {
+                 if(!isOpen) { setEditingEvent(null); }
+                 setIsEventFormOpen(isOpen);
+             }}>
                 <EventForm />
             </Dialog>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. Se eliminará el evento permanentemente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setEventToDelete(null)}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteEvent}>Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

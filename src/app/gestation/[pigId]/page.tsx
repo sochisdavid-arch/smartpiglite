@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, Wheat } from 'lucide-react';
+import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +26,7 @@ type GestationEventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto"
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Event {
+    id: string; // Unique ID for each event
     type: GestationEventType | 'Ninguno';
     date: string;
     inseminationGroup?: string;
@@ -59,12 +61,12 @@ const initialPigs: Pig[] = [
         purchaseValue: 150, 
         age: 0, 
         status: 'Lactante', 
-        lastEvent: { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' }, 
+        lastEvent: { id: 'evt1', type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' }, 
         events: [
-            { type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' },
-            { type: 'Inseminación', date: '2024-03-17', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario A con semen de macho M-012.' },
-            { type: 'Vacunación', date: '2024-03-01', details: 'Vacuna contra Parvovirus.' },
-            { type: 'Tratamiento', date: '2024-02-15', details: 'Desparasitación interna.' }
+            { id: 'evt1', type: 'Parto', date: '2024-07-08', liveBorn: 14, stillborn: 1, mummified: 0, details: '14 nacidos vivos, 1 mortinato.' },
+            { id: 'evt2', type: 'Inseminación', date: '2024-03-17', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario A con semen de macho M-012.' },
+            { id: 'evt3', type: 'Vacunación', date: '2024-03-01', details: 'Vacuna contra Parvovirus.' },
+            { id: 'evt4', type: 'Tratamiento', date: '2024-02-15', details: 'Desparasitación interna.' }
         ] 
     },
     { 
@@ -77,10 +79,10 @@ const initialPigs: Pig[] = [
         purchaseValue: 155, 
         age: 0, 
         status: 'Lactante', 
-        lastEvent: { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' }, 
+        lastEvent: { id: 'evt5', type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' }, 
         events: [
-            { type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' },
-            { type: 'Inseminación', date: '2024-03-19', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario B.' },
+            { id: 'evt5', type: 'Parto', date: '2024-07-10', liveBorn: 12, stillborn: 0, mummified: 0, details: '12 nacidos vivos.' },
+            { id: 'evt6', type: 'Inseminación', date: '2024-03-19', inseminationGroup: 'SEMANA-12', details: 'Inseminado por Operario B.' },
         ] 
     },
     { 
@@ -93,10 +95,10 @@ const initialPigs: Pig[] = [
         purchaseValue: 160, 
         age: 0, 
         status: 'Gestante', 
-        lastEvent: { type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21' }, 
+        lastEvent: { id: 'evt7', type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21' }, 
         events: [
-            { type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21', details: 'Inseminado por Operario A.' },
-            { type: 'Celo no Servido', date: '2024-04-30', details: 'Baja condición corporal.' }
+            { id: 'evt7', type: 'Inseminación', date: '2024-05-20', inseminationGroup: 'SEMANA-21', details: 'Inseminado por Operario A.' },
+            { id: 'evt8', type: 'Celo no Servido', date: '2024-04-30', details: 'Baja condición corporal.' }
         ] 
     },
     { 
@@ -109,7 +111,7 @@ const initialPigs: Pig[] = [
         purchaseValue: 120, 
         age: 0, 
         status: 'Remplazo', 
-        lastEvent: { type: 'Ninguno', date: '' }, 
+        lastEvent: { id: 'evt9', type: 'Ninguno', date: '' }, 
         events: [] 
     },
     { 
@@ -122,10 +124,10 @@ const initialPigs: Pig[] = [
         purchaseValue: 165, 
         age: 0, 
         status: 'Destetada', 
-        lastEvent: { type: 'Destete', date: '2024-06-25' }, 
+        lastEvent: { id: 'evt10', type: 'Destete', date: '2024-06-25' }, 
         events: [
-            { type: 'Destete', date: '2024-06-25', details: 'Destetados 11 lechones.' },
-            { type: 'Parto', date: '2024-05-28', details: '11 nacidos vivos, 2 mortinatos.' }
+            { id: 'evt10', type: 'Destete', date: '2024-06-25', details: 'Destetados 11 lechones.' },
+            { id: 'evt11', type: 'Parto', date: '2024-05-28', details: '11 nacidos vivos, 2 mortinatos.' }
         ] 
     },
 ];
@@ -183,6 +185,10 @@ export default function PigHistoryPage() {
     const [pig, setPig] = React.useState<Pig | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<GestationEventType | null>(null);
+    const [editingEvent, setEditingEvent] = React.useState<Event | null>(null);
+    const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -195,13 +201,25 @@ export default function PigHistoryPage() {
 
     const openEventDialog = (eventType: GestationEventType) => {
         setSelectedEventType(eventType);
+        setEditingEvent(null);
         setIsEventFormOpen(true);
+    };
+    
+    const openEditEventDialog = (event: Event) => {
+        setSelectedEventType(event.type as GestationEventType);
+        setEditingEvent(event);
+        setIsEventFormOpen(true);
+    };
+
+    const openDeleteEventDialog = (event: Event) => {
+        setEventToDelete(event);
+        setIsDeleteDialogOpen(true);
     };
 
     const EventForm = () => {
         if (!selectedEventType) return null;
     
-        const [inseminationDate, setInseminationDate] = React.useState<string>('');
+        const [inseminationDate, setInseminationDate] = React.useState<string>(editingEvent?.date || '');
         const probableFarrowingDate = React.useMemo(() => {
             if (inseminationDate) {
                 const date = parseISO(inseminationDate);
@@ -212,7 +230,7 @@ export default function PigHistoryPage() {
             return '---';
         }, [inseminationDate]);
     
-        const [liveBorn, setLiveBorn] = React.useState<number | string>('');
+        const [liveBorn, setLiveBorn] = React.useState<number | string>(editingEvent?.liveBorn || '');
         const [litterWeight, setLitterWeight] = React.useState<number | string>('');
         const averagePigletWeight = React.useMemo(() => {
             const numLiveBorn = Number(liveBorn);
@@ -228,7 +246,8 @@ export default function PigHistoryPage() {
             const formData = new FormData(e.target as HTMLFormElement);
             const eventDate = formData.get('eventDate') as string;
             
-            const newEvent: Event = {
+            const eventData: Event = {
+                id: editingEvent ? editingEvent.id : `evt-${Date.now()}`,
                 type: selectedEventType,
                 date: eventDate,
                 details: formData.get('eventNotes') as string || `${selectedEventType} registrado.`,
@@ -238,15 +257,22 @@ export default function PigHistoryPage() {
 
             if (selectedEventType === 'Parto') {
                 const liveBornCount = Number(formData.get('liveBorn'));
-                newEvent.liveBorn = liveBornCount;
-                newEvent.stillborn = Number(formData.get('stillborn'));
-                newEvent.mummified = Number(formData.get('mummified'));
-                newEvent.details = `${liveBornCount} lechones vivos. Peso camada: ${formData.get('litterWeight')}kg.`;
+                eventData.liveBorn = liveBornCount;
+                eventData.stillborn = Number(formData.get('stillborn'));
+                eventData.mummified = Number(formData.get('mummified'));
+                eventData.details = `${liveBornCount} lechones vivos. Peso camada: ${formData.get('litterWeight')}kg.`;
             }
 
+            if (editingEvent) {
+                updatedPig.events = updatedPig.events.map(ev => ev.id === editingEvent.id ? eventData : ev);
+            } else {
+                updatedPig.events.unshift(eventData); // Add to the beginning
+            }
+            
+            // Sort events by date descending to ensure `lastEvent` is correct
+            updatedPig.events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            updatedPig.lastEvent = updatedPig.events[0] || { id: 'none', type: 'Ninguno', date: '' };
 
-            updatedPig.events.unshift(newEvent); // Add to the beginning
-            updatedPig.lastEvent = newEvent;
 
             if (selectedEventType === 'Parto') {
                 updatedPig.status = 'Lactante';
@@ -260,13 +286,14 @@ export default function PigHistoryPage() {
             setPig(updatedPig);
             
             toast({
-                title: "¡Evento Registrado!",
-                description: `El evento "${selectedEventType}" ha sido añadido al historial.`,
+                title: `¡Evento ${editingEvent ? 'Actualizado' : 'Registrado'}!`,
+                description: `El evento "${selectedEventType}" ha sido ${editingEvent ? 'actualizado' : 'añadido'} al historial.`,
             });
             
             setIsEventFormOpen(false);
+            setEditingEvent(null);
 
-            if (selectedEventType === 'Parto') {
+            if (selectedEventType === 'Parto' && !editingEvent) {
                 toast({
                     title: "¡Estado Actualizado!",
                     description: `La cerda ${pig!.id} ha sido movida a Lactancia.`,
@@ -278,7 +305,7 @@ export default function PigHistoryPage() {
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Registrar Evento: {selectedEventType}</DialogTitle>
+                    <DialogTitle>{editingEvent ? 'Editar' : 'Registrar'} Evento: {selectedEventType}</DialogTitle>
                     <DialogDescription>
                         Complete la información para el evento.
                     </DialogDescription>
@@ -293,6 +320,7 @@ export default function PigHistoryPage() {
                                 name="eventDate"
                                 type="date" 
                                 required 
+                                defaultValue={editingEvent?.date}
                                 onChange={e => selectedEventType === 'Inseminación' && setInseminationDate(e.target.value)}
                             />
                         </div>
@@ -300,13 +328,13 @@ export default function PigHistoryPage() {
                         {selectedEventType === 'Celo' && (
                             <div className="space-y-2">
                                 <Label htmlFor="observations">Observaciones</Label>
-                                <Textarea id="observations" name="observations" placeholder="Ej: Signos de celo muy evidentes."/>
+                                <Textarea id="observations" name="observations" placeholder="Ej: Signos de celo muy evidentes." defaultValue={editingEvent?.details}/>
                             </div>
                         )}
                         {selectedEventType === 'Celo no Servido' && (
                             <div className="space-y-2">
                                 <Label htmlFor="reason">Motivo</Label>
-                                <Input id="reason" name="reason" placeholder="Ej: Condición corporal baja"/>
+                                <Input id="reason" name="reason" placeholder="Ej: Condición corporal baja" defaultValue={editingEvent?.details}/>
                             </div>
                         )}
                         {selectedEventType === 'Inseminación' && (
@@ -321,7 +349,7 @@ export default function PigHistoryPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="inseminationGroup">Grupo de Inseminación</Label>
-                                    <Input id="inseminationGroup" name="inseminationGroup" placeholder="Ej. SEMANA-34" />
+                                    <Input id="inseminationGroup" name="inseminationGroup" placeholder="Ej. SEMANA-34" defaultValue={editingEvent?.inseminationGroup} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="inseminator">Inseminador</Label>
@@ -343,15 +371,15 @@ export default function PigHistoryPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="liveBorn">Vivos</Label>
-                                    <Input id="liveBorn" name="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} />
+                                    <Input id="liveBorn" name="liveBorn" type="number" required value={liveBorn} onChange={e => setLiveBorn(e.target.value)} defaultValue={editingEvent?.liveBorn} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="stillborn">Mortinatos</Label>
-                                    <Input id="stillborn" name="stillborn" type="number" required />
+                                    <Input id="stillborn" name="stillborn" type="number" required defaultValue={editingEvent?.stillborn} />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="mummified">Momias</Label>
-                                    <Input id="mummified" name="mummified" type="number" required />
+                                    <Input id="mummified" name="mummified" type="number" required defaultValue={editingEvent?.mummified} />
                                 </div>
                                  <div className="space-y-2">
                                     <Label htmlFor="lowViability">Baja Viabilidad</Label>
@@ -376,7 +404,7 @@ export default function PigHistoryPage() {
                         {selectedEventType === 'Aborto' && (
                             <div className="space-y-2">
                                 <Label htmlFor="abortionReason">Causa probable</Label>
-                                <Input id="abortionReason" name="abortionReason" placeholder="Ej: Estrés por calor"/>
+                                <Input id="abortionReason" name="abortionReason" placeholder="Ej: Estrés por calor" defaultValue={editingEvent?.details} />
                             </div>
                         )}
                         {selectedEventType === 'Tratamiento' && (
@@ -425,7 +453,7 @@ export default function PigHistoryPage() {
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="reason">Causa / Motivo</Label>
-                                    <Input id="reason" name="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required />
+                                    <Input id="reason" name="reason" placeholder={`Motivo de la ${selectedEventType.toLowerCase()}`} required defaultValue={editingEvent?.details}/>
                                 </div>
                                 {['Venta', 'Descarte', 'Muerte'].includes(selectedEventType) && (
                                 <div className="space-y-2">
@@ -437,7 +465,7 @@ export default function PigHistoryPage() {
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="eventNotes">Notas Adicionales</Label>
-                            <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento."/>
+                            <Textarea id="eventNotes" name="eventNotes" placeholder="Cualquier nota adicional relevante para este evento." defaultValue={editingEvent?.details}/>
                         </div>
                     </form>
                     </ScrollArea>
@@ -450,6 +478,30 @@ export default function PigHistoryPage() {
         )
       }
 
+    const handleDeleteEvent = () => {
+        if (!eventToDelete || !pig) return;
+        
+        let updatedPig = { ...pig };
+        updatedPig.events = updatedPig.events.filter(ev => ev.id !== eventToDelete.id);
+        updatedPig.events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        updatedPig.lastEvent = updatedPig.events[0] || { id: 'none', type: 'Ninguno', date: '' };
+        
+        // Add logic to potentially update pig status if the deleted event was critical
+        
+        const pigsFromStorage = localStorage.getItem('pigs');
+        let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+        pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
+        localStorage.setItem('pigs', JSON.stringify(pigs));
+
+        setPig(updatedPig);
+        toast({
+            title: "Evento Eliminado",
+            description: `El evento "${eventToDelete.type}" ha sido eliminado del historial.`,
+        });
+
+        setIsDeleteDialogOpen(false);
+        setEventToDelete(null);
+    };
 
     if (!pig) {
         return (
@@ -531,7 +583,7 @@ export default function PigHistoryPage() {
                             
                             <div className="space-y-8">
                                 {pig.events.map((event, index) => (
-                                    <div key={index} className="flex gap-4 items-start">
+                                    <div key={event.id} className="flex gap-4 items-start relative">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
                                             {eventIcons[event.type as GestationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
@@ -540,6 +592,19 @@ export default function PigHistoryPage() {
                                             <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'dd/MM/yyyy')}</p>
                                             {event.details && <p className="text-sm mt-1">{event.details}</p>}
                                             {event.inseminationGroup && <Badge variant="outline" className="mt-1">Grupo: {event.inseminationGroup}</Badge>}
+                                        </div>
+                                        <div className="absolute top-2 right-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => openEditEventDialog(event)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openDeleteEventDialog(event)} className="text-destructive">Eliminar</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 ))}
@@ -551,13 +616,28 @@ export default function PigHistoryPage() {
                     </CardContent>
                 </Card>
             </div>
-            <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+            <Dialog open={isEventFormOpen} onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    setEditingEvent(null);
+                }
+                setIsEventFormOpen(isOpen);
+            }}>
                 <EventForm />
             </Dialog>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmas la eliminación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. El evento será eliminado permanentemente del historial del animal.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setEventToDelete(null)}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteEvent}>Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }
-
-    
-
-    

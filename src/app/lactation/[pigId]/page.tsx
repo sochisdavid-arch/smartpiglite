@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, Repeat, GitMerge, MoveUp, MoveDown, Package, Banknote, Wheat } from 'lucide-react';
+import { ArrowLeft, Syringe, Baby, HeartPulse, XCircle, Beaker, PlusCircle, ChevronDown, Repeat, GitMerge, MoveUp, MoveDown, Package, Banknote, Wheat, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, differenceInWeeks, isValid, addDays, differenceInDays, getWeek } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +28,7 @@ type LactationEventType = "Tratamiento" | "Vacunación" | "Muerte de Lechón" | 
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
 interface Event {
+    id: string; // Unique ID for each event
     type: LactationEventType | "Parto" | "Inseminación"; // Allow gestation events for history
     date: string;
     details?: string;
@@ -72,8 +74,8 @@ const initialPigs: Pig[] = [
     status: 'Gestante', 
     lastEvent: { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24' }, 
     events: [
-        { type: 'Parto', date: '2024-07-05', details: '14 nacidos vivos', liveBorn: 14 },
-        { type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A con semen de macho M-012.' },
+        { id: 'evt-parto-1', type: 'Parto', date: '2024-07-05', details: '14 nacidos vivos', liveBorn: 14 },
+        { id: 'evt-insem-1', type: 'Inseminación', date: '2024-06-10', inseminationGroup: 'SEMANA-24', details: 'Inseminado por Operario A con semen de macho M-012.' },
     ] 
   },
 ];
@@ -100,7 +102,7 @@ const eventIcons: { [key in LactationEventType]: React.ReactElement } = {
     "Muerte": <XCircle className="h-5 w-5" />,
 };
 
-const allLactationEventTypes: LactationEventType[] = ["Tratamiento", "Vacunación", "Muerte de Lechón", "Adopción de Lechón", "Donación de Lechón", "Destete", "Venta", "Muerte"];
+const allLactationEventTypes: LactationEventType[] = ["Tratamiento", "Vacunación", "Muerte de Lechón", "Adopción de Lechón", "Donación de Lechón", "Destete"];
 
 export default function LactationHistoryPage() {
     const router = useRouter();
@@ -111,28 +113,47 @@ export default function LactationHistoryPage() {
     const [pig, setPig] = React.useState<Pig | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<LactationEventType | null>(null);
+    const [editingEvent, setEditingEvent] = React.useState<Event | null>(null);
+    const [eventToDelete, setEventToDelete] = React.useState<Event | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
     const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
     const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_${pigId}`, [pigId]);
 
-    React.useEffect(() => {
+    const loadPigData = React.useCallback(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
         const pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
         const foundPig = pigs.find((p: Pig) => p.id === pigId);
         if (foundPig) {
             setPig({...foundPig, age: calculateAge(foundPig.birthDate)});
         }
+    }, [pigId]);
 
+    React.useEffect(() => {
+        loadPigData();
         const historyFromStorage = localStorage.getItem(getConsumptionStorageKey());
         if (historyFromStorage) {
             setConsumptionHistory(JSON.parse(historyFromStorage));
         }
-    }, [pigId, getConsumptionStorageKey]);
+    }, [pigId, getConsumptionStorageKey, loadPigData]);
 
     const openEventDialog = (eventType: LactationEventType) => {
         setSelectedEventType(eventType);
+        setEditingEvent(null);
         setIsEventFormOpen(true);
+    };
+
+    const openEditEventDialog = (event: Event) => {
+        setSelectedEventType(event.type as LactationEventType);
+        setEditingEvent(event);
+        setIsEventFormOpen(true);
+    };
+
+    const openDeleteEventDialog = (event: Event) => {
+        setEventToDelete(event);
+        setIsDeleteDialogOpen(true);
     };
 
      const ConsumptionForm = () => {
@@ -246,7 +267,7 @@ export default function LactationHistoryPage() {
     const EventForm = () => {
         if (!selectedEventType) return null;
 
-        const [weanedCount, setWeanedCount] = React.useState<number | string>('');
+        const [weanedCount, setWeanedCount] = React.useState<number | string>(editingEvent?.pigletCount || '');
         const [litterWeight, setLitterWeight] = React.useState<number | string>('');
         const [avgWeight, setAvgWeight] = React.useState<number | string>('---');
         const [weaningDestination, setWeaningDestination] = React.useState<'precebo' | 'venta'>('precebo');
@@ -282,6 +303,7 @@ export default function LactationHistoryPage() {
             const eventDate = formData.get('eventDate') as string;
             
             const newEvent: Event = {
+                id: editingEvent ? editingEvent.id : `evt-${Date.now()}`,
                 type: selectedEventType,
                 date: eventDate,
                 details: formData.get('details') as string || `${selectedEventType} registrado.`,
@@ -301,8 +323,14 @@ export default function LactationHistoryPage() {
             if (selectedEventType === 'Adopción de Lechón') newEvent.fromSow = formData.get('fromSow') as string;
             if (selectedEventType === 'Donación de Lechón') newEvent.toSow = formData.get('toSow') as string;
             
-            updatedPig.events.unshift(newEvent); 
-            updatedPig.lastEvent = newEvent;
+            if (editingEvent) {
+                updatedPig.events = updatedPig.events.map(ev => ev.id === editingEvent.id ? newEvent : ev);
+            } else {
+                updatedPig.events.unshift(newEvent);
+            }
+            updatedPig.events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            updatedPig.lastEvent = updatedPig.events[0];
+            
             setPig(updatedPig); // Optimistic update of UI
 
             // Main logic for Destete
@@ -357,13 +385,14 @@ export default function LactationHistoryPage() {
             localStorage.setItem('pigs', JSON.stringify(pigs));
             
             toast({
-                title: "¡Evento Registrado!",
-                description: `El evento "${selectedEventType}" ha sido añadido al historial de lactancia.`,
+                title: `¡Evento ${editingEvent ? 'Actualizado' : 'Registrado'}!`,
+                description: `El evento "${selectedEventType}" ha sido ${editingEvent ? 'actualizado' : 'añadido'} al historial.`,
             });
             
             setIsEventFormOpen(false);
+            setEditingEvent(null);
 
-            if (selectedEventType === 'Destete') {
+            if (selectedEventType === 'Destete' && !editingEvent) {
                 toast({
                     title: "¡Estado Actualizado!",
                     description: `La cerda ${pig!.id} ha sido movida a Destetada.`,
@@ -375,14 +404,14 @@ export default function LactationHistoryPage() {
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Registrar Evento de Lactancia: {selectedEventType}</DialogTitle>
+                    <DialogTitle>{editingEvent ? 'Editar' : 'Registrar'} Evento de Lactancia: {selectedEventType}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto -mx-6 px-6">
                  <ScrollArea className="h-full pr-6">
                     <form onSubmit={handleSubmit} id="lactation-event-form" className="space-y-4 pt-2 pb-6">
                         <div className="space-y-2">
                             <Label htmlFor="eventDate">Fecha del Evento</Label>
-                            <Input id="eventDate" name="eventDate" type="date" required />
+                            <Input id="eventDate" name="eventDate" type="date" required defaultValue={editingEvent?.date} />
                         </div>
                         
                         {['Tratamiento', 'Vacunación'].includes(selectedEventType) && (
@@ -409,11 +438,11 @@ export default function LactationHistoryPage() {
                            <>
                                <div className="space-y-2">
                                    <Label htmlFor="pigletCount">Cantidad</Label>
-                                   <Input id="pigletCount" name="pigletCount" type="number" placeholder="Nº de lechones" required />
+                                   <Input id="pigletCount" name="pigletCount" type="number" placeholder="Nº de lechones" required defaultValue={editingEvent?.pigletCount}/>
                                </div>
                                <div className="space-y-2">
                                    <Label htmlFor="cause">Causa</Label>
-                                   <Input id="cause" name="cause" placeholder="Causa de la muerte" required />
+                                   <Input id="cause" name="cause" placeholder="Causa de la muerte" required defaultValue={editingEvent?.cause}/>
                                </div>
                            </>
                         )}
@@ -421,19 +450,19 @@ export default function LactationHistoryPage() {
                         {['Adopción de Lechón', 'Donación de Lechón'].includes(selectedEventType) && (
                             <div className="space-y-2">
                                 <Label htmlFor="pigletCount">Cantidad de Lechones</Label>
-                                <Input id="pigletCount" name="pigletCount" type="number" placeholder="Ej: 2" required />
+                                <Input id="pigletCount" name="pigletCount" type="number" placeholder="Ej: 2" required defaultValue={editingEvent?.pigletCount}/>
                             </div>
                         )}
                         {selectedEventType === 'Adopción de Lechón' && (
                              <div className="space-y-2">
                                 <Label htmlFor="fromSow">Cerda Donante</Label>
-                                <Input id="fromSow" name="fromSow" placeholder="ID de la cerda que dona" required />
+                                <Input id="fromSow" name="fromSow" placeholder="ID de la cerda que dona" required defaultValue={editingEvent?.fromSow}/>
                             </div>
                         )}
                         {selectedEventType === 'Donación de Lechón' && (
                              <div className="space-y-2">
                                 <Label htmlFor="toSow">Cerda Receptora</Label>
-                                <Input id="toSow" name="toSow" placeholder="ID de la cerda que adopta" required />
+                                <Input id="toSow" name="toSow" placeholder="ID de la cerda que adopta" required defaultValue={editingEvent?.toSow}/>
                             </div>
                         )}
                          {selectedEventType === 'Destete' && (
@@ -494,7 +523,7 @@ export default function LactationHistoryPage() {
                          {selectedEventType !== 'Muerte de Lechón' && selectedEventType !== 'Destete' && (
                             <div className="space-y-2">
                                 <Label htmlFor="details">Notas Adicionales</Label>
-                                <Textarea id="details" name="details" placeholder="Cualquier nota adicional relevante para este evento."/>
+                                <Textarea id="details" name="details" placeholder="Cualquier nota adicional relevante para este evento." defaultValue={editingEvent?.details}/>
                             </div>
                         )}
                     </form>
@@ -507,6 +536,29 @@ export default function LactationHistoryPage() {
             </DialogContent>
         )
       }
+    
+    const handleDeleteEvent = () => {
+        if (!eventToDelete || !pig) return;
+        
+        let updatedPig = { ...pig };
+        updatedPig.events = updatedPig.events.filter(ev => ev.id !== eventToDelete.id);
+        updatedPig.events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        updatedPig.lastEvent = updatedPig.events[0] || { id: 'none', type: 'Ninguno', date: '' };
+        
+        const pigsFromStorage = localStorage.getItem('pigs');
+        let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
+        pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
+        localStorage.setItem('pigs', JSON.stringify(pigs));
+
+        setPig(updatedPig);
+        toast({
+            title: "Evento Eliminado",
+            description: `El evento "${eventToDelete.type}" ha sido eliminado del historial.`,
+        });
+
+        setIsDeleteDialogOpen(false);
+        setEventToDelete(null);
+    };
 
     if (!pig) {
         return <AppLayout><div className="flex justify-center items-center h-full"><p>Cargando datos del animal...</p></div></AppLayout>;
@@ -585,7 +637,7 @@ export default function LactationHistoryPage() {
                             
                             <div className="space-y-8">
                                 {pig.events.filter(e => allLactationEventTypes.includes(e.type as LactationEventType)).map((event, index) => (
-                                    <div key={index} className="flex gap-4 items-start">
+                                    <div key={event.id} className="flex gap-4 items-start relative">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
                                             {eventIcons[event.type as LactationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
@@ -593,6 +645,19 @@ export default function LactationHistoryPage() {
                                             <p className="font-semibold">{event.type}</p>
                                             <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'dd/MM/yyyy')}</p>
                                             {event.details && <p className="text-sm mt-1">{event.details}</p>}
+                                        </div>
+                                        <div className="absolute top-2 right-0">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => openEditEventDialog(event)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => openDeleteEventDialog(event)} className="text-destructive">Eliminar</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 ))}
@@ -604,12 +669,29 @@ export default function LactationHistoryPage() {
                     </CardContent>
                 </Card>
             </div>
-            <Dialog open={isEventFormOpen} onOpenChange={setIsEventFormOpen}>
+            <Dialog open={isEventFormOpen} onOpenChange={(isOpen) => {
+                if(!isOpen) { setEditingEvent(null); }
+                setIsEventFormOpen(isOpen);
+            }}>
                 <EventForm />
             </Dialog>
             <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
                 <ConsumptionForm />
             </Dialog>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmas la eliminación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. El evento será eliminado permanentemente del historial.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setEventToDelete(null)}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteEvent}>Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }
