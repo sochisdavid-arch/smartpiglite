@@ -2,139 +2,67 @@
 "use client";
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Boxes, Pill, Syringe } from 'lucide-react';
-import { getInventory, InventoryItem } from '@/lib/inventory';
+
+interface CategoryCardProps {
+    title: string;
+    description: string;
+    icon: React.ReactElement;
+    onClick: () => void;
+}
+
+const CategoryCard: React.FC<CategoryCardProps> = ({ title, description, icon, onClick }) => (
+    <Card 
+        className="hover:bg-accent/50 cursor-pointer transition-colors duration-200"
+        onClick={onClick}
+    >
+        <CardHeader className="flex flex-row items-center gap-4">
+            {icon}
+            <div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Haga clic para ver y gestionar el stock de esta categoría.</p>
+        </CardContent>
+    </Card>
+);
+
 
 export default function InventoryPage() {
-    const [inventory, setInventory] = React.useState<InventoryItem[]>([]);
-
-    const loadInventory = React.useCallback(() => {
-        setInventory(getInventory());
-    }, []);
-    
-    React.useEffect(() => {
-        loadInventory();
-        
-        // Listen for storage changes to update inventory in real-time
-        const handleStorageChange = () => {
-            loadInventory();
-        };
-        window.addEventListener('storage', handleStorageChange);
-        
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [loadInventory]);
-    
-    const alimentos = inventory.filter(item => item.category === 'alimento');
-    const medicamentos = inventory.filter(item => item.category === 'medicamento');
-    const vacunas = inventory.filter(item => item.category === 'vacuna');
+    const router = useRouter();
 
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Inventario</h1>
-                    <p className="text-muted-foreground">Vista en tiempo real del stock disponible en la granja.</p>
+                    <p className="text-muted-foreground">Seleccione una categoría para ver y gestionar su stock.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Alimentos Card */}
-                    <Card className="lg:col-span-1">
-                        <CardHeader>
-                            <div className="flex items-center gap-4">
-                                <Boxes className="h-6 w-6 text-primary" />
-                                <div>
-                                    <CardTitle>Alimentos</CardTitle>
-                                    <CardDescription>Stock de concentrados y alimentos.</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Producto</TableHead>
-                                        <TableHead className="text-right">Stock (kg)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {alimentos.map(item => (
-                                        <TableRow key={item.id}>
-                                            <TableCell className="font-medium">{item.name}</TableCell>
-                                            <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-
-                    {/* Medicamentos y Vacunas Cards */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card>
-                             <CardHeader>
-                                <div className="flex items-center gap-4">
-                                    <Pill className="h-6 w-6 text-red-500" />
-                                    <div>
-                                        <CardTitle>Medicamentos</CardTitle>
-                                        <CardDescription>Stock de productos farmacéuticos.</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                               <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Producto</TableHead>
-                                            <TableHead className="text-right">Stock (ml/ud)</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {medicamentos.map(item => (
-                                            <TableRow key={item.id}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
-                                                <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                             <CardHeader>
-                                <div className="flex items-center gap-4">
-                                    <Syringe className="h-6 w-6 text-green-500" />
-                                    <div>
-                                        <CardTitle>Vacunas</CardTitle>
-                                        <CardDescription>Stock de productos biológicos.</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Producto</TableHead>
-                                            <TableHead className="text-right">Stock (dosis/ml)</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {vacunas.map(item => (
-                                            <TableRow key={item.id}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
-                                                <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <CategoryCard 
+                        title="Alimentos"
+                        description="Stock de concentrados y alimentos."
+                        icon={<Boxes className="h-8 w-8 text-primary" />}
+                        onClick={() => router.push('/inventory/alimentos')}
+                    />
+                    <CategoryCard 
+                        title="Medicamentos"
+                        description="Stock de productos farmacéuticos."
+                        icon={<Pill className="h-8 w-8 text-red-500" />}
+                        onClick={() => router.push('/inventory/medicamentos')}
+                    />
+                    <CategoryCard 
+                        title="Vacunas"
+                        description="Stock de productos biológicos."
+                        icon={<Syringe className="h-8 w-8 text-green-500" />}
+                        onClick={() => router.push('/inventory/vacunas')}
+                    />
                 </div>
             </div>
         </AppLayout>
