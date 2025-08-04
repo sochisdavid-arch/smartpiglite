@@ -246,25 +246,25 @@ export default function LactationHistoryPage() {
     const EventForm = () => {
         if (!selectedEventType) return null;
 
-        // States for Destete form
         const [weanedCount, setWeanedCount] = React.useState<number | string>('');
         const [litterWeight, setLitterWeight] = React.useState<number | string>('');
         const [avgWeight, setAvgWeight] = React.useState<number | string>('---');
         const [weaningDestination, setWeaningDestination] = React.useState<'precebo' | 'venta'>('precebo');
 
-        const calculateCurrentPiglets = () => {
+        const calculateCurrentPiglets = React.useCallback(() => {
             if (!pig) return 0;
             const partoEvent = pig.events.find(e => e.type === 'Parto');
             if (!partoEvent || typeof partoEvent.liveBorn !== 'number') return 0;
             
             const liveBorn = partoEvent.liveBorn || 0;
+            const lactationEvents = pig.events.slice(0, pig.events.indexOf(partoEvent));
             
-            const deaths = pig.events.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
-            const adoptions = pig.events.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
-            const donations = pig.events.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+            const deaths = lactationEvents.filter(e => e.type === 'Muerte de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+            const adoptions = lactationEvents.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
+            const donations = lactationEvents.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
             
-            return liveBorn - deaths + adoptions - donations;
-        }
+            return liveBorn - deaths - donations + adoptions;
+        }, [pig]);
 
         React.useEffect(() => {
             const numWeaned = Number(weanedCount);
@@ -287,6 +287,8 @@ export default function LactationHistoryPage() {
                 details: formData.get('details') as string || `${selectedEventType} registrado.`,
             };
 
+            let updatedPig = { ...pig! };
+
             // Specific event logic
             if (selectedEventType === 'Muerte de Lechón') {
                 newEvent.pigletCount = Number(formData.get('pigletCount'));
@@ -299,9 +301,9 @@ export default function LactationHistoryPage() {
             if (selectedEventType === 'Adopción de Lechón') newEvent.fromSow = formData.get('fromSow') as string;
             if (selectedEventType === 'Donación de Lechón') newEvent.toSow = formData.get('toSow') as string;
             
-            let updatedPig = { ...pig! };
             updatedPig.events.unshift(newEvent); 
             updatedPig.lastEvent = newEvent;
+            setPig(updatedPig); // Optimistic update of UI
 
             // Main logic for Destete
             if (selectedEventType === 'Destete') {
@@ -332,11 +334,13 @@ export default function LactationHistoryPage() {
                             id: batchId,
                             creationDate: eventDate,
                             pigletCount: newPigletsCount,
+                            initialPigletCount: newPigletsCount,
                             totalWeight: newTotalWeight,
                             avgWeight: (newTotalWeight / newPigletsCount).toFixed(2),
                             avgAge: avgAge,
                             sows: [pig!.id],
-                            status: 'Activo'
+                            status: 'Activo',
+                            events: []
                         };
                     }
                     localStorage.setItem('nurseryBatches', JSON.stringify(nurseryBatches));
@@ -351,8 +355,6 @@ export default function LactationHistoryPage() {
             let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
             pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
             localStorage.setItem('pigs', JSON.stringify(pigs));
-
-            setPig(updatedPig);
             
             toast({
                 title: "¡Evento Registrado!",
@@ -611,5 +613,3 @@ export default function LactationHistoryPage() {
         </AppLayout>
     );
 }
-
-    

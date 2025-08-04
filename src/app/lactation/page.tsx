@@ -118,7 +118,7 @@ const calculateAge = (birthDate: string) => {
 
 const getParityData = (pig: Pig) => {
     const partoEvents = pig.events.filter(e => e.type === 'Parto');
-    const lastPartoEvent = partoEvents.length > 0 ? partoEvents[0] : null;
+    const lastPartoEvent = partoEvents[0]; // Most recent is at the beginning
 
     if (!lastPartoEvent) {
         return { farrowingDate: null, liveBorn: 0, stillborn: 0, mummified: 0, currentPiglets: 0, parity: 0 };
@@ -134,7 +134,7 @@ const getParityData = (pig: Pig) => {
     const adoptions = lactationEvents.filter(e => e.type === 'Adopción de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
     const donations = lactationEvents.filter(e => e.type === 'Donación de Lechón').reduce((sum, e) => sum + (e.pigletCount || 0), 0);
     
-    const currentPiglets = liveBorn - deaths + adoptions - donations;
+    const currentPiglets = liveBorn - deaths - donations + adoptions;
     
     return {
         farrowingDate: lastPartoEvent?.date,
