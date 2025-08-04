@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, PlusCircle, Syringe, Move, Banknote, PackagePlus, ShieldPlus, Skull } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, parseISO, isValid, addDays, getDay } from 'date-fns';
+import { format, parseISO, isValid, addDays, getDay, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { PreceboReportData } from '@/components/PreceboReport';
 
 
 interface NurseryBatch {
@@ -32,6 +33,7 @@ interface NurseryBatch {
     sows: string[];
     status: 'Activo' | 'Finalizado';
     module?: string;
+    events: BatchEvent[];
 }
 
 interface ConsumptionRecord {
@@ -50,6 +52,19 @@ interface ConsumptionRecord {
 
 type PreceboEventType = "Muerte en lote" | "Traslado de lote" | "Venta de lote" | "Ingreso a lote" | "Tratamiento" | "Vacunación";
 
+interface BatchEvent {
+    type: PreceboEventType;
+    date: string;
+    details?: string;
+    animalCount?: number;
+    avgWeight?: number;
+    cause?: string;
+    product?: string;
+    dose?: number;
+    destination?: string;
+    saleValue?: number;
+}
+
 const eventIcons: { [key in PreceboEventType]: React.ReactElement } = {
     "Muerte en lote": <Skull className="h-5 w-5 text-destructive" />,
     "Traslado de lote": <Move className="h-5 w-5 text-blue-500" />,
@@ -60,7 +75,6 @@ const eventIcons: { [key in PreceboEventType]: React.ReactElement } = {
 };
 
 const allEventTypes: PreceboEventType[] = ["Muerte en lote", "Traslado de lote", "Venta de lote", "Ingreso a lote", "Tratamiento", "Vacunación"];
-
 
 export default function LotePreceboPage() {
     const router = useRouter();
@@ -76,9 +90,9 @@ export default function LotePreceboPage() {
 
     const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_precebo_${loteId}`, [loteId]);
     
-    const handleHistoryChange = React.useCallback((updatedHistory: ConsumptionRecord[], currentBatch: NurseryBatch) => {
+    const updateConsumption = React.useCallback((history: ConsumptionRecord[], currentBatch: NurseryBatch) => {
         let accumulatedFeed = 0;
-        const calculatedHistory = updatedHistory.map(week => {
+        const calculatedHistory = history.map(week => {
             const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
             accumulatedFeed += weeklyConsumption;
             
@@ -99,8 +113,7 @@ export default function LotePreceboPage() {
         localStorage.setItem(getConsumptionStorageKey(), JSON.stringify(calculatedHistory));
     }, [getConsumptionStorageKey]);
 
-
-    React.useEffect(() => {
+    const loadData = React.useCallback(() => {
         const storedBatches = localStorage.getItem('nurseryBatches');
         if (storedBatches) {
             const batchData = JSON.parse(storedBatches);
@@ -113,6 +126,7 @@ export default function LotePreceboPage() {
                     totalWeight: Number(foundBatch.totalWeight),
                     avgWeight: Number(foundBatch.avgWeight),
                     avgAge: Number(foundBatch.avgAge),
+                    events: foundBatch.events || [],
                 };
                 setBatch(processedBatch);
 
@@ -120,7 +134,7 @@ export default function LotePreceboPage() {
                 const storedConsumption = localStorage.getItem(storageKey);
                 let history: ConsumptionRecord[] = storedConsumption ? JSON.parse(storedConsumption) : [];
                 
-                if (history.length < 8) {
+                if (history.length < 8 && foundBatch.creationDate) {
                     const additionalWeeks = Array.from({ length: 8 - history.length }).map((_, weekIndex) => {
                         const currentWeekIndex = history.length + weekIndex;
                         const weekStartDate = addDays(parseISO(foundBatch.creationDate), currentWeekIndex * 7);
@@ -141,39 +155,36 @@ export default function LotePreceboPage() {
                     });
                     history = [...history, ...additionalWeeks];
                 }
-                handleHistoryChange(history, processedBatch);
+                updateConsumption(history, processedBatch);
             }
         }
-    }, [loteId, getConsumptionStorageKey, handleHistoryChange]);
+    }, [loteId, getConsumptionStorageKey, updateConsumption]);
+
+    React.useEffect(() => {
+        loadData();
+    }, [loadData]);
 
 
-    const handleConsumptionChange = React.useCallback((weekId: string, dayIndex: number, value: string) => {
-        setConsumptionHistory(prevHistory => {
-            if (!batch) return prevHistory;
-            const updatedHistory = prevHistory.map(week => {
-                if (week.id === weekId) {
-                    const newConsumption = [...week.consumption];
-                    newConsumption[dayIndex] = value;
-                    return { ...week, consumption: newConsumption };
-                }
-                return week;
-            });
-            handleHistoryChange(updatedHistory, batch);
-            return updatedHistory;
+    const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
+        if (!batch) return;
+        const updatedHistory = consumptionHistory.map(week => {
+            if (week.id === weekId) {
+                const newConsumption = [...week.consumption];
+                newConsumption[dayIndex] = value;
+                return { ...week, consumption: newConsumption };
+            }
+            return week;
         });
-    }, [batch, handleHistoryChange]);
+        updateConsumption(updatedHistory, batch);
+    };
 
-
-    const handleFeedTypeChange = React.useCallback((weekId: string, feedType: string) => {
-        setConsumptionHistory(prevHistory => {
-            if (!batch) return prevHistory;
-            const updatedHistory = prevHistory.map(week =>
-                week.id === weekId ? { ...week, feedType } : week
-            );
-            handleHistoryChange(updatedHistory, batch);
-            return updatedHistory;
-        });
-    }, [batch, handleHistoryChange]);
+    const handleFeedTypeChange = (weekId: string, feedType: string) => {
+        if (!batch) return;
+        const updatedHistory = consumptionHistory.map(week =>
+            week.id === weekId ? { ...week, feedType } : week
+        );
+        updateConsumption(updatedHistory, batch);
+    };
     
     const openEventDialog = (eventType: PreceboEventType) => {
         setSelectedEventType(eventType);
@@ -181,16 +192,47 @@ export default function LotePreceboPage() {
     };
 
     const EventForm = () => {
-        if (!selectedEventType) return null;
+        if (!selectedEventType || !batch) return null;
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
-            // Here you would handle form submission, save the event,
-            // and potentially update the batch data.
-            toast({
-                title: "¡Evento Registrado!",
-                description: `El evento "${selectedEventType}" ha sido registrado para el lote ${loteId}.`,
-            });
+            const formData = new FormData(e.target as HTMLFormElement);
+
+            const newEvent: BatchEvent = {
+                type: selectedEventType,
+                date: formData.get('eventDate') as string,
+                details: formData.get('eventNotes') as string || undefined,
+                animalCount: Number(formData.get('animalCount')) || undefined,
+                avgWeight: Number(formData.get('avgWeight')) || undefined,
+                cause: formData.get('cause') as string || undefined,
+                product: formData.get('product') as string || undefined,
+                dose: Number(formData.get('dose')) || undefined,
+                destination: formData.get('destination') as string || undefined,
+                saleValue: Number(formData.get('saleValue')) || undefined,
+            };
+
+            const updatedBatch = { ...batch, events: [...batch.events, newEvent] };
+
+            if (['Traslado de lote', 'Venta de lote'].includes(selectedEventType)) {
+                updatedBatch.status = 'Finalizado';
+                generateLiquidationReport(updatedBatch, newEvent);
+                toast({
+                    title: "¡Lote Finalizado!",
+                    description: `El lote ${loteId} ha sido marcado como finalizado. Se ha generado un informe de liquidación.`,
+                });
+                router.push('/analysis/liquidated-batches');
+            } else {
+                 toast({
+                    title: "¡Evento Registrado!",
+                    description: `El evento "${selectedEventType}" ha sido registrado para el lote ${loteId}.`,
+                });
+            }
+
+            setBatch(updatedBatch);
+            const storedBatches = JSON.parse(localStorage.getItem('nurseryBatches') || '{}');
+            storedBatches[loteId] = updatedBatch;
+            localStorage.setItem('nurseryBatches', JSON.stringify(storedBatches));
+            
             setIsEventFormOpen(false);
         }
         
@@ -296,6 +338,55 @@ export default function LotePreceboPage() {
             </DialogContent>
         )
     }
+
+     const generateLiquidationReport = (finalBatch: NurseryBatch, finalEvent: BatchEvent) => {
+        const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
+        const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
+        
+        const finalCount = finalBatch.initialPigletCount - totalDeaths;
+        const daysInPrecebo = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
+        const finalAge = finalBatch.avgAge + daysInPrecebo;
+        const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
+        const finalTotalWeight = finalEvent.avgWeight ? finalEvent.avgWeight * finalCount : 0;
+        const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
+
+        const report: PreceboReportData = {
+            batchId: finalBatch.id,
+            generationDate: new Date().toISOString(),
+            liquidationReason: finalEvent.type,
+            startDate: finalBatch.creationDate,
+            endDate: finalEvent.date,
+            initialCount: finalBatch.initialPigletCount,
+            finalCount: finalCount,
+            initialAge: finalBatch.avgAge,
+            finalAge: finalAge,
+            daysInPrecebo: daysInPrecebo,
+            weeksOfLife: Math.floor(finalAge / 7),
+            totalDeaths: totalDeaths,
+            mortalityRate: finalBatch.initialPigletCount > 0 ? (totalDeaths / finalBatch.initialPigletCount) * 100 : 0,
+            avgMortalityAge: 0, // Needs logic to be calculated
+            initialTotalWeight: finalBatch.totalWeight,
+            finalTotalWeight: finalTotalWeight,
+            initialAvgWeight: finalBatch.avgWeight,
+            finalAvgWeight: finalEvent.avgWeight || 0,
+            totalWeightGain: totalWeightGain,
+            animalWeightGain: finalCount > 0 ? totalWeightGain / finalCount : 0,
+            dailyWeightGain: daysInPrecebo > 0 ? (totalWeightGain / finalCount) / daysInPrecebo * 1000 : 0, // in grams
+            totalFeedConsumed: totalFeedConsumed,
+            dailyAnimalConsumption: finalCount > 0 && daysInPrecebo > 0 ? (totalFeedConsumed / finalCount) / daysInPrecebo : 0,
+            feedConversion: totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0,
+            healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
+                date: e.date,
+                type: e.type,
+                product: mockInventory.find(p => p.id === e.product)?.name || e.product || 'N/A',
+                details: e.details || `Aplicado a ${e.animalCount} animales.`
+            })),
+        };
+
+        const existingReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
+        existingReports.push(report);
+        localStorage.setItem('liquidatedPreceboReports', JSON.stringify(existingReports));
+    };
 
     if (!batch) {
         return (

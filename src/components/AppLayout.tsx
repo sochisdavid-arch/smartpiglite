@@ -30,6 +30,7 @@ import {
   Users,
   Landmark,
   Stethoscope,
+  LineChart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +58,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/finance', label: 'Finanzas', icon: Landmark },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
+    { href: '/analysis/liquidated-batches', label: 'Análisis', icon: LineChart },
   ];
 
   return (
