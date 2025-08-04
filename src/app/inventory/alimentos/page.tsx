@@ -178,17 +178,17 @@ export default function AlimentosPage() {
                 </Card>
 
                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
+                    <DialogContent className="max-w-3xl flex flex-col max-h-[90vh]">
                         <DialogHeader>
                             <DialogTitle>Registrar Ingreso de Alimento</DialogTitle>
                              <DialogDescription>
                                 Complete los detalles de la compra para añadirla al inventario.
                             </DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="flex-1 -mx-6">
-                            <form onSubmit={handleAddSubmit} id="add-food-form" className="space-y-4 px-6 py-2">
+                        <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                            <form onSubmit={handleAddSubmit} id="add-food-form" className="space-y-6 py-2">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
+                                     <div className="space-y-2">
                                         <Label htmlFor="entryDate">Fecha de Ingreso</Label>
                                         <Input id="entryDate" name="entryDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
                                     </div>
@@ -197,43 +197,53 @@ export default function AlimentosPage() {
                                         <Input id="productName" name="productName" type="text" placeholder="Ej: Precebo Fase 1" required />
                                     </div>
                                 </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bags">Nº de Bultos</Label>
-                                        <Input id="bags" name="bags" type="number" required value={bags} onChange={(e) => setBags(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="kilosPerBag">Kilos por Bulto</Label>
-                                        <Input id="kilosPerBag" name="kilosPerBag" type="number" step="0.1" required value={kilosPerBag} onChange={(e) => setKilosPerBag(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Kilos Totales</Label>
-                                        <Input value={totalKilos.toFixed(2)} readOnly className="font-semibold bg-muted" />
-                                    </div>
-                                </div>
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Cantidad</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bags">Nº de Bultos</Label>
+                                            <Input id="bags" name="bags" type="number" required value={bags} onChange={(e) => setBags(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="kilosPerBag">Kilos por Bulto</Label>
+                                            <Input id="kilosPerBag" name="kilosPerBag" type="number" step="0.1" required value={kilosPerBag} onChange={(e) => setKilosPerBag(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Kilos Totales</Label>
+                                            <Input value={totalKilos.toFixed(2)} readOnly className="font-semibold bg-muted" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="totalValue">Valor Total Compra ($)</Label>
-                                        <Input id="totalValue" name="totalValue" type="number" step="0.01" required value={totalValue} onChange={(e) => setTotalValue(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Precio / Kilo ($)</Label>
-                                        <Input value={pricePerKg > 0 ? pricePerKg.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} readOnly className="font-semibold bg-muted" />
-                                    </div>
-                                </div>
+                                <Card>
+                                     <CardHeader><CardTitle className="text-base">Costo</CardTitle></CardHeader>
+                                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="totalValue">Valor Total Compra ($)</Label>
+                                            <Input id="totalValue" name="totalValue" type="number" step="0.01" required value={totalValue} onChange={(e) => setTotalValue(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Precio / Kilo ($)</Label>
+                                            <Input value={pricePerKg > 0 ? pricePerKg.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} readOnly className="font-semibold bg-muted" />
+                                        </div>
+                                     </CardContent>
+                                </Card>
                                 
-                                <div className="space-y-2">
-                                    <Label htmlFor="lotNumber">Número de Lote</Label>
-                                    <Input id="lotNumber" name="lotNumber" type="text" placeholder="Lote del fabricante (opcional)" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="notes">Observaciones / Notas</Label>
-                                    <Textarea id="notes" name="notes" placeholder="Cualquier nota adicional sobre la compra o el producto." />
-                                </div>
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Información Adicional</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lotNumber">Número de Lote</Label>
+                                            <Input id="lotNumber" name="lotNumber" type="text" placeholder="Lote del fabricante (opcional)" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="notes">Observaciones / Notas</Label>
+                                            <Textarea id="notes" name="notes" placeholder="Cualquier nota adicional sobre la compra o el producto." />
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </form>
-                        </ScrollArea>
+                        </div>
                         <DialogFooter className="flex-shrink-0 border-t pt-4 bg-background -mx-6 px-6 sm:justify-end sm:space-x-2">
                             <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                             <Button type="submit" form="add-food-form">Guardar Ingreso</Button>
@@ -243,5 +253,4 @@ export default function AlimentosPage() {
             </div>
         </AppLayout>
     );
-
-    
+}
