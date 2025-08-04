@@ -3,146 +3,139 @@
 
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Search, QrCode, Boxes, PackagePlus, ArrowRightLeft, Settings, FileSliders, Bell, Archive, FileText } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Boxes, Pill, Syringe } from 'lucide-react';
+import { getInventory, InventoryItem } from '@/lib/inventory';
 
 export default function InventoryPage() {
-   
+    const [inventory, setInventory] = React.useState<InventoryItem[]>([]);
+
+    const loadInventory = React.useCallback(() => {
+        setInventory(getInventory());
+    }, []);
+    
+    React.useEffect(() => {
+        loadInventory();
+        
+        // Listen for storage changes to update inventory in real-time
+        const handleStorageChange = () => {
+            loadInventory();
+        };
+        window.addEventListener('storage', handleStorageChange);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [loadInventory]);
+    
+    const alimentos = inventory.filter(item => item.category === 'alimento');
+    const medicamentos = inventory.filter(item => item.category === 'medicamento');
+    const vacunas = inventory.filter(item => item.category === 'vacuna');
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Inventario</h1>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Búsqueda</Button>
-                        <Button variant="outline" className="w-full sm:w-auto"><QrCode className="mr-2 h-4 w-4" /> Escanear</Button>
-                    </div>
+                    <p className="text-muted-foreground">Vista en tiempo real del stock disponible en la granja.</p>
                 </div>
 
-                <Tabs defaultValue="stock" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:grid-cols-10">
-                        <TabsTrigger value="stock">Stock Actual</TabsTrigger>
-                        <TabsTrigger value="products">Productos</TabsTrigger>
-                        <TabsTrigger value="entries">Entradas</TabsTrigger>
-                        <TabsTrigger value="outputs">Salidas</TabsTrigger>
-                        <TabsTrigger value="transfers">Transferencias</TabsTrigger>
-                        <TabsTrigger value="adjustments">Ajustes</TabsTrigger>
-                        <TabsTrigger value="alerts">Alertas</TabsTrigger>
-                        <TabsTrigger value="config">Configuración</TabsTrigger>
-                        <TabsTrigger value="kardex">Kardex</TabsTrigger>
-                        <TabsTrigger value="reports">Reportes</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="stock" className="mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Alimentos Card */}
+                    <Card className="lg:col-span-1">
+                        <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <Boxes className="h-6 w-6 text-primary" />
+                                <div>
+                                    <CardTitle>Alimentos</CardTitle>
+                                    <CardDescription>Stock de concentrados y alimentos.</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Producto</TableHead>
+                                        <TableHead className="text-right">Stock (kg)</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {alimentos.map(item => (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium">{item.name}</TableCell>
+                                            <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+
+                    {/* Medicamentos y Vacunas Cards */}
+                    <div className="lg:col-span-2 space-y-6">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Stock Actual</CardTitle>
-                                <CardDescription>Vista general del inventario disponible.</CardDescription>
+                             <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <Pill className="h-6 w-6 text-red-500" />
+                                    <div>
+                                        <CardTitle>Medicamentos</CardTitle>
+                                        <CardDescription>Stock de productos farmacéuticos.</CardDescription>
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
-                               <Alert><Boxes className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La vista de stock actual estará disponible próximamente.</AlertDescription></Alert>
+                               <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Producto</TableHead>
+                                            <TableHead className="text-right">Stock (ml/ud)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {medicamentos.map(item => (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
-                    </TabsContent>
 
-                    <TabsContent value="products" className="mt-6">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Registro de Productos</CardTitle>
-                                <CardDescription>Añada o edite los productos de su inventario.</CardDescription>
+                             <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <Syringe className="h-6 w-6 text-green-500" />
+                                    <div>
+                                        <CardTitle>Vacunas</CardTitle>
+                                        <CardDescription>Stock de productos biológicos.</CardDescription>
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
-                               <Alert><PackagePlus className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de productos estará disponible próximamente.</AlertDescription></Alert>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Producto</TableHead>
+                                            <TableHead className="text-right">Stock (dosis/ml)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {vacunas.map(item => (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
-                    </TabsContent>
-
-                    <TabsContent value="entries" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Entradas de Inventario</CardTitle>
-                                <CardDescription>Registre la compra o ingreso de nuevos productos.</CardDescription>
-                            </CardHeader>
-                             <CardContent><Alert><FileSliders className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de entradas estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-                    
-                    <TabsContent value="outputs" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Salidas de Inventario</CardTitle>
-                                <CardDescription>Registre el consumo o baja de productos.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><FileSliders className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de salidas estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="transfers" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Transferencias Internas</CardTitle>
-                                <CardDescription>Mueva productos entre diferentes almacenes o salas.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><ArrowRightLeft className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de transferencias estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="adjustments" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Ajustes de Inventario</CardTitle>
-                                <CardDescription>Corrija descuadres en el stock.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><FileSliders className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El registro de ajustes estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="alerts" className="mt-6">
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Alertas de Inventario</CardTitle>
-                                <CardDescription>Revise notificaciones sobre stock mínimo y vencimientos.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><Bell className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>Las alertas de inventario estarán disponibles próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="config" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Configuración Avanzada</CardTitle>
-                                <CardDescription>Configure parámetros como stock mínimo y ubicaciones.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><Settings className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La configuración avanzada estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="kardex" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Kardex de Producto</CardTitle>
-                                <CardDescription>Vea todos los movimientos de un producto específico.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><Archive className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>El kardex de producto estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="reports" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Reportes de Inventario</CardTitle>
-                                <CardDescription>Genere reportes de consumo, valoración y rotación.</CardDescription>
-                            </CardHeader>
-                            <CardContent><Alert><FileText className="h-4 w-4" /><AlertTitle>Funcionalidad en desarrollo</AlertTitle><AlertDescription>La generación de reportes detallados estará disponible próximamente.</AlertDescription></Alert></CardContent>
-                        </Card>
-                    </TabsContent>
-
-                </Tabs>
+                    </div>
+                </div>
             </div>
         </AppLayout>
     );
