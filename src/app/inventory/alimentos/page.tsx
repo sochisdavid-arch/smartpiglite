@@ -162,7 +162,7 @@ export default function AlimentosPage() {
                                         <TableCell>{item.bags}</TableCell>
                                         <TableCell>{item.totalKilos.toFixed(2)}</TableCell>
                                         <TableCell>${(item.totalValue || 0).toLocaleString('es-CO')}</TableCell>
-                                        <TableCell>${(item.pricePerKg || 0).toLocaleString('es-CO')}</TableCell>
+                                        <TableCell>${(item.pricePerKg || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         <TableCell>{item.batchNumber || 'N/A'}</TableCell>
                                     </TableRow>
                                 )) : (
