@@ -58,6 +58,7 @@ interface BatchEvent {
     date: string;
     details?: string;
     animalCount?: number;
+    totalWeight?: number;
     avgWeight?: number;
     cause?: string;
     product?: string;
@@ -213,6 +214,21 @@ export default function LotePreceboPage() {
 
     const EventForm = () => {
         if (!selectedEventType || !batch) return null;
+    
+        const [animalCount, setAnimalCount] = React.useState<number | string>(editingEvent?.animalCount || '');
+        const [totalWeight, setTotalWeight] = React.useState<number | string>(editingEvent?.totalWeight || '');
+        const [avgWeight, setAvgWeight] = React.useState<number | string>(editingEvent?.avgWeight || '0.00');
+
+        React.useEffect(() => {
+            const numCount = Number(animalCount);
+            const numTotalWeight = Number(totalWeight);
+            if (numCount > 0 && numTotalWeight > 0) {
+                setAvgWeight((numTotalWeight / numCount).toFixed(2));
+            } else {
+                setAvgWeight('0.00');
+            }
+        }, [animalCount, totalWeight]);
+
 
         const handleSubmit = (e: React.FormEvent) => {
             e.preventDefault();
@@ -224,7 +240,8 @@ export default function LotePreceboPage() {
                 date: formData.get('eventDate') as string,
                 details: formData.get('eventNotes') as string || undefined,
                 animalCount: Number(formData.get('animalCount')) || undefined,
-                avgWeight: Number(formData.get('avgWeight')) || undefined,
+                totalWeight: Number(formData.get('totalWeight')) || undefined,
+                avgWeight: Number(avgWeight) || undefined,
                 cause: formData.get('cause') as string || undefined,
                 product: formData.get('product') as string || undefined,
                 dose: Number(formData.get('dose')) || undefined,
@@ -338,19 +355,23 @@ export default function LotePreceboPage() {
                                 </>
                             )}
                             
-                            {['Venta de lote', 'Ingreso a lote'].includes(selectedEventType) && (
+                            {['Venta de lote', 'Ingreso a lote', 'Traslado de lote'].includes(selectedEventType) && (
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="animalCount">Número de Animales</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" required defaultValue={editingEvent?.animalCount}/>
+                                        <Input id="animalCount" name="animalCount" type="number" required value={animalCount} onChange={e => setAnimalCount(e.target.value)} />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="totalWeight">Peso Total del Grupo (kg)</Label>
+                                        <Input id="totalWeight" name="totalWeight" type="number" step="0.1" required value={totalWeight} onChange={e => setTotalWeight(e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="avgWeight">Peso Promedio (kg)</Label>
-                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required defaultValue={editingEvent?.avgWeight}/>
+                                        <Label>Peso Promedio por Animal (kg)</Label>
+                                        <Input value={avgWeight} readOnly className="font-semibold bg-muted" />
                                     </div>
                                 </>
                             )}
-                            
+
                             {selectedEventType === 'Venta de lote' && (
                                  <div className="space-y-2">
                                     <Label htmlFor="saleValue">Valor Total de Venta ($)</Label>
@@ -360,15 +381,7 @@ export default function LotePreceboPage() {
 
                             {selectedEventType === 'Traslado de lote' && (
                                  <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="animalCount">Número de Animales Trasladados</Label>
-                                        <Input id="animalCount" name="animalCount" type="number" defaultValue={editingEvent?.animalCount || batch.pigletCount} required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="avgWeight">Peso Promedio de Traslado (kg)</Label>
-                                        <Input id="avgWeight" name="avgWeight" type="number" step="0.1" required defaultValue={editingEvent?.avgWeight}/>
-                                    </div>
-                                    <div className="space-y-2">
+                                     <div className="space-y-2">
                                         <Label htmlFor="destination">Destino del Lote</Label>
                                         <Input id="destination" name="destination" placeholder="Ej: Módulo de Ceba 1" required defaultValue={editingEvent?.destination}/>
                                     </div>
@@ -671,7 +684,9 @@ export default function LotePreceboPage() {
                                                 <span>{event.type}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{event.details || `Animales: ${event.animalCount}, Peso: ${event.avgWeight}kg`}</TableCell>
+                                        <TableCell>
+                                            {event.details || `Animales: ${event.animalCount || 'N/A'}${event.cause ? `, Causa: ${event.cause}` : ''}`}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                              <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -719,3 +734,5 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+
+    

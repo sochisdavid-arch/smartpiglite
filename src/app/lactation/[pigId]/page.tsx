@@ -32,12 +32,14 @@ interface Event {
     type: LactationEventType | "Parto" | "Inseminación"; // Allow gestation events for history
     date: string;
     details?: string;
+    target?: 'madre' | 'lechones';
     // Lactation specific
     pigletCount?: number;
     toSow?: string;
     fromSow?: string;
     cause?: string;
     liveBorn?: number;
+    product?: string;
 }
 
 interface Pig {
@@ -312,6 +314,11 @@ export default function LactationHistoryPage() {
             let updatedPig = { ...pig! };
 
             // Specific event logic
+            if (['Tratamiento', 'Vacunación'].includes(selectedEventType)) {
+                newEvent.target = formData.get('target') as 'madre' | 'lechones';
+                newEvent.product = formData.get('product') as string;
+                newEvent.details = `${newEvent.product} aplicado a ${newEvent.target}.`;
+            }
             if (selectedEventType === 'Muerte de Lechón') {
                 newEvent.pigletCount = Number(formData.get('pigletCount'));
                 newEvent.cause = formData.get('cause') as string;
@@ -350,6 +357,8 @@ export default function LactationHistoryPage() {
                     const newTotalWeight = Number(formData.get('litterWeight'));
                     const partoEvent = pig!.events.find(e => e.type === 'Parto');
                     const avgAge = partoEvent ? differenceInDays(weaningDate, parseISO(partoEvent.date)) : 0;
+                    
+                    const healthEventsForPiglets = pig!.events.filter(e => e.target === 'lechones');
 
 
                     if (existingBatch) {
@@ -357,6 +366,7 @@ export default function LactationHistoryPage() {
                         existingBatch.totalWeight += newTotalWeight;
                         existingBatch.sows.push(pig!.id);
                         existingBatch.avgWeight = (existingBatch.totalWeight / existingBatch.pigletCount).toFixed(2);
+                        existingBatch.events.push(...healthEventsForPiglets);
                     } else {
                         nurseryBatches[batchId] = {
                             id: batchId,
@@ -368,7 +378,7 @@ export default function LactationHistoryPage() {
                             avgAge: avgAge,
                             sows: [pig!.id],
                             status: 'Activo',
-                            events: []
+                            events: healthEventsForPiglets
                         };
                     }
                     localStorage.setItem('nurseryBatches', JSON.stringify(nurseryBatches));
@@ -382,7 +392,7 @@ export default function LactationHistoryPage() {
             const pigsFromStorage = localStorage.getItem('pigs');
             let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
             pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
-            localStorage.setItem('pigs', JSON.stringify(pigs));
+localStorage.setItem('pigs', JSON.stringify(pigs));
             
             toast({
                 title: `¡Evento ${editingEvent ? 'Actualizado' : 'Registrado'}!`,
@@ -417,8 +427,21 @@ export default function LactationHistoryPage() {
                         {['Tratamiento', 'Vacunación'].includes(selectedEventType) && (
                             <>
                                 <div className="space-y-2">
+                                    <Label>Aplicar a</Label>
+                                    <RadioGroup name="target" defaultValue={editingEvent?.target || "madre"} className="flex gap-4">
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="madre" id="madre" />
+                                            <Label htmlFor="madre">Madre</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="lechones" id="lechones" />
+                                            <Label htmlFor="lechones">Lechones</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="product">Producto</Label>
-                                    <Select name="product" required>
+                                    <Select name="product" required defaultValue={editingEvent?.product}>
                                         <SelectTrigger><SelectValue placeholder={`Seleccionar ${selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna'}`} /></SelectTrigger>
                                         <SelectContent>
                                             {mockInventory.filter(p => p.category === (selectedEventType === 'Tratamiento' ? 'medicamento' : 'vacuna')).map(item => (
@@ -642,7 +665,7 @@ export default function LactationHistoryPage() {
                                             {eventIcons[event.type as LactationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
                                         <div className="flex-grow pt-2">
-                                            <p className="font-semibold">{event.type}</p>
+                                            <p className="font-semibold">{event.type} {event.target && `(${event.target})`}</p>
                                             <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'dd/MM/yyyy')}</p>
                                             {event.details && <p className="text-sm mt-1">{event.details}</p>}
                                         </div>
@@ -695,3 +718,5 @@ export default function LactationHistoryPage() {
         </AppLayout>
     );
 }
+
+    
