@@ -3,24 +3,208 @@
 
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format, parseISO, isValid } from 'date-fns';
+import { PlusCircle, User, MoreHorizontal } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+interface Personnel {
+    id: string; // cedula
+    name: string;
+    role: string;
+    phone: string;
+    email: string;
+    hireDate: string;
+    status: 'Activo' | 'Inactivo';
+}
+
+const PERSONNEL_STORAGE_KEY = 'personnelList';
 
 export default function PersonnelPage() {
-   
+    const { toast } = useToast();
+    const [personnelList, setPersonnelList] = React.useState<Personnel[]>([]);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingPersonnel, setEditingPersonnel] = React.useState<Personnel | null>(null);
+
+    const loadPersonnel = React.useCallback(() => {
+        const storedPersonnel = localStorage.getItem(PERSONNEL_STORAGE_KEY);
+        if (storedPersonnel) {
+            setPersonnelList(JSON.parse(storedPersonnel));
+        }
+    }, []);
+
+    React.useEffect(() => {
+        loadPersonnel();
+    }, [loadPersonnel]);
+    
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const id = formData.get('id') as string;
+
+        const newPersonnel: Personnel = {
+            id,
+            name: formData.get('name') as string,
+            role: formData.get('role') as string,
+            phone: formData.get('phone') as string,
+            email: formData.get('email') as string,
+            hireDate: formData.get('hireDate') as string,
+            status: 'Activo', // Default status
+        };
+
+        const currentList = JSON.parse(localStorage.getItem(PERSONNEL_STORAGE_KEY) || '[]');
+        
+        if (editingPersonnel) {
+            // Update existing personnel
+            const updatedList = currentList.map((p: Personnel) => p.id === editingPersonnel.id ? newPersonnel : p);
+            localStorage.setItem(PERSONNEL_STORAGE_KEY, JSON.stringify(updatedList));
+            toast({
+                title: 'Personal Actualizado',
+                description: `Los datos de ${newPersonnel.name} han sido actualizados.`,
+            });
+        } else {
+            // Add new personnel, check for duplicates
+            if (currentList.some((p: Personnel) => p.id === id)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error: Empleado duplicado',
+                    description: `Ya existe un empleado con la cédula ${id}.`
+                });
+                return;
+            }
+            const updatedList = [...currentList, newPersonnel];
+            localStorage.setItem(PERSONNEL_STORAGE_KEY, JSON.stringify(updatedList));
+            toast({
+                title: '¡Personal Agregado!',
+                description: `${newPersonnel.name} ha sido añadido al equipo.`,
+            });
+        }
+        
+        setIsFormOpen(false);
+        setEditingPersonnel(null);
+        loadPersonnel();
+    };
+
+    const openEditDialog = (person: Personnel) => {
+        setEditingPersonnel(person);
+        setIsFormOpen(true);
+    };
+
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Gestión de Personal</h1>
+                     <Button onClick={() => { setEditingPersonnel(null); setIsFormOpen(true); }}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Personal
+                    </Button>
                 </div>
-                <Alert>
-                    <User className="h-4 w-4" />
-                    <AlertTitle>Página Limpiada</AlertTitle>
-                    <AlertDescription>
-                        El contenido de esta sección ha sido eliminado según la solicitud.
-                    </AlertDescription>
-                </Alert>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Equipo de la Granja</CardTitle>
+                        <CardDescription>
+                            Listado de todo el personal activo e inactivo.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nombre</TableHead>
+                                    <TableHead>Cédula</TableHead>
+                                    <TableHead>Cargo</TableHead>
+                                    <TableHead>Teléfono</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {personnelList.length > 0 ? personnelList.map(person => (
+                                    <TableRow key={person.id}>
+                                        <TableCell className="font-medium">{person.name}</TableCell>
+                                        <TableCell>{person.id}</TableCell>
+                                        <TableCell>{person.role}</TableCell>
+                                        <TableCell>{person.phone}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={person.status === 'Activo' ? 'default' : 'secondary'}>
+                                                {person.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => openEditDialog(person)}>Editar</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            No hay personal registrado.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{editingPersonnel ? 'Editar' : 'Agregar Nuevo'} Personal</DialogTitle>
+                            <DialogDescription>
+                                Complete los datos del empleado.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleFormSubmit} id="personnel-form" className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Nombre Completo</Label>
+                                <Input id="name" name="name" type="text" placeholder="Nombre y Apellido" required defaultValue={editingPersonnel?.name} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="id">Cédula / Documento</Label>
+                                <Input id="id" name="id" type="text" placeholder="Número de documento" required defaultValue={editingPersonnel?.id} disabled={!!editingPersonnel} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="role">Cargo</Label>
+                                <Input id="role" name="role" type="text" placeholder="Ej: Operario, Veterinario" required defaultValue={editingPersonnel?.role}/>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Teléfono</Label>
+                                    <Input id="phone" name="phone" type="tel" required defaultValue={editingPersonnel?.phone} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="hireDate">Fecha de Contratación</Label>
+                                    <Input id="hireDate" name="hireDate" type="date" required defaultValue={editingPersonnel?.hireDate} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Correo Electrónico</Label>
+                                <Input id="email" name="email" type="email" placeholder="correo@ejemplo.com" required defaultValue={editingPersonnel?.email}/>
+                            </div>
+                        </form>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => { setIsFormOpen(false); setEditingPersonnel(null); }}>Cancelar</Button>
+                            <Button type="submit" form="personnel-form">{editingPersonnel ? 'Guardar Cambios' : 'Guardar Empleado'}</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );
