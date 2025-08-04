@@ -622,7 +622,7 @@ export default function LoteCebaPage() {
                                             <TableCell key={`${weekData.id}-day-${dayIndex}`}>
                                                 <Input 
                                                     type="number"
-                                                    value={dayConsumption}
+                                                    defaultValue={dayConsumption}
                                                     onBlur={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
                                                     className="w-20 text-center"
                                                 />
@@ -715,3 +715,5 @@ export default function LoteCebaPage() {
         </AppLayout>
     );
 }
+
+    
