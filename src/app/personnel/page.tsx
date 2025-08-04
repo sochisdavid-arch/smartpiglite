@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 
 interface Personnel {
     id: string; // cedula
@@ -58,7 +59,7 @@ export default function PersonnelPage() {
             phone: formData.get('phone') as string,
             email: formData.get('email') as string,
             hireDate: formData.get('hireDate') as string,
-            status: 'Activo', // Default status
+            status: editingPersonnel ? editingPersonnel.status : 'Activo', // Keep status on edit, default on new
             salary: Number(formData.get('salary')) || undefined,
             bonus: Number(formData.get('bonus')) || undefined,
         };
@@ -181,46 +182,62 @@ export default function PersonnelPage() {
                         <DialogHeader>
                             <DialogTitle>{editingPersonnel ? 'Editar' : 'Agregar Nuevo'} Personal</DialogTitle>
                             <DialogDescription>
-                                Complete los datos del empleado.
+                                Complete los datos del empleado para registrarlo en el sistema.
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleFormSubmit} id="personnel-form" className="space-y-4 py-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Nombre Completo</Label>
-                                    <Input id="name" name="name" type="text" placeholder="Nombre y Apellido" required defaultValue={editingPersonnel?.name} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="id">Cédula / Documento</Label>
-                                    <Input id="id" name="id" type="text" placeholder="Número de documento" required defaultValue={editingPersonnel?.id} disabled={!!editingPersonnel} />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="role">Cargo</Label>
-                                <Input id="role" name="role" type="text" placeholder="Ej: Operario, Veterinario" required defaultValue={editingPersonnel?.role}/>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="phone">Teléfono</Label>
-                                    <Input id="phone" name="phone" type="tel" required defaultValue={editingPersonnel?.phone} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="hireDate">Fecha de Contratación</Label>
-                                    <Input id="hireDate" name="hireDate" type="date" required defaultValue={editingPersonnel?.hireDate} />
+                        <form onSubmit={handleFormSubmit} id="personnel-form" className="space-y-6 py-4">
+                            
+                            <div>
+                                <h3 className="text-base font-semibold text-foreground mb-2">Información Personal</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Nombre Completo</Label>
+                                        <Input id="name" name="name" type="text" placeholder="Nombre y Apellido" required defaultValue={editingPersonnel?.name} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="id">Cédula / Documento</Label>
+                                        <Input id="id" name="id" type="text" placeholder="Número de documento" required defaultValue={editingPersonnel?.id} disabled={!!editingPersonnel} />
+                                    </div>
                                 </div>
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="email">Correo Electrónico</Label>
-                                <Input id="email" name="email" type="email" placeholder="correo@ejemplo.com" required defaultValue={editingPersonnel?.email}/>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="salary">Sueldo Base ($)</Label>
-                                    <Input id="salary" name="salary" type="number" step="1000" placeholder="Ej: 1500000" defaultValue={editingPersonnel?.salary} />
+                            
+                            <Separator />
+
+                            <div>
+                                <h3 className="text-base font-semibold text-foreground mb-2">Detalles del Contrato</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="role">Cargo</Label>
+                                        <Input id="role" name="role" type="text" placeholder="Ej: Operario, Veterinario" required defaultValue={editingPersonnel?.role}/>
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="hireDate">Fecha de Contratación</Label>
+                                        <Input id="hireDate" name="hireDate" type="date" required defaultValue={editingPersonnel?.hireDate} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="salary">Sueldo Base ($)</Label>
+                                        <Input id="salary" name="salary" type="number" step="1000" placeholder="Ej: 1500000" defaultValue={editingPersonnel?.salary} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bonus">Bonificaciones ($)</Label>
+                                        <Input id="bonus" name="bonus" type="number" step="1000" placeholder="Opcional" defaultValue={editingPersonnel?.bonus} />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="bonus">Bonificaciones ($)</Label>
-                                    <Input id="bonus" name="bonus" type="number" step="1000" placeholder="Opcional" defaultValue={editingPersonnel?.bonus} />
+                            </div>
+
+                            <Separator />
+                            
+                            <div>
+                                <h3 className="text-base font-semibold text-foreground mb-2">Datos de Contacto</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Teléfono</Label>
+                                        <Input id="phone" name="phone" type="tel" required defaultValue={editingPersonnel?.phone} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Correo Electrónico</Label>
+                                        <Input id="email" name="email" type="email" placeholder="correo@ejemplo.com" required defaultValue={editingPersonnel?.email}/>
+                                    </div>
                                 </div>
                             </div>
                         </form>
