@@ -5,7 +5,7 @@ import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, PlusCircle, ArrowUp, ArrowDown, Package } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,7 @@ export default function AlimentosPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [alimentos, setAlimentos] = React.useState<InventoryItem[]>([]);
     const [purchaseHistory, setPurchaseHistory] = React.useState<PurchaseRecord[]>([]);
     const [consumptionHistory, setConsumptionHistory] = React.useState<FoodConsumptionRecord[]>([]);
 
@@ -57,6 +58,9 @@ export default function AlimentosPage() {
     }, [totalValue, totalKilos]);
 
     const loadData = React.useCallback(() => {
+        const allInventory = getInventory();
+        setAlimentos(allInventory.filter(item => item.category === 'alimento'));
+
         const storedPurchases = localStorage.getItem(PURCHASE_HISTORY_KEY);
         if (storedPurchases) {
             setPurchaseHistory(JSON.parse(storedPurchases));
@@ -123,11 +127,12 @@ export default function AlimentosPage() {
         
         toast({ title: 'Ingreso Registrado', description: `${totalKilos}kg de ${productName} añadidos al inventario.` });
         
-        // Reset form and state
+        // Reset form and state, and reload data
         setIsFormOpen(false);
         setBags('');
         setKilosPerBag('');
         setTotalValue('');
+        loadData();
     }
 
     return (
@@ -145,6 +150,35 @@ export default function AlimentosPage() {
                         Registrar Ingreso de Alimento
                     </Button>
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Package className="text-blue-500"/>Stock Actual de Alimentos</CardTitle>
+                        <CardDescription>Inventario disponible de cada tipo de alimento.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Producto</TableHead>
+                                    <TableHead className="text-right">Stock Actual (kg)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {alimentos.length > 0 ? alimentos.map(item => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">{item.name}</TableCell>
+                                        <TableCell className="text-right font-semibold">{item.stock.toFixed(2)} kg</TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} className="h-24 text-center">No hay alimentos en el inventario.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>
@@ -225,17 +259,21 @@ export default function AlimentosPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="flex-1 overflow-y-auto -mx-6 px-6">
-                            <form onSubmit={handleAddSubmit} id="add-food-form" className="space-y-6 py-4">
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="entryDate">Fecha de Ingreso</Label>
-                                        <Input id="entryDate" name="entryDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="productName">Nombre del Alimento</Label>
-                                        <Input id="productName" name="productName" type="text" placeholder="Ej: Precebo Fase 1" required />
-                                    </div>
-                                </div>
+                             <form onSubmit={handleAddSubmit} id="add-food-form" className="space-y-4 py-4 pr-6">
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Detalles del Producto</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="entryDate">Fecha de Ingreso</Label>
+                                            <Input id="entryDate" name="entryDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="productName">Nombre del Alimento</Label>
+                                            <Input id="productName" name="productName" type="text" placeholder="Ej: Precebo Fase 1" required />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
                                 <Card>
                                     <CardHeader><CardTitle className="text-base">Cantidad</CardTitle></CardHeader>
                                     <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -270,14 +308,14 @@ export default function AlimentosPage() {
                                 
                                 <Card>
                                     <CardHeader><CardTitle className="text-base">Información Adicional</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="lotNumber">Número de Lote</Label>
                                             <Input id="lotNumber" name="lotNumber" type="text" placeholder="Lote del fabricante (opcional)" />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="notes">Observaciones / Notas</Label>
-                                            <Textarea id="notes" name="notes" placeholder="Cualquier nota adicional sobre la compra o el producto." />
+                                            <Textarea id="notes" name="notes" placeholder="Cualquier nota adicional..." />
                                         </div>
                                     </CardContent>
                                 </Card>
