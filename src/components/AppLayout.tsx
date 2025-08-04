@@ -55,7 +55,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/ceba', label: 'Ceba', icon: Beef },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
-    { href: '/finance', label: 'Finanzas', icon: Landmark },
+    { href: '/finance', label: 'Financiero', icon: Landmark },
     { href: '/feeding', label: 'IA de Alimentación', icon: UtensilsCrossed },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/analysis/liquidated-batches', label: 'Análisis', icon: LineChart },
