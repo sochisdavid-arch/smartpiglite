@@ -58,9 +58,13 @@ export const deductFromStock = (
     area?: string,
     consumptionDate?: string
 ): { success: boolean, newStock?: number, message?: string } => {
-    if (!productId || quantityToDeduct <= 0) {
+    if (!productId) {
         return { success: false, message: 'Invalid product ID or quantity.' };
     }
+     if (quantityToDeduct <= 0 && quantityToDeduct !== 0) { // allow 0 for edits
+        return { success: false, message: 'La cantidad debe ser un número positivo.' };
+    }
+
 
     const inventory = getInventory();
     const productIndex = inventory.findIndex(item => item.id === productId);
@@ -72,8 +76,8 @@ export const deductFromStock = (
     const product = inventory[productIndex];
     inventory[productIndex].stock -= quantityToDeduct;
 
-    // If it's a food item, record the consumption
-    if (product.category === 'alimento') {
+    // If it's a food item, record the consumption if quantity is positive
+    if (product.category === 'alimento' && quantityToDeduct > 0) {
         const consumptionHistory: FoodConsumptionRecord[] = JSON.parse(localStorage.getItem(FOOD_CONSUMPTION_HISTORY_KEY) || '[]');
         const newRecord: FoodConsumptionRecord = {
             id: `consumo-${Date.now()}-${Math.random()}`,

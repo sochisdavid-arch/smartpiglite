@@ -125,7 +125,7 @@ export default function LactationHistoryPage() {
     const [isConsumptionFormOpen, setIsConsumptionFormOpen] = React.useState(false);
     const [consumptionHistory, setConsumptionHistory] = React.useState<ConsumptionRecord[]>([]);
 
-    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_${pigId}`, [pigId]);
+    const getConsumptionStorageKey = React.useCallback(() => `consumptionHistory_lactancia_${pigId}`, [pigId]);
 
     const loadPigData = React.useCallback(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -178,7 +178,8 @@ export default function LactationHistoryPage() {
             if (!foundFeed) return;
             
             const quantityNumber = Number(quantity);
-            const result = deductFromStock(foundFeed.id, quantityNumber);
+            const consumptionDate = (document.getElementById('consumptionDate') as HTMLInputElement).value;
+            const result = deductFromStock(foundFeed.id, quantityNumber, `Lactancia Cerda ${pigId}`, consumptionDate);
 
             if (!result.success) {
                 toast({ variant: "destructive", title: "Error de Stock", description: result.message });
@@ -187,7 +188,7 @@ export default function LactationHistoryPage() {
 
             const newRecord: ConsumptionRecord = {
                 id: new Date().toISOString(),
-                date: (document.getElementById('consumptionDate') as HTMLInputElement).value,
+                date: consumptionDate,
                 quantity: quantityNumber,
                 feedType: foundFeed.name,
                 productId: foundFeed.id,
