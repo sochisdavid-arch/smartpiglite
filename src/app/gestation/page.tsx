@@ -185,6 +185,19 @@ export default function GestationPage() {
   const [filterBreed, setFilterBreed] = React.useState('all');
   const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
 
+  // States for consumption form
+  const [consumptionQuantity, setConsumptionQuantity] = React.useState<number | string>('');
+  const [consumptionSowCount, setConsumptionSowCount] = React.useState<number | string>('');
+
+  const consumptionAverage = React.useMemo(() => {
+    const numQuantity = Number(consumptionQuantity);
+    const numSowCount = Number(consumptionSowCount);
+    if (numQuantity > 0 && numSowCount > 0) {
+        return (numQuantity / numSowCount).toFixed(2);
+    }
+    return '0.00';
+  }, [consumptionQuantity, consumptionSowCount]);
+
   React.useEffect(() => {
     // Load pigs from localStorage
     const pigsFromStorage = localStorage.getItem('pigs');
@@ -395,9 +408,19 @@ export default function GestationPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="quantity">Cantidad Total Consumida (kg)</Label>
-                            <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej: 80.5" required />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="sowCount">Número de Hembras</Label>
+                              <Input id="sowCount" name="sowCount" type="number" placeholder="Ej: 25" required value={consumptionSowCount} onChange={(e) => setConsumptionSowCount(e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="quantity">Cantidad Total (kg)</Label>
+                              <Input id="quantity" name="quantity" type="number" step="0.1" placeholder="Ej: 80.5" required value={consumptionQuantity} onChange={(e) => setConsumptionQuantity(e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Consumo Promedio / Hembra (kg)</Label>
+                            <Input value={consumptionAverage} readOnly className="font-semibold bg-muted" />
                         </div>
                     </form>
                     <DialogFooter>
@@ -630,3 +653,5 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
+
+    
