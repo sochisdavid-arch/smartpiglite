@@ -180,10 +180,16 @@ export default function LoteCebaPage() {
                 const consumptionDifference = newConsumptionValue - oldConsumptionValue;
 
                 if (week.feedType && consumptionDifference !== 0) {
-                    deductFromStock(week.feedType, consumptionDifference);
+                     const consumptionDate = addDays(parseISO(week.startDate), dayIndex);
+                    deductFromStock(
+                        week.feedType,
+                        consumptionDifference,
+                        `Lote Ceba ${loteId}`,
+                        consumptionDate.toISOString()
+                    );
                     toast({
                         title: "Stock Actualizado",
-                        description: `Se han descontado ${consumptionDifference.toFixed(2)}kg de ${mockInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
+                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${mockInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
                     });
                 }
 
@@ -715,5 +721,3 @@ export default function LoteCebaPage() {
         </AppLayout>
     );
 }
-
-    
