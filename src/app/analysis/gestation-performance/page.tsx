@@ -9,7 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, add, sub } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -322,10 +327,141 @@ export default function GestationPerformancePage() {
         return 'default';
     };
 
+    const getTableData = () => {
+        const head = ['Métricas de Desempeño', 'Metas', ...visiblePeriods.map(p => getPeriodLabel(p, groupBy)), 'Media', 'Total'];
+        const body = METRIC_DEFINITIONS.map(metric => {
+            if (metric.isHeader) {
+                return { isHeader: true, label: metric.label, key: metric.key };
+            }
+
+            const categoryKey = getCategoryKey(metric.key);
+            if (!openCategories[categoryKey]) return null;
+
+            let total = 0;
+            let count = 0;
+            allPeriodKeys.forEach(header => {
+                const value = metrics.get(header)?.[metric.key];
+                if (value !== undefined && !isNaN(value)) {
+                    total += value;
+                    count++;
+                }
+            });
+
+            const average = count > 0 ? total / count : 0;
+            const isSummable = !metric.isPercentage && !metric.key.toLowerCase().includes('intervalo') && !metric.key.toLowerCase().includes('consumo') && !metric.key.toLowerCase().includes('peso') && !metric.key.toLowerCase().includes('montasporservicio');
+            const isAverageable = metric.isPercentage || metric.key.toLowerCase().includes('intervalo') || metric.key.toLowerCase().includes('consumo') || metric.key.toLowerCase().includes('peso') || metric.key.toLowerCase().includes('montasporservicio');
+            let finalTotalValue: number | undefined;
+
+            if (isSummable) {
+                finalTotalValue = total;
+            } else if (isAverageable) {
+                 if (metric.isPercentage) {
+                    let totalNumerator = 0;
+                    let totalDenominator = 0;
+                    let numeratorKey = metric.key.replace('_p', '');
+                    let denominatorKey: string | undefined;
+
+                    if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p', 'primerizasServidas_p'].includes(metric.key)) {
+                        denominatorKey = 'totalServicios';
+                    } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
+                        allPeriodKeys.forEach(header => {
+                            const m = metrics.get(header);
+                            if(m) {
+                               totalNumerator += m[numeratorKey] || 0;
+                               totalDenominator += (m['servicio7dias'] || 0) + (m['servicioMas7dias'] || 0);
+                            }
+                        });
+                    }
+
+                    if(denominatorKey) {
+                        allPeriodKeys.forEach(header => {
+                            const m = metrics.get(header);
+                            if(m) {
+                                totalNumerator += m[numeratorKey] || 0;
+                                totalDenominator += m[denominatorKey] || 0;
+                            }
+                        });
+                    }
+                    finalTotalValue = totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+                } else {
+                     finalTotalValue = average;
+                }
+            }
+
+            return {
+                isHeader: false,
+                label: metric.label,
+                goal: '-',
+                values: visiblePeriods.map(p => formatValue(metrics.get(p)?.[metric.key], metric.isPercentage)),
+                average: formatValue(average, metric.isPercentage),
+                total: formatValue(finalTotalValue, metric.isPercentage)
+            };
+        }).filter(Boolean);
+
+        return { head, body };
+    };
+
+    const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
+        const { head, body } = getTableData();
+
+        const title = "Informe de Desempeño de Gestación";
+        const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+
+        if (formatType === 'pdf') {
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.text(title, 14, 16);
+            doc.setFontSize(10);
+            doc.text(dateRange, 14, 22);
+            autoTable(doc, {
+                head: [head],
+                body: body.map(row => {
+                    if (row!.isHeader) return [{ content: row!.label, colSpan: head.length, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } }];
+                    return [row!.label, row!.goal, ...row!.values, row!.average, row!.total];
+                }),
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            doc.save(`desempeno_gestacion_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        if (formatType === 'csv' || formatType === 'xlsx') {
+            const dataToExport = body.map(row => {
+                 if (row!.isHeader) return { 'Métricas de Desempeño': row!.label };
+                 const rowData: {[key:string]: any} = { 'Métricas de Desempeño': row!.label, 'Metas': row!.goal };
+                 head.slice(2, -2).forEach((h, i) => rowData[h] = row!.values[i]);
+                 rowData['Media'] = row!.average;
+                 rowData['Total'] = row!.total;
+                 return rowData;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Desempeño");
+            XLSX.writeFile(wb, `desempeno_gestacion_${new Date().toISOString().split('T')[0]}.${formatType}`);
+        }
+    };
+
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <h1 className="text-3xl font-bold tracking-tight">Desempeño de la gestación</h1>
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight">Desempeño de la gestación</h1>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">
+                                <Download className="mr-2 h-4 w-4" />
+                                Exportar
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
                 
                 <Card>
                     <CardContent className="p-4 space-y-4">
