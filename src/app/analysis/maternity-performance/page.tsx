@@ -159,7 +159,7 @@ export default function MaternityPerformancePage() {
     const [currentPeriodIndex, setCurrentPeriodIndex] = React.useState(0);
     const [visiblePeriods, setVisiblePeriods] = React.useState<string[]>([]);
     const [allPeriodKeys, setAllPeriodKeys] = React.useState<string[]>([]);
-    const periodsPerPage = 1;
+    const periodsPerPage = 5;
 
 
     const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
@@ -196,7 +196,7 @@ export default function MaternityPerformancePage() {
         
         const headerKeys = headers.map(d => formatPeriodKey(d, groupBy)).sort();
         setAllPeriodKeys(headerKeys);
-        setCurrentPeriodIndex(headerKeys.length > 0 ? headerKeys.length - 1 : 0);
+        setCurrentPeriodIndex(0);
 
     }, [pigs, startDate, endDate, groupBy, breedFilter]);
 
@@ -309,6 +309,19 @@ export default function MaternityPerformancePage() {
                 </Card>
 
                 <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Resultados del Análisis</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('prev')} disabled={currentPeriodIndex === 0}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('next')} disabled={currentPeriodIndex + periodsPerPage >= allPeriodKeys.length}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <Table>
@@ -316,15 +329,9 @@ export default function MaternityPerformancePage() {
                                     <TableRow>
                                         <TableHead className="w-[250px] sticky left-0 bg-card z-10">Mes</TableHead>
                                         <TableHead className="w-[100px] text-center">Metas</TableHead>
-                                        {visiblePeriods.length > 0 && (
-                                            <TableHead className="min-w-[100px] text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigatePeriods('prev')} disabled={currentPeriodIndex === 0}><ChevronLeft className="h-4 w-4" /></Button>
-                                                    <span>{getPeriodLabel(visiblePeriods[0], groupBy)}</span>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigatePeriods('next')} disabled={currentPeriodIndex + periodsPerPage >= allPeriodKeys.length}><ChevronRight className="h-4 w-4" /></Button>
-                                                </div>
-                                            </TableHead>
-                                        )}
+                                        {visiblePeriods.map(p => (
+                                            <TableHead key={p} className="min-w-[100px] text-center">{getPeriodLabel(p, groupBy)}</TableHead>
+                                        ))}
                                         <TableHead className="min-w-[100px] text-center font-bold">Media</TableHead>
                                         <TableHead className="min-w-[100px] text-center font-bold">Total</TableHead>
                                     </TableRow>
@@ -369,7 +376,3 @@ export default function MaternityPerformancePage() {
         </AppLayout>
     );
 }
-
-    
-
-    
