@@ -44,7 +44,7 @@ const geneticLines = [
 const allGenetics = [...pigBreeds, ...geneticLines];
 
 const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 21 }, (_, i) => (currentYear - 10 + i).toString());
+const years = Array.from({ length: 121 }, (_, i) => (currentYear - 100 + i).toString());
 
 export default function GestationPerformancePage() {
     const [period, setPeriod] = React.useState('anual');
@@ -425,3 +425,4 @@ export default function GestationPerformancePage() {
     );
 
     
+
