@@ -6,7 +6,9 @@ import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Repeat, Baby, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart as RechartsLineChart } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 const kpiData = [
   { title: "Tasa de Partos", value: "89.5%", icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
@@ -16,6 +18,27 @@ const kpiData = [
   { title: "Tasa de Abortos", value: "2.1%", icon: XCircle, description: "Porcentaje de gestaciones que terminan en aborto." },
   { title: "Intervalo Destete-Servicio (IDS)", value: "5.8 días", icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
 ];
+
+const servicesKpiData = [
+    { metric: "I.A.", value: "120" },
+    { metric: "I.A. (%)", value: "92.3%" },
+    { metric: "Monta natural", value: "10" },
+    { metric: "Monta natural (%)", value: "7.7%" },
+    { metric: "Compra de gestante", value: "5" },
+    { metric: "Compra de gestante (%)", value: "3.8%" },
+    { metric: "Total de Servicios", value: "130", isTotal: true },
+    { metric: "Servicio hasta 7 días", value: "115" },
+    { metric: "Servicio hasta 7 días (%)", value: "88.5%" },
+    { metric: "Servicios por encima 7 días", value: "15" },
+    { metric: "Servicios por encima 7 días (%)", value: "11.5%" },
+    { metric: "Reservicios", value: "8" },
+    { metric: "Reservicios (%)", value: "6.2%" },
+    { metric: "Primerizas servidas", value: "25" },
+    { metric: "Primerizas cubiertas (%)", value: "19.2%" },
+    { metric: "% Múltiples montas / I.A.", value: "45.0%" },
+    { metric: "Nº de montas / I.A. por servicio", value: "2.10" },
+];
+
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
@@ -116,6 +139,25 @@ export default function GestationPerformancePage() {
                     </CardHeader>
                 </Card>
 
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Análisis de Servicios</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableBody>
+                                {servicesKpiData.map((item) => (
+                                    <TableRow key={item.metric}>
+                                        <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
+                                        <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader>
@@ -146,7 +188,7 @@ export default function GestationPerformancePage() {
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={liveBornData}>
+                                <RechartsLineChart data={liveBornData}>
                                      <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                                      <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
                                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
@@ -158,7 +200,7 @@ export default function GestationPerformancePage() {
                                     />
                                      <Legend />
                                      <Line type="monotone" dataKey="value" name="Nacidos Vivos" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }}/>
-                                </LineChart>
+                                </RechartsLineChart>
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
@@ -167,3 +209,5 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
+
+    
