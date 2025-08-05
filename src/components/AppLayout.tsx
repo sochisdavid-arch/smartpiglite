@@ -73,6 +73,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const analysisSubMenuItems = [
       { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
       { href: '/analysis/gestation-performance', label: 'Desempeño Gestación' },
+      { href: '/analysis/reproductive-loss', label: 'Pérdida Reproductiva' },
   ]
 
   const isAnalysisActive = pathname.startsWith('/analysis');
