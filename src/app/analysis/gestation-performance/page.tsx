@@ -8,6 +8,12 @@ import { Activity, Repeat, Baby, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart as RechartsLineChart } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 
 const kpiData = [
@@ -60,6 +66,11 @@ const intervalsData = [
     { metric: "Edad - 1er Servicio", value: "35 semanas" },
 ];
 
+const complementaryData = [
+    { metric: "Peso de la madre en el servicio", value: "185 kg" },
+    { metric: "Alimento consumido (Kg)", value: "350 kg" },
+    { metric: "Consumo hembra/dia (Kg)", value: "3.0 kg" },
+];
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
@@ -118,6 +129,78 @@ export default function GestationPerformancePage() {
                         </Card>
                     ))}
                 </div>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Indicadores de Desempeño Detallados</CardTitle>
+                        <CardDescription>Expanda cada sección para ver los detalles de los indicadores.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>Análisis de Servicios</AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableBody>
+                                            {servicesKpiData.map((item) => (
+                                                <TableRow key={item.metric}>
+                                                    <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
+                                                    <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                             <AccordionItem value="item-2">
+                                <AccordionTrigger>Pérdida Reproductiva</AccordionTrigger>
+                                <AccordionContent>
+                                   <Table>
+                                        <TableBody>
+                                            {reproductiveLossData.map((item) => (
+                                                <TableRow key={item.metric}>
+                                                    <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
+                                                    <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-3">
+                                <AccordionTrigger>Intervalos</AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableBody>
+                                            {intervalsData.map((item) => (
+                                                <TableRow key={item.metric}>
+                                                    <TableCell>{item.metric}</TableCell>
+                                                    <TableCell className="text-right">{item.value}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-4">
+                                <AccordionTrigger>Índices Complementarios</AccordionTrigger>
+                                <AccordionContent>
+                                     <Table>
+                                        <TableBody>
+                                            {complementaryData.map((item) => (
+                                                <TableRow key={item.metric}>
+                                                    <TableCell>{item.metric}</TableCell>
+                                                    <TableCell className="text-right">{item.value}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </CardContent>
+                </Card>
+
 
                 <Card>
                     <CardHeader>
@@ -159,60 +242,6 @@ export default function GestationPerformancePage() {
                         </div>
                     </CardHeader>
                 </Card>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Análisis de Servicios</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableBody>
-                                    {servicesKpiData.map((item) => (
-                                        <TableRow key={item.metric}>
-                                            <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
-                                            <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pérdida Reproductiva</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableBody>
-                                    {reproductiveLossData.map((item) => (
-                                        <TableRow key={item.metric}>
-                                            <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
-                                            <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Intervalos</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableBody>
-                                    {intervalsData.map((item) => (
-                                        <TableRow key={item.metric}>
-                                            <TableCell>{item.metric}</TableCell>
-                                            <TableCell className="text-right">{item.value}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                 </div>
 
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
@@ -264,5 +293,4 @@ export default function GestationPerformancePage() {
             </div>
         </AppLayout>
     );
-
-    
+}
