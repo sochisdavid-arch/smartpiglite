@@ -5,7 +5,7 @@ import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Repeat, Baby, XCircle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 
 const kpiData = [
@@ -28,10 +28,10 @@ const geneticLines = [
 
 // Mock data for charts
 const farrowingRateData = [
-    { breed: 'Duroc', rate: 88 },
-    { breed: 'Landrace', rate: 92 },
-    { breed: 'Yorkshire', rate: 90 },
-    { breed: 'Pietrain', rate: 85 },
+    { name: 'Duroc', rate: 88 },
+    { name: 'Landrace', rate: 92 },
+    { name: 'Yorkshire', rate: 90 },
+    { name: 'Pietrain', rate: 85 },
 ];
 
 const liveBornData = [
@@ -47,8 +47,7 @@ const liveBornData = [
 export default function GestationPerformancePage() {
     const [period, setPeriod] = React.useState('anual');
     const [year, setYear] = React.useState(new Date().getFullYear().toString());
-    const [breed, setBreed] = React.useState('todas');
-    const [geneticLine, setGeneticLine] = React.useState('todas');
+    const [genetics, setGenetics] = React.useState('todas');
 
     return (
         <AppLayout>
@@ -80,7 +79,7 @@ export default function GestationPerformancePage() {
                     <CardHeader>
                         <CardTitle>Filtros de Visualización</CardTitle>
                          <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                             <Select value={period} onValueChange={setPeriod}>
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Periodo" /></SelectTrigger>
                                 <SelectContent>
@@ -99,18 +98,18 @@ export default function GestationPerformancePage() {
                                     <SelectItem value="2022">2022</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select value={breed} onValueChange={setBreed}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Raza" /></SelectTrigger>
+                             <Select value={genetics} onValueChange={setGenetics}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="todas">Todas las Razas</SelectItem>
-                                    {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={geneticLine} onValueChange={setGeneticLine}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Línea Genética" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="todas">Todas las Líneas</SelectItem>
-                                    {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
+                                     <SelectItem value="todas">Todas las Genéticas</SelectItem>
+                                     <SelectGroup>
+                                        <SelectLabel>Razas</SelectLabel>
+                                        {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
+                                     </SelectGroup>
+                                     <SelectGroup>
+                                        <SelectLabel>Líneas Genéticas</SelectLabel>
+                                        {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
+                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -120,14 +119,14 @@ export default function GestationPerformancePage() {
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Tasa de Partos por Raza</CardTitle>
-                            <CardDescription>Comparativo de la tasa de partos (%) entre las principales razas.</CardDescription>
+                            <CardTitle>Tasa de Partos por Genética</CardTitle>
+                            <CardDescription>Comparativo de la tasa de partos (%) entre las diferentes genéticas.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={farrowingRateData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                    <XAxis dataKey="breed" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
                                     <YAxis unit="%" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
                                     <Tooltip
                                         contentStyle={{
