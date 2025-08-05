@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval } from 'date-fns';
+import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, add, sub } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -47,17 +47,17 @@ const METRIC_DEFINITIONS = [
     { key: 'compraGestante', label: 'Compra de gestante' },
     { key: 'compraGestante_p', label: 'Compra de gestante (%)', isPercentage: true },
     { key: 'totalServicios', label: 'Total de Servicios', isBold: true },
-    { key: 'reservicios', label: 'Reservicios' },
-    { key: 'reservicios_p', label: 'Reservicios (%)', isPercentage: true },
-    { key: 'primerizasServidas', label: 'Primerizas servidas' },
-    { key: 'primerizasCubiertas_p', label: 'Primerizas cubiertas (%)', isPercentage: true },
-    { key: 'multiplesMontas_p', label: '% Múltiples montas / I.A.', isPercentage: true },
-    { key: 'montasPorServicio', label: 'Nº de montas / I.A. por servicio' },
     { key: 'servicio7dias', label: 'Servicio hasta 7 días' },
     { key: 'servicio7dias_p', label: 'Servicio hasta 7 días (%)', isPercentage: true },
     { key: 'servicioMas7dias', label: 'Servicios por encima 7 días' },
     { key: 'servicioMas7dias_p', label: 'Servicios por encima 7 días (%)', isPercentage: true },
-
+    { key: 'reservicios', label: 'Reservicios' },
+    { key: 'reservicios_p', label: 'Reservicios (%)', isPercentage: true },
+    { key: 'primerizasServidas', label: 'Primerizas servidas' },
+    { key: 'primerizasServidas_p', label: 'Primerizas servidas (%)', isPercentage: true },
+    { key: 'multiplesMontas_p', label: '% Múltiples montas / I.A.', isPercentage: true },
+    { key: 'montasPorServicio', label: 'Nº de montas / I.A. por servicio' },
+    
     { key: 'partos', label: 'PARTOS', isHeader: true },
     { key: 'totalPartos', label: 'Total de Partos' },
     { key: 'tasaPartos', label: 'Tasa de Partos (%)', isPercentage: true },
@@ -203,6 +203,9 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
             metrics['detectadaVacia_p'] = (metrics['detectadaVacia'] || 0) / totalServicios * 100;
             metrics['descarteGestante_p'] = (metrics['descarteGestante'] || 0) / totalServicios * 100;
             metrics['muerteGestante_p'] = (metrics['muerteGestante'] || 0) / totalServicios * 100;
+            metrics['reservicios_p'] = (metrics['reservicios'] || 0) / totalServicios * 100;
+            metrics['primerizasServidas_p'] = (metrics['primerizasServidas'] || 0) / totalServicios * 100;
+
         } else {
              metrics['ia_p'] = 0;
              metrics['montaNatural_p'] = 0;
@@ -213,6 +216,8 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
              metrics['detectadaVacia_p'] = 0;
              metrics['descarteGestante_p'] = 0;
              metrics['muerteGestante_p'] = 0;
+             metrics['reservicios_p'] = 0;
+             metrics['primerizasServidas_p'] = 0;
         }
 
         const totalServiciosPostDestete = (metrics['servicio7dias'] || 0) + (metrics['servicioMas7dias'] || 0);
@@ -234,11 +239,17 @@ export default function GestationPerformancePage() {
     const [pigs, setPigs] = React.useState<Pig[]>([]);
     const [filteredPigs, setFilteredPigs] = React.useState<Pig[]>([]);
     const [metrics, setMetrics] = React.useState<Map<string, Metrics>>(new Map());
-    const [periodHeaders, setPeriodHeaders] = React.useState<string[]>([]);
     
-    const [startDate, setStartDate] = React.useState('2023-01-01');
-    const [endDate, setEndDate] = React.useState(new Date().toISOString().split('T')[0]);
-    const [groupBy, setGroupBy] = React.useState<GroupingUnit>('year');
+    // Period navigation state
+    const [currentPeriodIndex, setCurrentPeriodIndex] = React.useState(0);
+    const [visiblePeriods, setVisiblePeriods] = React.useState<string[]>([]);
+    const [allPeriodKeys, setAllPeriodKeys] = React.useState<string[]>([]);
+    const periodsPerPage = 5;
+
+
+    const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
+    const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const [groupBy, setGroupBy] = React.useState<GroupingUnit>('month');
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [breedOptions, setBreedOptions] = React.useState<string[]>([]);
 
@@ -277,14 +288,29 @@ export default function GestationPerformancePage() {
         else if (groupBy === 'week') headers = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
         else if (groupBy === 'day') headers = eachDayOfInterval({ start, end });
         
-        const headerKeys = headers.map(d => formatPeriodKey(d, groupBy));
-        setPeriodHeaders(headerKeys);
+        const headerKeys = headers.map(d => formatPeriodKey(d, groupBy)).sort();
+        setAllPeriodKeys(headerKeys);
+        setCurrentPeriodIndex(0);
 
     }, [pigs, startDate, endDate, groupBy, breedFilter]);
+
+     React.useEffect(() => {
+        const end = Math.min(currentPeriodIndex + periodsPerPage, allPeriodKeys.length);
+        setVisiblePeriods(allPeriodKeys.slice(currentPeriodIndex, end));
+    }, [currentPeriodIndex, allPeriodKeys]);
 
     React.useEffect(() => {
         handleFilter();
     }, [handleFilter]);
+    
+    const navigatePeriods = (direction: 'next' | 'prev') => {
+        if (direction === 'next') {
+            setCurrentPeriodIndex(prev => Math.min(prev + periodsPerPage, allPeriodKeys.length - periodsPerPage));
+        } else {
+            setCurrentPeriodIndex(prev => Math.max(prev - periodsPerPage, 0));
+        }
+    };
+
 
     const toggleCategory = (key: string) => {
         setOpenCategories(prev => ({ ...prev, [key]: !prev[key] }));
@@ -296,6 +322,15 @@ export default function GestationPerformancePage() {
         return Math.round(value).toString();
     };
     
+    const getCategoryKey = (metricKey: string) => {
+        if (['ia', 'ia_p', 'montaNatural', 'montaNatural_p', 'compraGestante', 'compraGestante_p', 'totalServicios', 'reservicios', 'reservicios_p', 'primerizasServidas', 'primerizasServidas_p', 'multiplesMontas_p', 'montasPorServicio', 'servicio7dias', 'servicio7dias_p', 'servicioMas7dias', 'servicioMas7dias_p'].includes(metricKey)) return 'servicios';
+        if (['totalPartos', 'tasaPartos'].includes(metricKey)) return 'partos';
+        if (['repeticionCelo', 'repeticionCelo_p', 'abortos', 'abortos_p', 'detectadaVacia', 'detectadaVacia_p', 'descarteGestante', 'descarteGestante_p', 'muerteGestante', 'muerteGestante_p', 'totalPerdidas'].includes(metricKey)) return 'perdidaReproductiva';
+        if (['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio'].includes(metricKey)) return 'intervalos';
+        if (['pesoMadreServicio', 'alimentoConsumido', 'consumoHembraDia'].includes(metricKey)) return 'indicesComplementarios';
+        return 'default';
+    };
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -303,7 +338,7 @@ export default function GestationPerformancePage() {
                 
                 <Card>
                     <CardContent className="p-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div className="space-y-2">
                                 <Label htmlFor="start-date">Fecha inicial *</Label>
                                 <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -333,33 +368,42 @@ export default function GestationPerformancePage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button onClick={handleFilter} className="w-full lg:w-auto">
-                                <Filter className="mr-2 h-4 w-4" />
-                                FILTRAR
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Resultados del Análisis</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('prev')} disabled={currentPeriodIndex === 0}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('next')} disabled={currentPeriodIndex + periodsPerPage >= allPeriodKeys.length}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[250px] sticky left-0 bg-card z-10">Año</TableHead>
-                                        <TableHead className="w-[100px]">Metas</TableHead>
-                                        {periodHeaders.map(header => (
+                                        <TableHead className="w-[250px] sticky left-0 bg-card z-10">Métricas de Desempeño</TableHead>
+                                        <TableHead className="w-[100px] text-center">Metas</TableHead>
+                                        {visiblePeriods.map(header => (
                                             <TableHead key={header} className="min-w-[100px] text-center">{getPeriodLabel(header, groupBy)}</TableHead>
                                         ))}
-                                        <TableHead className="min-w-[100px] text-center">Media</TableHead>
-                                        <TableHead className="min-w-[100px] text-center">Total</TableHead>
+                                        <TableHead className="min-w-[100px] text-center font-bold">Media</TableHead>
+                                        <TableHead className="min-w-[100px] text-center font-bold">Total</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {METRIC_DEFINITIONS.map(metric => {
                                         if (metric.isHeader) {
-                                            const categoryKey = metric.key.split('_')[0];
+                                            const categoryKey = metric.key;
                                             return (
                                                 <TableRow key={metric.key} className="bg-muted/50 hover:bg-muted/60 sticky left-0">
                                                     <TableCell 
@@ -371,26 +415,20 @@ export default function GestationPerformancePage() {
                                                             {metric.label}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell colSpan={periodHeaders.length + 3}></TableCell>
+                                                    <TableCell colSpan={visiblePeriods.length + 3}></TableCell>
                                                 </TableRow>
                                             )
                                         }
                                         
-                                        const categoryKey = metric.key.includes('Servicio') || metric.key.startsWith('ia') || metric.key.startsWith('montaNatural') || metric.key.startsWith('compraGestante') ? 'servicios'
-                                            : metric.key.includes('Parto') ? 'partos'
-                                            : metric.key.includes('Celo') || metric.key.includes('aborto') || metric.key.includes('Vacia') || metric.key.includes('descarte') || metric.key.includes('muerte') || metric.key.includes('Perdida') ? 'perdidaReproductiva'
-                                            : metric.key.toLowerCase().includes('intervalo') ? 'intervalos'
-                                            : metric.key.toLowerCase().includes('indice') ? 'indicesComplementarios'
-                                            : 'default'; // Fallback category
-
+                                        const categoryKey = getCategoryKey(metric.key);
                                         if (!openCategories[categoryKey]) return null;
 
                                         let total = 0;
                                         let count = 0;
-
-                                        periodHeaders.forEach(header => {
+                                        
+                                        allPeriodKeys.forEach(header => {
                                             const value = metrics.get(header)?.[metric.key];
-                                            if (value !== undefined) {
+                                            if (value !== undefined && !isNaN(value)) {
                                                 total += value;
                                                 count++;
                                             }
@@ -398,57 +436,60 @@ export default function GestationPerformancePage() {
 
                                         const average = count > 0 ? total / count : 0;
                                         
-                                        const sumTotal = !metric.key.includes('_p') && !['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key);
-                                        const avgTotal = metric.key.includes('_p') || ['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key);
-
+                                        const isSummable = !metric.isPercentage && !metric.key.toLowerCase().includes('intervalo') && !metric.key.toLowerCase().includes('consumo') && !metric.key.toLowerCase().includes('peso') && !metric.key.toLowerCase().includes('montasporservicio');
+                                        const isAverageable = metric.isPercentage || metric.key.toLowerCase().includes('intervalo') || metric.key.toLowerCase().includes('consumo') || metric.key.toLowerCase().includes('peso') || metric.key.toLowerCase().includes('montasporservicio');
+                                        
                                         let finalTotalValue: number | undefined;
-                                        if (sumTotal) {
-                                            finalTotalValue = total;
-                                        } else if (avgTotal) {
-                                            let totalNumerator = 0;
-                                            let totalDenominator = 0;
-                                            
-                                            // Special calculation for percentages to get a weighted average
-                                            if(metric.key.includes('_p')) {
-                                                periodHeaders.forEach(header => {
-                                                    const periodMetrics = metrics.get(header);
-                                                    if(periodMetrics) {
-                                                        const numeratorKey = metric.key.replace('_p', '');
-                                                        let denominatorKey: string | undefined;
 
-                                                        if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p'].includes(metric.key)) {
-                                                            denominatorKey = 'totalServicios';
-                                                        } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
-                                                            denominatorKey = 'totalServiciosPostDestete'; // Special case
+                                        if (isSummable) {
+                                            finalTotalValue = total;
+                                        } else if (isAverageable) {
+                                            if (metric.isPercentage) {
+                                                let totalNumerator = 0;
+                                                let totalDenominator = 0;
+
+                                                let numeratorKey = metric.key.replace('_p', '');
+                                                let denominatorKey: string | undefined;
+
+                                                 if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p', 'primerizasServidas_p'].includes(metric.key)) {
+                                                    denominatorKey = 'totalServicios';
+                                                } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
+                                                    // This one needs a custom denominator based on the sum of its parts
+                                                    allPeriodKeys.forEach(header => {
+                                                        const m = metrics.get(header);
+                                                        if(m) {
+                                                           totalNumerator += m[numeratorKey] || 0;
+                                                           totalDenominator += (m['servicio7dias'] || 0) + (m['servicioMas7dias'] || 0);
                                                         }
-                                                        
-                                                        if(numeratorKey && denominatorKey && periodMetrics[denominatorKey]) {
-                                                             totalNumerator += periodMetrics[numeratorKey] || 0;
-                                                             if (denominatorKey === 'totalServiciosPostDestete') {
-                                                                 totalDenominator += (periodMetrics['servicio7dias'] || 0) + (periodMetrics['servicioMas7dias'] || 0);
-                                                             } else {
-                                                                 totalDenominator += periodMetrics[denominatorKey] || 0;
-                                                             }
+                                                    });
+                                                }
+
+                                                if(denominatorKey) {
+                                                    allPeriodKeys.forEach(header => {
+                                                        const m = metrics.get(header);
+                                                        if(m) {
+                                                            totalNumerator += m[numeratorKey] || 0;
+                                                            totalDenominator += m[denominatorKey] || 0;
                                                         }
-                                                    }
-                                                });
-                                                 if (totalDenominator > 0) {
+                                                    });
+                                                }
+                                                
+                                                if (totalDenominator > 0) {
                                                     finalTotalValue = (totalNumerator / totalDenominator) * 100;
                                                 } else {
                                                     finalTotalValue = 0;
                                                 }
+
                                             } else {
-                                                 // For non-percentage averages, the simple average is usually representative enough
                                                  finalTotalValue = average;
                                             }
-                                           
                                         }
-                                        
+
                                         return (
                                             <TableRow key={metric.key}>
                                                 <TableCell className={cn("sticky left-0 bg-card z-10", metric.isBold && "font-bold")}>{metric.label}</TableCell>
                                                 <TableCell className="text-center">-</TableCell>
-                                                {periodHeaders.map(header => (
+                                                {visiblePeriods.map(header => (
                                                     <TableCell key={header} className="text-center">{formatValue(metrics.get(header)?.[metric.key], metric.isPercentage)}</TableCell>
                                                 ))}
                                                 <TableCell className="text-center">{formatValue(average, metric.isPercentage)}</TableCell>
@@ -465,3 +506,5 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
+
+    
