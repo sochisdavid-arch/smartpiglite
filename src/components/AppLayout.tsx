@@ -75,6 +75,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { href: '/analysis/gestation-performance', label: 'Desempeño Gestación' },
       { href: '/analysis/reproductive-loss', label: 'Pérdida Reproductiva' },
       { href: '/analysis/service-analysis', label: 'Análisis de Servicios' },
+      { href: '/analysis/farrowing-rate', label: 'Análisis Tasa de Parición' },
   ]
 
   const isAnalysisActive = pathname.startsWith('/analysis');
