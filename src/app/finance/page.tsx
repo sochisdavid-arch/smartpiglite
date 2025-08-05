@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 
 const formatCurrency = (value?: number) => {
     if (value === undefined || value === null) return '$0';
@@ -223,44 +224,57 @@ export default function FinancePage() {
                 </Card>
             </div>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-h-[90vh] flex flex-col">
+                 <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
                     <DialogHeader>
-                        <DialogTitle>Agregar Nuevo Movimiento</DialogTitle>
+                        <DialogTitle>Agregar Nuevo Movimiento Manual</DialogTitle>
                         <DialogDescription>
-                            Registre un ingreso o egreso manual.
+                            Registre un ingreso o egreso que no esté directamente ligado a la producción.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="flex-1 -mx-6 px-6">
-                        <form onSubmit={handleTransactionSubmit} id="transaction-form" className="space-y-4 py-4 pr-2">
-                            <div className="space-y-2">
-                                <Label>Tipo de Movimiento</Label>
-                                <RadioGroup name="type" required defaultValue="expense" className="flex gap-4">
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="income" id="income" />
-                                        <Label htmlFor="income">Ingreso</Label>
+                    <ScrollArea className="flex-1 overflow-y-auto -mx-6 px-6">
+                        <form onSubmit={handleTransactionSubmit} id="transaction-form" className="space-y-6 py-4 pr-6">
+                            <Card>
+                                <CardHeader><CardTitle className="text-base">Tipo y Fecha</CardTitle></CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <Label>Tipo de Movimiento</Label>
+                                        <RadioGroup name="type" required defaultValue="expense" className="flex gap-4 pt-2">
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="income" id="income" />
+                                                <Label htmlFor="income">Ingreso</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="expense" id="expense" />
+                                                <Label htmlFor="expense">Egreso</Label>
+                                            </div>
+                                        </RadioGroup>
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="expense" id="expense" />
-                                        <Label htmlFor="expense">Egreso</Label>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="date">Fecha</Label>
+                                        <Input id="date" name="date" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
                                     </div>
-                                </RadioGroup>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="date">Fecha</Label>
-                                <Input id="date" name="date" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="amount">Monto ($)</Label>
-                                <Input id="amount" name="amount" type="number" step="0.01" required placeholder="Ej: 50000" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="category">Categoría</Label>
-                                <Input id="category" name="category" type="text" required placeholder="Ej: Servicios Públicos, Inversión Externa" />
-                            </div>
-                                <div className="space-y-2">
-                                <Label htmlFor="description">Descripción</Label>
-                                <Input id="description" name="description" type="text" required placeholder="Ej: Pago factura de energía" />
-                            </div>
+                                </CardContent>
+                            </Card>
+                           
+                           <Card>
+                                <CardHeader><CardTitle className="text-base">Detalles de la Transacción</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="amount">Monto ($)</Label>
+                                            <Input id="amount" name="amount" type="number" step="0.01" required placeholder="Ej: 50000" />
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="category">Categoría</Label>
+                                            <Input id="category" name="category" type="text" required placeholder="Ej: Servicios Públicos" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Descripción</Label>
+                                        <Textarea id="description" name="description" required placeholder="Ej: Pago factura de energía del mes de Julio." />
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </form>
                     </ScrollArea>
                     <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
