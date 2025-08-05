@@ -9,5 +9,6 @@ export {
     Printer, 
     Calendar as CalendarIcon, 
     Syringe,
-    X
+    X,
+    UserSearch
 } from 'lucide-react';

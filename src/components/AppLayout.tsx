@@ -39,7 +39,8 @@ import {
   Landmark,
   Stethoscope,
   LineChart,
-  ChevronDown
+  ChevronDown,
+  UserSearch
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -77,6 +78,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { href: '/analysis/service-analysis', label: 'Análisis de Servicios' },
       { href: '/analysis/farrowing-rate', label: 'Análisis Tasa de Parición' },
       { href: '/analysis/reproductive-loss-analysis', label: 'Análisis Pérdidas Reproductivas' },
+      { href: '/analysis/sow-card', label: 'Ficha de la Madre' },
   ]
 
   const isAnalysisActive = pathname.startsWith('/analysis');
