@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { differenceInDays, parseISO, getMonth, isWithinInterval, startOfYear, endOfYear, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -235,7 +236,7 @@ export default function GestationPerformancePage() {
                     <CardHeader>
                         <CardTitle>Filtros de Visualización</CardTitle>
                          <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                              <div className={cn("grid gap-2")}>
                                 <Popover>
                                     <PopoverTrigger asChild>
@@ -243,7 +244,7 @@ export default function GestationPerformancePage() {
                                         id="date"
                                         variant={"outline"}
                                         className={cn(
-                                        "justify-start text-left font-normal",
+                                        "w-full justify-start text-left font-normal",
                                         !dateRange && "text-muted-foreground"
                                         )}
                                     >
@@ -251,11 +252,11 @@ export default function GestationPerformancePage() {
                                         {dateRange?.from ? (
                                         dateRange.to ? (
                                             <>
-                                            {format(dateRange.from, "LLL dd, y")} -{" "}
-                                            {format(dateRange.to, "LLL dd, y")}
+                                            {format(dateRange.from, "LLL dd, y", { locale: es })} -{" "}
+                                            {format(dateRange.to, "LLL dd, y", { locale: es })}
                                             </>
                                         ) : (
-                                            format(dateRange.from, "LLL dd, y")
+                                            format(dateRange.from, "LLL dd, y", { locale: es })
                                         )
                                         ) : (
                                         <span>Seleccione un rango</span>
