@@ -90,7 +90,7 @@ const METRIC_DEFINITIONS = [
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
-  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   "Otro"
 ];
 
@@ -636,5 +636,3 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
-
-    
