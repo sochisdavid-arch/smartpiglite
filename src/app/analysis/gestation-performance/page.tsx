@@ -16,12 +16,8 @@ import {
 } from "@/components/ui/accordion"
 import { differenceInDays, parseISO, getMonth, isWithinInterval, startOfYear, endOfYear, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DateRange } from 'react-day-picker';
-import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 interface Event {
@@ -52,19 +48,23 @@ const geneticLines = [
 const allGenetics = [...pigBreeds, ...geneticLines];
 
 export default function GestationPerformancePage() {
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: startOfYear(new Date()),
-        to: endOfYear(new Date()),
+    const [dateRange, setDateRange] = React.useState<{ from: string, to: string }>({
+        from: format(startOfYear(new Date()), 'yyyy-MM-dd'),
+        to: format(endOfYear(new Date()), 'yyyy-MM-dd'),
     });
     const [genetics, setGenetics] = React.useState('todas');
     const [filteredData, setFilteredData] = React.useState<any>(null);
 
-    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, range?: DateRange) => {
+    const handleDateChange = (field: 'from' | 'to', value: string) => {
+        setDateRange(prev => ({...prev, [field]: value}));
+    };
+
+    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, range: {from: string, to: string}) => {
         if (!range || !range.from || !range.to) {
             return null;
         }
 
-        const dateRangeForFiltering = { start: range.from, end: range.to };
+        const dateRangeForFiltering = { start: parseISO(range.from), end: parseISO(range.to) };
 
         let relevantPigs = pigs;
         if (selectedGenetics !== 'todas') {
@@ -236,59 +236,32 @@ export default function GestationPerformancePage() {
                     <CardHeader>
                         <CardTitle>Filtros de Visualización</CardTitle>
                          <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                             <div className={cn("grid gap-2")}>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <Button
-                                        id="date"
-                                        variant={"outline"}
-                                        className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !dateRange && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateRange?.from ? (
-                                        dateRange.to ? (
-                                            <>
-                                            {format(dateRange.from, "LLL dd, y", { locale: es })} -{" "}
-                                            {format(dateRange.to, "LLL dd, y", { locale: es })}
-                                            </>
-                                        ) : (
-                                            format(dateRange.from, "LLL dd, y", { locale: es })
-                                        )
-                                        ) : (
-                                        <span>Seleccione un rango</span>
-                                        )}
-                                    </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={dateRange?.from}
-                                        selected={dateRange}
-                                        onSelect={setDateRange}
-                                        numberOfMonths={2}
-                                    />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                             <Select value={genetics} onValueChange={setGenetics}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
-                                <SelectContent>
-                                     <SelectItem value="todas">Todas las Genéticas</SelectItem>
-                                     <SelectGroup>
-                                        <SelectLabel>Razas</SelectLabel>
-                                        {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
-                                     </SelectGroup>
-                                     <SelectGroup>
-                                        <SelectLabel>Líneas Genéticas</SelectLabel>
-                                        {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
-                                     </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                             <div className="grid gap-2">
+                                <Label htmlFor="start-date">Fecha de Inicio</Label>
+                                <Input id="start-date" type="date" value={dateRange.from} onChange={(e) => handleDateChange('from', e.target.value)} />
+                             </div>
+                             <div className="grid gap-2">
+                                <Label htmlFor="end-date">Fecha de Fin</Label>
+                                <Input id="end-date" type="date" value={dateRange.to} onChange={(e) => handleDateChange('to', e.target.value)} />
+                             </div>
+                             <div className="grid gap-2">
+                                <Label>Genética</Label>
+                                 <Select value={genetics} onValueChange={setGenetics}>
+                                    <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
+                                    <SelectContent>
+                                         <SelectItem value="todas">Todas las Genéticas</SelectItem>
+                                         <SelectGroup>
+                                            <SelectLabel>Razas</SelectLabel>
+                                            {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
+                                         </SelectGroup>
+                                         <SelectGroup>
+                                            <SelectLabel>Líneas Genéticas</SelectLabel>
+                                            {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
+                                         </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                             </div>
                         </div>
                     </CardHeader>
                 </Card>
