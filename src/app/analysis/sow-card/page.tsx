@@ -31,6 +31,7 @@ interface Pig {
     breed: string;
     birthDate: string;
     status: string;
+    gender: string;
     events: Event[];
 }
 
@@ -105,7 +106,7 @@ const processSowHistory = (sow: Pig): { cycles: CycleData[], kpis: any } => {
         avgLiveBorn: totalFarrowings > 0 ? (totalLiveBorn / totalFarrowings).toFixed(1) : '0.0',
         avgWeaned: totalFarrowings > 0 ? (totalWeaned / totalFarrowings).toFixed(1) : '0.0',
         avgFarrowingInterval: farrowingIntervals.length > 0 ? (farrowingIntervals.reduce((a,b)=> a+b,0) / farrowingIntervals.length).toFixed(0) : '0',
-        totalWeanedYear: totalFarrowings > 0 ? ((totalWeaned / totalFarrowings) * (365 / (farrowingIntervals.length > 0 ? (farrowingIntervals.reduce((a,b)=> a+b,0) / farrowingIntervals.length) : 145))).toFixed(1) : '0.0',
+        totalWeanedYear: totalFarrowings > 0 && farrowingIntervals.length > 0 ? ((totalWeaned / totalFarrowings) * (365 / (farrowingIntervals.reduce((a,b)=> a+b,0) / farrowingIntervals.length))).toFixed(1) : '0.0',
         avgNPD: totalFarrowings > 0 ? (totalNPD / totalFarrowings).toFixed(0) : '0',
     }
 
