@@ -53,7 +53,7 @@ export default function FinancePage() {
                             <TrendingUp className="h-4 w-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-green-600 break-words">{formatCurrency(summary.income)}</div>
+                            <div className="text-xl font-bold text-green-600 break-words">{formatCurrency(summary.income)}</div>
                             <p className="text-xs text-muted-foreground">Total de ingresos registrados</p>
                         </CardContent>
                     </Card>
@@ -63,7 +63,7 @@ export default function FinancePage() {
                             <TrendingDown className="h-4 w-4 text-red-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-red-600 break-words">{formatCurrency(summary.expenses)}</div>
+                            <div className="text-xl font-bold text-red-600 break-words">{formatCurrency(summary.expenses)}</div>
                             <p className="text-xs text-muted-foreground">Total de egresos registrados</p>
                         </CardContent>
                     </Card>
@@ -73,7 +73,7 @@ export default function FinancePage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'} break-words`}>{formatCurrency(summary.balance)}</div>
+                            <div className={`text-xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'} break-words`}>{formatCurrency(summary.balance)}</div>
                             <p className="text-xs text-muted-foreground">Ingresos - Egresos</p>
                         </CardContent>
                     </Card>
