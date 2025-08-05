@@ -73,7 +73,7 @@ export default function FinancePage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(summary.balance)}</div>
+                            <div className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(summary.balance)}</div>
                             <p className="text-xs text-muted-foreground">Ingresos - Egresos</p>
                         </CardContent>
                     </Card>
