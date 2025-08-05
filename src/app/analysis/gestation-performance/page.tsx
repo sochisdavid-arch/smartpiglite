@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface Event {
     id: string;
@@ -46,6 +47,12 @@ const METRIC_DEFINITIONS = [
     { key: 'compraGestante', label: 'Compra de gestante' },
     { key: 'compraGestante_p', label: 'Compra de gestante (%)', isPercentage: true },
     { key: 'totalServicios', label: 'Total de Servicios', isBold: true },
+    { key: 'reservicios', label: 'Reservicios' },
+    { key: 'reservicios_p', label: 'Reservicios (%)', isPercentage: true },
+    { key: 'primerizasServidas', label: 'Primerizas servidas' },
+    { key: 'primerizasCubiertas_p', label: 'Primerizas cubiertas (%)', isPercentage: true },
+    { key: 'multiplesMontas_p', label: '% Múltiples montas / I.A.', isPercentage: true },
+    { key: 'montasPorServicio', label: 'Nº de montas / I.A. por servicio' },
     { key: 'servicio7dias', label: 'Servicio hasta 7 días' },
     { key: 'servicio7dias_p', label: 'Servicio hasta 7 días (%)', isPercentage: true },
     { key: 'servicioMas7dias', label: 'Servicios por encima 7 días' },
@@ -53,9 +60,20 @@ const METRIC_DEFINITIONS = [
 
     { key: 'partos', label: 'PARTOS', isHeader: true },
     { key: 'totalPartos', label: 'Total de Partos' },
-    { key: 'partosNormales', label: 'Partos Normales' },
-    { key: 'abortos', label: 'Abortos' },
     { key: 'tasaPartos', label: 'Tasa de Partos (%)', isPercentage: true },
+    
+    { key: 'perdidaReproductiva', label: 'PÉRDIDA REPRODUCTIVA', isHeader: true },
+    { key: 'repeticionCelo', label: 'Repetición de celo' },
+    { key: 'repeticionCelo_p', label: 'Repetición de celo (%)', isPercentage: true },
+    { key: 'abortos', label: 'Abortos' },
+    { key: 'abortos_p', label: 'Aborto (%)', isPercentage: true },
+    { key: 'detectadaVacia', label: 'Detectada vacía' },
+    { key: 'detectadaVacia_p', label: 'Detectada vacía (%)', isPercentage: true },
+    { key: 'descarteGestante', label: 'Descarte de gestante' },
+    { key: 'descarteGestante_p', label: 'Descarte de gestante (%)', isPercentage: true },
+    { key: 'muerteGestante', label: 'Muerte de gestante' },
+    { key: 'muerteGestante_p', label: 'Muerte de gestante (%)', isPercentage: true },
+    { key: 'totalPerdidas', label: 'Total de pérdidas reproductivas', isBold: true },
 ];
 
 
@@ -94,7 +112,7 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
     );
     
     filteredPigs.forEach(pig => {
-        pig.events.forEach(event => {
+        pig.events.forEach((event, index) => {
             const eventDate = parseISO(event.date);
             if (eventDate >= startDate && eventDate <= endDate) {
                 const periodKey = formatPeriodKey(eventDate, unit);
@@ -104,7 +122,6 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
                 }
                 const metrics = periodMetrics.get(periodKey)!;
 
-                // Initialize if not present
                 const initMetric = (k: string) => metrics[k] = metrics[k] || 0;
                 
                 if (event.type === 'Inseminación' || event.type === 'Monta Natural' || event.type === 'Compra Gestante') {
@@ -143,35 +160,60 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
                     initMetric('abortos');
                     metrics['abortos']++;
                 }
+                if (event.type === 'Celo no Servido') { // Assuming this is repeticion de celo
+                    initMetric('repeticionCelo');
+                    metrics['repeticionCelo']++;
+                }
+                 if (event.type === 'Vacia') { // Custom event type
+                    initMetric('detectadaVacia');
+                    metrics['detectadaVacia']++;
+                }
+                 if (event.type === 'Descarte' && index > 0 && ['Inseminación', 'Monta Natural'].includes(pig.events[index-1].type)) {
+                    initMetric('descarteGestante');
+                    metrics['descarteGestante']++;
+                }
+                 if (event.type === 'Muerte' && index > 0 && ['Inseminación', 'Monta Natural'].includes(pig.events[index-1].type)) {
+                    initMetric('muerteGestante');
+                    metrics['muerteGestante']++;
+                }
             }
         });
     });
     
     periodMetrics.forEach(metrics => {
-        if (metrics['totalServicios'] > 0) {
-            metrics['ia_p'] = ((metrics['ia'] || 0) / metrics['totalServicios']) * 100;
-            metrics['montaNatural_p'] = ((metrics['montaNatural'] || 0) / metrics['totalServicios']) * 100;
-            metrics['compraGestante_p'] = ((metrics['compraGestante'] || 0) / metrics['totalServicios']) * 100;
+        const totalServicios = metrics['totalServicios'] || 0;
+        if (totalServicios > 0) {
+            metrics['ia_p'] = (metrics['ia'] || 0) / totalServicios * 100;
+            metrics['montaNatural_p'] = (metrics['montaNatural'] || 0) / totalServicios * 100;
+            metrics['compraGestante_p'] = (metrics['compraGestante'] || 0) / totalServicios * 100;
+            metrics['tasaPartos'] = (metrics['totalPartos'] || 0) / totalServicios * 100;
+            metrics['repeticionCelo_p'] = (metrics['repeticionCelo'] || 0) / totalServicios * 100;
+            metrics['abortos_p'] = (metrics['abortos'] || 0) / totalServicios * 100;
+            metrics['detectadaVacia_p'] = (metrics['detectadaVacia'] || 0) / totalServicios * 100;
+            metrics['descarteGestante_p'] = (metrics['descarteGestante'] || 0) / totalServicios * 100;
+            metrics['muerteGestante_p'] = (metrics['muerteGestante'] || 0) / totalServicios * 100;
         } else {
              metrics['ia_p'] = 0;
              metrics['montaNatural_p'] = 0;
              metrics['compraGestante_p'] = 0;
+             metrics['tasaPartos'] = 0;
+             metrics['repeticionCelo_p'] = 0;
+             metrics['abortos_p'] = 0;
+             metrics['detectadaVacia_p'] = 0;
+             metrics['descarteGestante_p'] = 0;
+             metrics['muerteGestante_p'] = 0;
         }
 
         const totalServiciosPostDestete = (metrics['servicio7dias'] || 0) + (metrics['servicioMas7dias'] || 0);
         if (totalServiciosPostDestete > 0) {
-            metrics['servicio7dias_p'] = ((metrics['servicio7dias'] || 0) / totalServiciosPostDestete) * 100;
-            metrics['servicioMas7dias_p'] = ((metrics['servicioMas7dias'] || 0) / totalServiciosPostDestete) * 100;
+            metrics['servicio7dias_p'] = (metrics['servicio7dias'] || 0) / totalServiciosPostDestete * 100;
+            metrics['servicioMas7dias_p'] = (metrics['servicioMas7dias'] || 0) / totalServiciosPostDestete * 100;
         } else {
             metrics['servicio7dias_p'] = 0;
             metrics['servicioMas7dias_p'] = 0;
         }
 
-        if ((metrics['totalServicios'] || 0) > 0) {
-            metrics['tasaPartos'] = ((metrics['totalPartos'] || 0) / (metrics['totalServicios'] || 0)) * 100;
-        } else {
-            metrics['tasaPartos'] = 0;
-        }
+        metrics['totalPerdidas'] = (metrics['repeticionCelo'] || 0) + (metrics['abortos'] || 0) + (metrics['detectadaVacia'] || 0) + (metrics['descarteGestante'] || 0) + (metrics['muerteGestante'] || 0);
     });
 
     return periodMetrics;
@@ -192,6 +234,7 @@ export default function GestationPerformancePage() {
     const [openCategories, setOpenCategories] = React.useState<{[key: string]: boolean}>({
         'servicios': true,
         'partos': true,
+        'perdidaReproductiva': true,
     });
     
     React.useEffect(() => {
@@ -303,14 +346,15 @@ export default function GestationPerformancePage() {
                                 <TableBody>
                                     {METRIC_DEFINITIONS.map(metric => {
                                         if (metric.isHeader) {
+                                            const categoryKey = metric.key.split('_')[0];
                                             return (
                                                 <TableRow key={metric.key} className="bg-muted/50 hover:bg-muted/60 sticky left-0">
                                                     <TableCell 
                                                         className="font-bold sticky left-0 bg-muted/50 z-10 cursor-pointer" 
-                                                        onClick={() => toggleCategory(metric.key)}
+                                                        onClick={() => toggleCategory(categoryKey)}
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            {openCategories[metric.key] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                            {openCategories[categoryKey] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                                             {metric.label}
                                                         </div>
                                                     </TableCell>
@@ -318,8 +362,9 @@ export default function GestationPerformancePage() {
                                                 </TableRow>
                                             )
                                         }
-
-                                        if (!openCategories[metric.key.split('_')[0]]) return null;
+                                        
+                                        const categoryKey = metric.key.split('_')[0];
+                                        if (!openCategories[categoryKey]) return null;
 
                                         let total = 0;
                                         let count = 0;
@@ -334,23 +379,25 @@ export default function GestationPerformancePage() {
 
                                         const average = count > 0 ? total / count : 0;
                                         
-                                        const sumTotal = ['ia', 'montaNatural', 'compraGestante', 'totalServicios', 'servicio7dias', 'servicioMas7dias', 'totalPartos', 'abortos'].includes(metric.key);
-                                        const avgTotal = ['ia_p', 'montaNatural_p', 'compraGestante_p', 'servicio7dias_p', 'servicioMas7dias_p', 'tasaPartos'].includes(metric.key);
+                                        const sumTotal = !metric.key.includes('_p') && metric.key !== 'montasPorServicio';
+                                        const avgTotal = metric.key.includes('_p') || metric.key === 'montasPorServicio';
 
                                         let finalTotalValue: number | undefined;
                                         if (sumTotal) {
                                             finalTotalValue = total;
                                         } else if (avgTotal) {
-                                             // Recalculate percentage for total period
-                                            const numeratorKey = metric.key.replace('_p', '');
-                                            let denominatorKey;
-                                            if (['ia_p', 'montaNatural_p', 'compraGestante_p'].includes(metric.key)) denominatorKey = 'totalServicios';
-                                            else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) denominatorKey = 'totalServiciosPostDestete'; // special case
-                                            else if (metric.key === 'tasaPartos') denominatorKey = 'totalServicios';
-
                                             let totalNumerator = 0;
                                             let totalDenominator = 0;
                                             metrics.forEach(m => {
+                                                const numeratorKey = metric.key.replace('_p', '');
+                                                let denominatorKey: string | undefined;
+
+                                                if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p'].includes(metric.key)) {
+                                                    denominatorKey = 'totalServicios';
+                                                } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
+                                                    denominatorKey = 'totalServiciosPostDestete'; // Special case
+                                                }
+
                                                 totalNumerator += m[numeratorKey] || 0;
                                                 if (denominatorKey === 'totalServiciosPostDestete') {
                                                     totalDenominator += (m['servicio7dias'] || 0) + (m['servicioMas7dias'] || 0);
@@ -358,7 +405,14 @@ export default function GestationPerformancePage() {
                                                     totalDenominator += m[denominatorKey] || 0;
                                                 }
                                             });
-                                            finalTotalValue = totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+
+                                            if (metric.key === 'montasPorServicio') {
+                                                finalTotalValue = average; // For this specific metric, average is more representative than a re-calculated total
+                                            } else if (totalDenominator > 0) {
+                                                finalTotalValue = (totalNumerator / totalDenominator) * 100;
+                                            } else {
+                                                finalTotalValue = 0;
+                                            }
                                         }
                                         
                                         return (
@@ -382,6 +436,3 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
-
-
-    
