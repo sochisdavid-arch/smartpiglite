@@ -17,6 +17,15 @@ const kpiData = [
   { title: "Intervalo Destete-Servicio (IDS)", value: "5.8 días", icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
 ];
 
+const pigBreeds = [
+  "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
+];
+
+const geneticLines = [
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+];
+
+
 // Mock data for charts
 const farrowingRateData = [
     { breed: 'Duroc', rate: 88 },
@@ -39,6 +48,7 @@ export default function GestationPerformancePage() {
     const [period, setPeriod] = React.useState('anual');
     const [year, setYear] = React.useState(new Date().getFullYear().toString());
     const [breed, setBreed] = React.useState('todas');
+    const [geneticLine, setGeneticLine] = React.useState('todas');
 
     return (
         <AppLayout>
@@ -93,9 +103,14 @@ export default function GestationPerformancePage() {
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Raza" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="todas">Todas las Razas</SelectItem>
-                                    <SelectItem value="duroc">Duroc</SelectItem>
-                                    <SelectItem value="landrace">Landrace</SelectItem>
-                                    <SelectItem value="yorkshire">Yorkshire</SelectItem>
+                                    {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={geneticLine} onValueChange={setGeneticLine}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Línea Genética" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="todas">Todas las Líneas</SelectItem>
+                                    {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
