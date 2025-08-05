@@ -41,7 +41,8 @@ import {
   LineChart,
   ChevronDown,
   UserSearch,
-  Activity
+  Activity,
+  BarChart2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,6 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/finance', label: 'Financiero', icon: Landmark },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
+    { href: '/analysis/lactation-analysis', label: 'Análisis de Lactancia', icon: BarChart2 },
   ];
   
   const gestationAnalysisMenuItems = [
@@ -82,7 +84,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
   
   const productionAnalysisMenuItems = [
-       { href: '/analysis/lactation-analysis', label: 'Análisis de Lactancia' },
        { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
   ];
 
