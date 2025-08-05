@@ -84,7 +84,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   const productionAnalysisMenuItems = [
        { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
-       { href: '/analysis/lactation-analysis', label: 'Análisis de Lactancia' },
   ];
 
   const isGestationAnalysisActive = gestationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
@@ -142,6 +141,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </SidebarMenuSub>
                     </CollapsibleContent>
                 </Collapsible>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/analysis/lactation-analysis'}
+                >
+                    <Link href="/analysis/lactation-analysis">
+                        <Activity />
+                        <span>Análisis de Lactancia</span>
+                    </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
                  <Collapsible>
