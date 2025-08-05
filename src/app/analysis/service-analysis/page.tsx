@@ -9,12 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter } from 'lucide-react';
+import { Filter, Download } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, differenceInCalendarDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Event {
     id: string;
@@ -221,6 +225,49 @@ export default function ServiceAnalysisPage() {
     React.useEffect(() => {
         handleFilter();
     }, [handleFilter]);
+    
+    const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
+        const head = [
+            ['Madre', 'Fecha', 'Ciclo', 'Raza', 'Nº Montas', 'Empleado', 'Tipo', 'Reservicio']
+        ];
+        const body = serviceRecords.map(r => [
+            r.sowId,
+            isValid(parseISO(r.date)) ? format(parseISO(r.date), 'dd/MM/yyyy') : 'N/A',
+            r.cycle,
+            r.breed,
+            r.mounts,
+            r.employee,
+            r.type,
+            r.isRepeat ? 'Sí' : 'No'
+        ]);
+
+        const title = "Análisis de Servicios - Listado de Servicios";
+        const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+
+        if (formatType === 'pdf') {
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.text(title, 14, 16);
+            doc.setFontSize(10);
+            doc.text(dateRange, 14, 22);
+            autoTable(doc, {
+                head: head,
+                body: body,
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            doc.save(`analisis_servicios_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        if (formatType === 'csv' || formatType === 'xlsx') {
+            const dataToExport = [head[0], ...body];
+            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Servicios");
+            XLSX.writeFile(wb, `analisis_servicios_${new Date().toISOString().split('T')[0]}.${formatType}`);
+        }
+    };
+
 
     const kpiCards = [
         { title: 'TOTAL DE SERVICIOS', value: kpiData?.totalServices?.toFixed(0) || '0', subValue: '' },
@@ -391,7 +438,22 @@ export default function ServiceAnalysisPage() {
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Listado de Servicios</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Listado de Servicios</CardTitle>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Exportar
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -436,5 +498,7 @@ export default function ServiceAnalysisPage() {
         </AppLayout>
     );
 }
+
+    
 
     

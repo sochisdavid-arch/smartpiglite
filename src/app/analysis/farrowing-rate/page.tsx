@@ -9,11 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Circle } from 'lucide-react';
+import { Filter, Circle, Download } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Event {
     id: string;
@@ -248,6 +252,46 @@ export default function FarrowingRatePage() {
         { title: 'MUERTE (%)', value: totalMetrics.deathRate.toFixed(2), isGood: totalMetrics.deathRate < 2, goal: '< 2%' },
     ];
     
+     const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
+        const head = [
+            ['Madre', 'Ciclo', 'Fecha Servicio', 'Resultado', 'Fecha Resultado', 'Días Gestación']
+        ];
+        const body = serviceOutcomes.map(o => [
+            o.sowId,
+            o.cycle,
+            isValid(parseISO(o.serviceDate)) ? format(parseISO(o.serviceDate), 'dd/MM/yyyy') : 'N/A',
+            o.outcome,
+            isValid(parseISO(o.outcomeDate)) ? format(parseISO(o.outcomeDate), 'dd/MM/yyyy') : 'N/A',
+            o.gestationDays
+        ]);
+
+        const title = "Análisis de Tasa de Parición - Listado de Madres";
+        const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+
+        if (formatType === 'pdf') {
+            const doc = new jsPDF({ orientation: 'portrait' });
+            doc.text(title, 14, 16);
+            doc.setFontSize(10);
+            doc.text(dateRange, 14, 22);
+            autoTable(doc, {
+                head: head,
+                body: body,
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            doc.save(`tasa_paricion_listado_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        if (formatType === 'csv' || formatType === 'xlsx') {
+            const dataToExport = [head[0], ...body];
+            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Tasa Parición");
+            XLSX.writeFile(wb, `tasa_paricion_listado_${new Date().toISOString().split('T')[0]}.${formatType}`);
+        }
+    };
+    
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -387,7 +431,24 @@ export default function FarrowingRatePage() {
                 </Card>
 
                  <Card>
-                    <CardHeader><CardTitle>Listado de Madres</CardTitle></CardHeader>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Listado de Madres</CardTitle>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Exportar
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
                     <CardContent>
                         <Table>
                              <TableHeader><TableRow><TableHead>Madre</TableHead><TableHead>Ciclo</TableHead><TableHead>Fecha Servicio</TableHead><TableHead>Resultado</TableHead><TableHead>Fecha Resultado</TableHead><TableHead>Días Gestación</TableHead></TableRow></TableHeader>
@@ -409,5 +470,7 @@ export default function FarrowingRatePage() {
             </div>
         </AppLayout>
     );
+
+    
 
     

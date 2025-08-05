@@ -8,10 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, ChevronsUpDown, UserSearch } from 'lucide-react';
+import { Check, ChevronsUpDown, UserSearch, Download } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Event {
     id: string;
@@ -174,6 +178,46 @@ export default function SowCardPage() {
         { title: "Prom. Días No Productivos", value: sowData?.kpis.avgNPD || 0 },
     ];
     
+     const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
+        if (!sowData) return;
+
+        const head = [
+            ['Ciclo', 'F. Servicio', 'F. Parto', 'F. Destete', 'NV', 'Dest.', 'DNP']
+        ];
+        const body = sowData.cycles.map(cycle => [
+            cycle.cycle,
+            cycle.serviceDate ? format(parseISO(cycle.serviceDate), 'dd/MM/yy') : '-',
+            cycle.farrowingDate ? format(parseISO(cycle.farrowingDate), 'dd/MM/yy') : '-',
+            cycle.weaningDate ? format(parseISO(cycle.weaningDate), 'dd/MM/yy') : '-',
+            cycle.liveBorn || 0,
+            cycle.pigletsWeaned || 0,
+            cycle.nonProductiveDays || 0
+        ]);
+
+        const title = `Ficha de la Madre: ${selectedSow?.id}`;
+
+        if (formatType === 'pdf') {
+            const doc = new jsPDF();
+            doc.text(title, 14, 16);
+            autoTable(doc, {
+                head: head,
+                body: body,
+                startY: 22,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            doc.save(`ficha_madre_${selectedSow?.id}_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        if (formatType === 'csv' || formatType === 'xlsx') {
+            const dataToExport = [head[0], ...body];
+            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Historial Ciclos");
+            XLSX.writeFile(wb, `ficha_madre_${selectedSow?.id}_${new Date().toISOString().split('T')[0]}.${formatType}`);
+        }
+    };
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -250,7 +294,23 @@ export default function SowCardPage() {
                         
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <Card className="lg:col-span-2">
-                                <CardHeader><CardTitle>Historial de Ciclos</CardTitle></CardHeader>
+                                <CardHeader>
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle>Historial de Ciclos</CardTitle>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="sm">
+                                                    <Download className="mr-2 h-4 w-4" /> Exportar
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handleExport('pdf')}>PDF</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleExport('csv')}>CSV</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Excel</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </CardHeader>
                                 <CardContent>
                                     <Table>
                                         <TableHeader><TableRow>
@@ -294,3 +354,6 @@ export default function SowCardPage() {
     );
 }
 
+
+
+    
