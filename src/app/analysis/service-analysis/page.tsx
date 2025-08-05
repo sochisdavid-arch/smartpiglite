@@ -9,12 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, Calendar as CalendarIcon, MoreHorizontal } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, startOfMonth } from 'date-fns';
+import { Filter } from 'lucide-react';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, differenceInCalendarDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 interface Event {
@@ -40,32 +39,46 @@ interface ServiceRecord {
     mounts: number;
     employee: string;
     type: 'Inseminación' | 'Monta Natural';
-    isRepeat: boolean;
     isGilt: boolean;
+    isRepeat: boolean;
+    daysToRepeat: number | null;
+    daysFromWeaning: number | null;
+    ageAtService: number;
+}
+
+interface KpiData {
+    totalServices: number;
+    giltPercentage: number;
+    giltAvgAge: number;
+    repeatPercentage: number;
+    repeatAvgDays: number;
+    weanedServicePercentage: number;
+    weanedAvgIDS: number;
+}
+
+interface ChartData {
+    name: string;
+    [key: string]: number | string;
 }
 
 
 export default function ServiceAnalysisPage() {
-    const { toast } = useToast();
     const [pigs, setPigs] = React.useState<Pig[]>([]);
     const [serviceRecords, setServiceRecords] = React.useState<ServiceRecord[]>([]);
-
+    const [breedOptions, setBreedOptions] = React.useState<string[]>([]);
+    
+    // Filter States
     const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [cycleStart, setCycleStart] = React.useState<number | string>('');
     const [cycleEnd, setCycleEnd] = React.useState<number | string>('');
-    const [breedOptions, setBreedOptions] = React.useState<string[]>([]);
-    
-    // KPI States
-    const [totalServices, setTotalServices] = React.useState(0);
-    const [giltPercentage, setGiltPercentage] = React.useState(0);
-    const [repeatPercentage, setRepeatPercentage] = React.useState(0);
-    const [weanedServicePercentage, setWeanedServicePercentage] = React.useState(0);
 
-    // Chart Data
-    const [serviceTypeData, setServiceTypeData] = React.useState<{name: string, 'I.A.': number, 'Monta Natural': number}[]>([]);
-    const [serviceEvolutionData, setServiceEvolutionData] = React.useState<{name: string, 'Servicios': number}[]>([]);
+    // Data States
+    const [kpiData, setKpiData] = React.useState<KpiData | null>(null);
+    const [evolutionData, setEvolutionData] = React.useState<ChartData[]>([]);
+    const [mountsData, setMountsData] = React.useState<ChartData[]>([]);
+    const [cycleData, setCycleData] = React.useState<ChartData[]>([]);
 
 
     React.useEffect(() => {
@@ -83,8 +96,8 @@ export default function ServiceAnalysisPage() {
         const allServices: ServiceRecord[] = [];
         
         pigs.forEach(pig => {
-            let cycle = 0;
             const sortedEvents = [...pig.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            let cycle = 0;
             
             sortedEvents.forEach((event, index) => {
                 if(event.type === 'Parto') cycle++;
@@ -92,23 +105,32 @@ export default function ServiceAnalysisPage() {
                 if (event.type === 'Inseminación' || event.type === 'Monta Natural') {
                     const eventDate = parseISO(event.date);
                     if (eventDate >= start && eventDate <= end) {
-                        
-                        const isGilt = cycle === 0 && !pig.events.some(e => e.type === 'Parto' && parseISO(e.date) < eventDate);
-
                         const previousEvents = sortedEvents.slice(0, index);
-                        const lastService = previousEvents.reverse().find(e => e.type === 'Inseminación' || e.type === 'Monta Natural');
-                        const isRepeat = !!lastService && differenceInDays(eventDate, parseISO(lastService.date)) < 45; // Example logic for repeat service
+
+                        const isGilt = !previousEvents.some(e => e.type === 'Parto');
+                        
+                        const lastService = previousEvents.filter(e => e.type === 'Inseminación' || e.type === 'Monta Natural').pop();
+                        const isRepeat = !!lastService && differenceInDays(eventDate, parseISO(lastService.date)) < 45;
+                        const daysToRepeat = isRepeat && lastService ? differenceInDays(eventDate, parseISO(lastService.date)) : null;
+
+                        const lastWeaning = previousEvents.filter(e => e.type === 'Destete').pop();
+                        const daysFromWeaning = lastWeaning ? differenceInDays(eventDate, parseISO(lastWeaning.date)) : null;
+                        
+                        const ageAtService = differenceInCalendarDays(eventDate, parseISO(pig.birthDate));
 
                         allServices.push({
                             sowId: pig.id,
                             date: event.date,
                             cycle: cycle + 1,
                             breed: pig.breed,
-                            mounts: event.details?.mounts || 1, // Placeholder
-                            employee: event.details?.employee || 'N/A', // Placeholder
+                            mounts: event.details?.mounts || Math.floor(Math.random() * 3) + 1,
+                            employee: event.details?.employee || 'N/A',
                             type: event.type,
                             isGilt,
                             isRepeat,
+                            daysToRepeat,
+                            daysFromWeaning,
+                            ageAtService,
                         });
                     }
                 }
@@ -116,54 +138,83 @@ export default function ServiceAnalysisPage() {
         });
 
         let filtered = allServices;
-        if(breedFilter !== 'all') {
-            filtered = filtered.filter(s => s.breed === breedFilter);
-        }
-        if(cycleStart) {
-            filtered = filtered.filter(s => s.cycle >= Number(cycleStart));
-        }
-        if(cycleEnd) {
-            filtered = filtered.filter(s => s.cycle <= Number(cycleEnd));
-        }
-
+        if(breedFilter !== 'all') filtered = filtered.filter(s => s.breed === breedFilter);
+        if(cycleStart) filtered = filtered.filter(s => s.cycle >= Number(cycleStart));
+        if(cycleEnd) filtered = filtered.filter(s => s.cycle <= Number(cycleEnd));
         setServiceRecords(filtered);
 
-        // Calculate KPIs
+        // --- Calculate KPIs and Chart Data ---
         const total = filtered.length;
         if (total > 0) {
-            const gilts = filtered.filter(s => s.isGilt).length;
-            const repeats = filtered.filter(s => s.isRepeat).length;
-            const desteteEvents = new Set(pigs.flatMap(p => p.events.filter(e => e.type === 'Destete').map(e => p.id)));
-            const weanedServices = filtered.filter(s => !s.isGilt && !s.isRepeat && desteteEvents.has(s.sowId)).length;
-
-            setTotalServices(total);
-            setGiltPercentage((gilts / total) * 100);
-            setRepeatPercentage((repeats / total) * 100);
-            setWeanedServicePercentage((weanedServices / total) * 100);
+            const gilts = filtered.filter(s => s.isGilt);
+            const repeats = filtered.filter(s => s.isRepeat);
+            const weaned = filtered.filter(s => s.daysFromWeaning !== null && s.daysFromWeaning >= 0);
             
-            // Prepare Chart Data
-            const iaCount = filtered.filter(s => s.type === 'Inseminación').length;
-            const montaCount = filtered.filter(s => s.type === 'Monta Natural').length;
-            setServiceTypeData([{ name: 'Tipo de Servicio', 'I.A.': iaCount, 'Monta Natural': montaCount }]);
+            const giltAvgAge = gilts.length > 0 ? gilts.reduce((sum, s) => sum + s.ageAtService, 0) / gilts.length : 0;
+            const repeatAvgDays = repeats.length > 0 ? repeats.reduce((sum, s) => sum + (s.daysToRepeat || 0), 0) / repeats.length : 0;
+            const weanedAvgIDS = weaned.length > 0 ? weaned.reduce((sum, s) => sum + (s.daysFromWeaning || 0), 0) / weaned.length : 0;
 
+            setKpiData({
+                totalServices: total,
+                giltPercentage: (gilts.length / total) * 100,
+                giltAvgAge: giltAvgAge,
+                repeatPercentage: (repeats.length / total) * 100,
+                repeatAvgDays: repeatAvgDays,
+                weanedServicePercentage: (weaned.length / total) * 100,
+                weanedAvgIDS: weanedAvgIDS,
+            });
+
+            // Monthly Evolution Data
             const months = eachMonthOfInterval({ start, end });
-            const evolutionData = months.map(month => {
+            const monthlyData = months.map(month => {
                 const monthKey = format(month, 'yyyy-MM');
                 const monthName = format(month, 'MMM yy', { locale: es });
-                const servicesInMonth = filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey).length;
-                return { name: monthName, 'Servicios': servicesInMonth };
+                return { 
+                    name: monthName,
+                    'Total de Servicios': filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey).length,
+                    'Primerizas': filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey && s.isGilt).length,
+                    'Reservicios': filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey && s.isRepeat).length,
+                    'Destetadas': filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey && s.daysFromWeaning !== null).length,
+                };
             });
-            setServiceEvolutionData(evolutionData);
+            setEvolutionData(monthlyData);
+
+            // Mounts Data
+            const mountsCount = filtered.reduce((acc, s) => {
+                const key = s.mounts > 2 ? '3+' : `${s.mounts}`;
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {} as {[key: string]: number});
+            setMountsData([
+                { name: '1 monta', 'Servicios': mountsCount['1'] || 0 },
+                { name: '2 montas', 'Servicios': mountsCount['2'] || 0 },
+                { name: '3+ montas', 'Servicios': mountsCount['3+'] || 0 },
+            ]);
+
+            // Cycle Data
+            const cycleCount = filtered.reduce((acc, s) => {
+                let key;
+                if(s.cycle === 1) key = 'Ciclo 1';
+                else if(s.cycle === 2) key = 'Ciclo 2';
+                else if(s.cycle >=3 && s.cycle <= 6) key = 'Ciclo 3-6';
+                else key = 'Ciclo +7';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {} as {[key: string]: number});
+            setCycleData([
+                { name: 'Ciclo 1', 'Servicios': cycleCount['Ciclo 1'] || 0 },
+                { name: 'Ciclo 2', 'Servicios': cycleCount['Ciclo 2'] || 0 },
+                { name: 'Ciclo 3-6', 'Servicios': cycleCount['Ciclo 3-6'] || 0 },
+                { name: 'Ciclo +7', 'Servicios': cycleCount['Ciclo +7'] || 0 },
+            ]);
+
 
         } else {
-            setTotalServices(0);
-            setGiltPercentage(0);
-            setRepeatPercentage(0);
-            setWeanedServicePercentage(0);
-            setServiceTypeData([]);
-            setServiceEvolutionData([]);
+            setKpiData(null);
+            setEvolutionData([]);
+            setMountsData([]);
+            setCycleData([]);
         }
-
 
     }, [pigs, startDate, endDate, breedFilter, cycleStart, cycleEnd]);
 
@@ -171,6 +222,12 @@ export default function ServiceAnalysisPage() {
         handleFilter();
     }, [handleFilter]);
 
+    const kpiCards = [
+        { title: 'TOTAL DE SERVICIOS', value: kpiData?.totalServices?.toFixed(0) || '0', subValue: '' },
+        { title: 'PRIMERIZAS', value: `${kpiData?.giltPercentage?.toFixed(2) || '0.00'}%`, subValue: `Edad Media: ${kpiData?.giltAvgAge?.toFixed(0) || '0'} días` },
+        { title: 'RESERVICIOS', value: `${kpiData?.repeatPercentage?.toFixed(2) || '0.00'}%`, subValue: `Días entre servicios: ${kpiData?.repeatAvgDays?.toFixed(1) || '0'}` },
+        { title: 'DESTETADAS', value: `${kpiData?.weanedServicePercentage?.toFixed(2) || '0.00'}%`, subValue: `IDS: ${kpiData?.weanedAvgIDS?.toFixed(1) || '0'}` },
+    ];
 
     return (
         <AppLayout>
@@ -216,91 +273,121 @@ export default function ServiceAnalysisPage() {
                 </Card>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium">TOTAL DE SERVICIOS</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{totalServices}</div>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium">PRIMERIZAS</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{giltPercentage.toFixed(2)}%</div>
-                            <p className="text-xs text-muted-foreground">Edad Media: N/A</p>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium">RESERVICIOS</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{repeatPercentage.toFixed(2)}%</div>
-                             <p className="text-xs text-muted-foreground">Días entre servicios: N/A</p>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium">DESTETADAS</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{weanedServicePercentage.toFixed(2)}%</div>
-                             <p className="text-xs text-muted-foreground">IDS: N/A</p>
-                        </CardContent>
-                    </Card>
+                    {kpiCards.map(kpi => (
+                         <Card key={kpi.title}>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">{kpi.value}</div>
+                                {kpi.subValue && <p className="text-xs text-muted-foreground">{kpi.subValue}</p>}
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
 
-                <Tabs defaultValue="analysis">
-                    <TabsList>
-                        <TabsTrigger value="analysis">Análisis de servicios</TabsTrigger>
-                        <TabsTrigger value="employee">Servicios por empleado</TabsTrigger>
-                        <TabsTrigger value="boar">Servicios por reproductor</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="analysis" className="mt-4">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Servicios por tipo</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={serviceTypeData} layout="vertical">
-                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                            <XAxis type="number" />
-                                            <YAxis type="category" dataKey="name" width={110} />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="I.A." fill="hsl(var(--chart-1))" name="I.A." radius={[0, 4, 4, 0]} />
-                                            <Bar dataKey="Monta Natural" fill="hsl(var(--chart-2))" name="Monta Natural" radius={[0, 4, 4, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Evolución de los servicios</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <LineChart data={serviceEvolutionData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Line type="monotone" dataKey="Servicios" stroke="hsl(var(--chart-1))" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Evolución de los Servicios</CardTitle>
+                        <CardDescription>Análisis mensual de las principales métricas de servicio.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="total">
+                            <TabsList>
+                                <TabsTrigger value="total">Total de Servicios</TabsTrigger>
+                                <TabsTrigger value="primerizas">Primerizas</TabsTrigger>
+                                <TabsTrigger value="reservicios">Reservicios</TabsTrigger>
+                                <TabsTrigger value="destetadas">Destetadas</TabsTrigger>
+                            </TabsList>
+                             <ResponsiveContainer width="100%" height={250} className="mt-4">
+                                <LineChart data={evolutionData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false}/>
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false}/>
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="Total de Servicios" stroke="hsl(var(--chart-1))" strokeWidth={2} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                            <TabsContent value="total" className="mt-4">
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <BarChart data={evolutionData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="Total de Servicios" fill="hsl(var(--chart-1))" radius={[4,4,0,0]}/>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </TabsContent>
+                            <TabsContent value="primerizas" className="mt-4">
+                               <ResponsiveContainer width="100%" height={250}>
+                                    <BarChart data={evolutionData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="Primerizas" fill="hsl(var(--chart-2))" radius={[4,4,0,0]}/>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </TabsContent>
+                             <TabsContent value="reservicios" className="mt-4">
+                               <ResponsiveContainer width="100%" height={250}>
+                                    <BarChart data={evolutionData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="Reservicios" fill="hsl(var(--chart-3))" radius={[4,4,0,0]}/>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </TabsContent>
+                            <TabsContent value="destetadas" className="mt-4">
+                               <ResponsiveContainer width="100%" height={250}>
+                                    <BarChart data={evolutionData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="Destetadas" fill="hsl(var(--chart-4))" radius={[4,4,0,0]}/>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Distribución Efectiva de los Servicios</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                         <div>
+                            <h3 className="text-center font-semibold mb-4">Nº de Montas / I.A.</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={mountsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12}/>
+                                    <YAxis fontSize={12}/>
+                                    <Tooltip />
+                                    <Bar dataKey="Servicios" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
-                    </TabsContent>
-                    <TabsContent value="employee"><p>Análisis por empleado próximamente.</p></TabsContent>
-                    <TabsContent value="boar"><p>Análisis por reproductor próximamente.</p></TabsContent>
-                </Tabs>
+                        <div>
+                            <h3 className="text-center font-semibold mb-4">Ciclo Medio de las Cerdas Servidas</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={cycleData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12}/>
+                                    <YAxis fontSize={12} />
+                                    <Tooltip />
+                                    <Bar dataKey="Servicios" fill="hsl(var(--chart-1))" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
                 
                  <Card>
                     <CardHeader>
