@@ -14,7 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { differenceInDays, parseISO, getMonth, isWithinInterval, startOfYear, endOfYear, format } from 'date-fns';
+import { differenceInDays, parseISO, getMonth, isWithinInterval, startOfYear, endOfYear, format, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,19 @@ interface Pig {
     events: Event[];
 }
 
+type GroupBy = 'month' | 'year';
+
+interface KpiTableData {
+    headers: string[];
+    rows: {
+        metric: string;
+        isTotal?: boolean;
+        isPercentage?: boolean;
+        values: (string | number)[];
+    }[];
+}
+
+
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
 ];
@@ -53,13 +66,14 @@ export default function GestationPerformancePage() {
         to: format(endOfYear(new Date()), 'yyyy-MM-dd'),
     });
     const [genetics, setGenetics] = React.useState('todas');
+    const [groupBy, setGroupBy] = React.useState<GroupBy>('year');
     const [filteredData, setFilteredData] = React.useState<any>(null);
 
     const handleDateChange = (field: 'from' | 'to', value: string) => {
         setDateRange(prev => ({...prev, [field]: value}));
     };
 
-    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, range: {from: string, to: string}) => {
+    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, range: {from: string, to: string}, groupBy: GroupBy) => {
         if (!range || !range.from || !range.to) {
             return null;
         }
@@ -73,107 +87,152 @@ export default function GestationPerformancePage() {
                 p.breed.toLowerCase().replace(/ /g, '-') === selectedGenetics.toLowerCase()
             );
         }
+        
+        const periodData: { [key: string]: any } = {};
+        const periodKeys: string[] = [];
 
-        let services = 0;
-        let successfulServices = 0;
-        let totalLiveBorn = 0;
-        let farrowings = 0;
-        let abortions = 0;
-        let heatRepeats = 0;
-        let emptyDetections = 0; // Not tracked yet
-        let sowDiscards = 0; // Not tracked yet
-        let sowDeaths = 0; // Not tracked yet
-        let idsSum = 0;
-        let idsCount = 0;
-
-        const monthlyLiveBorn: { [key: string]: { total: number, count: number } } = {};
-        const farrowingRateByBreed: { [key: string]: { services: number, farrowings: number } } = {};
+        const getPeriodKey = (date: Date) => {
+            if (groupBy === 'year') return getYear(date).toString();
+            return format(date, 'yyyy-MM');
+        };
+        
+        const formatPeriodKey = (key: string) => {
+            if (groupBy === 'year') return key;
+            return format(parseISO(key), 'MMM yy', { locale: es });
+        };
+        
+        // Initialize data structure for each period
+        relevantPigs.forEach(pig => {
+            pig.events.forEach(event => {
+                const eventDate = parseISO(event.date);
+                if (!isWithinInterval(eventDate, dateRangeForFiltering)) return;
+                
+                const periodKey = getPeriodKey(eventDate);
+                if (!periodData[periodKey]) {
+                    periodData[periodKey] = {
+                        services: 0, farrowings: 0, totalLiveBorn: 0, abortions: 0, heatRepeats: 0,
+                        idsSum: 0, idsCount: 0,
+                    };
+                    if(!periodKeys.includes(periodKey)) periodKeys.push(periodKey);
+                }
+            });
+        });
+        
+        periodKeys.sort();
 
         relevantPigs.forEach(pig => {
-            const breedKey = pig.breed || 'Desconocida';
-            if (!farrowingRateByBreed[breedKey]) {
-                farrowingRateByBreed[breedKey] = { services: 0, farrowings: 0 };
-            }
-
             pig.events.forEach((event, index) => {
                 const eventDate = parseISO(event.date);
                 if (!isWithinInterval(eventDate, dateRangeForFiltering)) return;
 
-                if (event.type === 'Inseminación') {
-                    services++;
-                    farrowingRateByBreed[breedKey].services++;
-                }
+                const periodKey = getPeriodKey(eventDate);
+                const data = periodData[periodKey];
+
+                if (event.type === 'Inseminación') data.services++;
                 if (event.type === 'Parto') {
-                    farrowings++;
-                    farrowingRateByBreed[breedKey].farrowings++;
-                    totalLiveBorn += event.liveBorn || 0;
-                    
-                    const month = getMonth(eventDate);
-                    if (!monthlyLiveBorn[month]) {
-                        monthlyLiveBorn[month] = { total: 0, count: 0 };
-                    }
-                    monthlyLiveBorn[month].total += event.liveBorn || 0;
-                    monthlyLiveBorn[month].count++;
+                    data.farrowings++;
+                    data.totalLiveBorn += event.liveBorn || 0;
                 }
-                if (event.type === 'Aborto') {
-                    abortions++;
-                }
+                if (event.type === 'Aborto') data.abortions++;
                 if (event.type === 'Celo no Servido' || (event.type === 'Celo' && pig.events[index-1]?.type !== 'Inseminación')) {
-                    heatRepeats++;
+                    data.heatRepeats++;
                 }
                 if (event.type === 'Destete' && index > 0 && pig.events[index - 1].type === 'Inseminación') {
                     const inseminationDate = parseISO(pig.events[index-1].date);
                     const diff = differenceInDays(inseminationDate, eventDate);
                     if (diff > 0) {
-                        idsSum += diff;
-                        idsCount++;
+                        data.idsSum += diff;
+                        data.idsCount++;
                     }
                 }
             });
         });
-        
-        successfulServices = farrowings;
-        const totalServicesForRate = services;
 
-        const farrowingRate = totalServicesForRate > 0 ? (successfulServices / totalServicesForRate) * 100 : 0;
-        const avgLiveBorn = farrowings > 0 ? totalLiveBorn / farrowings : 0;
-        const avgIds = idsCount > 0 ? idsSum / idsCount : 0;
-        const dnp = avgIds + 21; // Simplified DNP
-        const heatRepeatRate = services > 0 ? (heatRepeats / services) * 100 : 0;
-        const abortionRate = services > 0 ? (abortions / services) * 100 : 0;
-        
-        const reproductiveLosses = heatRepeats + abortions + emptyDetections + sowDiscards + sowDeaths;
+        // --- Grand Totals ---
+        const totalServices = Object.values(periodData).reduce((sum, d) => sum + d.services, 0);
+        const totalFarrowings = Object.values(periodData).reduce((sum, d) => sum + d.farrowings, 0);
+        const totalLiveBorn = Object.values(periodData).reduce((sum, d) => sum + d.totalLiveBorn, 0);
+        const totalHeatRepeats = Object.values(periodData).reduce((sum, d) => sum + d.heatRepeats, 0);
+        const totalAbortions = Object.values(periodData).reduce((sum, d) => sum + d.abortions, 0);
+        const totalIdsSum = Object.values(periodData).reduce((sum, d) => sum + d.idsSum, 0);
+        const totalIdsCount = Object.values(periodData).reduce((sum, d) => sum + d.idsCount, 0);
 
-        const servicesKpiData = [
-            { metric: "I.A.", value: services },
-            { metric: "I.A. (%)", value: `100.0%` }, // Assuming all are IA for now
-            { metric: "Monta natural", value: "0" },
-            { metric: "Monta natural (%)", value: "0.0%" },
-            { metric: "Total de Servicios", value: services, isTotal: true },
-            { metric: "Reservicios", value: heatRepeats },
-            { metric: "Reservicios (%)", value: `${heatRepeatRate.toFixed(1)}%` },
-        ];
-        
-        const reproductiveLossData = [
-            { metric: "Repetición de celo", value: heatRepeats },
-            { metric: "Repetición de celo (%)", value: `${heatRepeatRate.toFixed(1)}%` },
-            { metric: "Aborto", value: abortions },
-            { metric: "Aborto (%)", value: `${abortionRate.toFixed(1)}%` },
-            { metric: "Total de pérdidas reproductivas", value: reproductiveLosses, isTotal: true },
-        ];
-
-        const intervalsData = [
-            { metric: "Destete - Servicio", value: `${avgIds.toFixed(1)} días` },
-        ];
+        const totalFarrowingRate = totalServices > 0 ? (totalFarrowings / totalServices) * 100 : 0;
+        const totalAvgLiveBorn = totalFarrowings > 0 ? totalLiveBorn / totalFarrowings : 0;
+        const totalAvgIds = totalIdsCount > 0 ? totalIdsSum / totalIdsCount : 0;
+        const totalDnp = totalAvgIds + 21;
+        const totalHeatRepeatRate = totalServices > 0 ? (totalHeatRepeats / totalServices) * 100 : 0;
+        const totalAbortionRate = totalServices > 0 ? (totalAbortions / totalServices) * 100 : 0;
 
         const kpiData = [
-            { title: "Tasa de Partos", value: `${farrowingRate.toFixed(1)}%`, icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
-            { title: "Promedio Nacidos Vivos / Parto", value: avgLiveBorn.toFixed(1), icon: Baby, description: "Promedio de lechones nacidos vivos por cada parto." },
-            { title: "Días No Productivos (DNP)", value: `${dnp.toFixed(1)} días`, icon: Activity, description: "Promedio de días que una cerda no está gestando ni lactando." },
-            { title: "Tasa de Repetición de Celo", value: `${heatRepeatRate.toFixed(1)}%`, icon: Repeat, description: "Porcentaje de cerdas que repiten celo." },
-            { title: "Tasa de Abortos", value: `${abortionRate.toFixed(1)}%`, icon: XCircle, description: "Porcentaje de gestaciones que terminan en aborto." },
-            { title: "Intervalo Destete-Servicio (IDS)", value: `${avgIds.toFixed(1)} días`, icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
+            { title: "Tasa de Partos", value: `${totalFarrowingRate.toFixed(1)}%`, icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
+            { title: "Promedio Nacidos Vivos / Parto", value: totalAvgLiveBorn.toFixed(1), icon: Baby, description: "Promedio de lechones nacidos vivos por cada parto." },
+            { title: "Días No Productivos (DNP)", value: `${totalDnp.toFixed(1)} días`, icon: Activity, description: "Promedio de días que una cerda no está gestando ni lactando." },
+            { title: "Tasa de Repetición de Celo", value: `${totalHeatRepeatRate.toFixed(1)}%`, icon: Repeat, description: "Porcentaje de cerdas que repiten celo." },
+            { title: "Tasa de Abortos", value: `${totalAbortionRate.toFixed(1)}%`, icon: XCircle, description: "Porcentaje de gestaciones que terminan en aborto." },
+            { title: "Intervalo Destete-Servicio (IDS)", value: `${totalAvgIds.toFixed(1)} días`, icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
         ];
+        
+        // --- Detailed Tables Data ---
+        const tableHeaders = ["Métrica", ...periodKeys.map(formatPeriodKey)];
+        
+        const createTableRows = (metrics: {key: string, label: string, isPercentage?: boolean, isTotal?: boolean}[], dataSource: (periodData: any, totals: any) => number) => {
+            return metrics.map(metric => ({
+                metric: metric.label,
+                isTotal: metric.isTotal,
+                isPercentage: metric.isPercentage,
+                values: periodKeys.map(key => {
+                    const periodTotals = { services: periodData[key].services };
+                    const value = dataSource(periodData[key], periodTotals);
+                    return metric.isPercentage ? `${value.toFixed(1)}%` : value.toFixed(metric.isPercentage ? 1 : 0);
+                })
+            }));
+        }
+
+        const servicesKpiData: KpiTableData = {
+            headers: tableHeaders,
+            rows: createTableRows([
+                { key: 'services', label: 'Total de Servicios', isTotal: true },
+                { key: 'heatRepeats', label: 'Reservicios' },
+                { key: 'heatRepeatRate', label: 'Reservicios (%)', isPercentage: true },
+            ], (data, totals) => {
+                if (event.type === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
+                return data[event.type] || 0;
+            })
+        };
+
+        const reproductiveLossData: KpiTableData = {
+            headers: tableHeaders,
+            rows: createTableRows([
+                { key: 'heatRepeats', label: 'Repetición de celo' },
+                { key: 'heatRepeatRate', label: 'Repetición de celo (%)', isPercentage: true },
+                { key: 'abortions', label: 'Aborto' },
+                { key: 'abortionRate', label: 'Aborto (%)', isPercentage: true },
+                 { key: 'totalLosses', label: 'Total de pérdidas reproductivas', isTotal: true },
+            ], (data, totals) => {
+                if (event.type === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
+                if (event.type === 'abortionRate') return totals.services > 0 ? (data.abortions / totals.services) * 100 : 0;
+                if (event.type === 'totalLosses') return data.heatRepeats + data.abortions;
+                return data[event.type] || 0;
+            })
+        };
+        
+         const intervalsData: KpiTableData = {
+            headers: tableHeaders,
+            rows: createTableRows([
+                { key: 'avgIds', label: 'Destete - Servicio (días)' },
+            ], (data) => data.idsCount > 0 ? data.idsSum / data.idsCount : 0)
+        };
+        
+        
+        // --- Charts Data ---
+        const monthlyLiveBorn = Object.entries(periodData).reduce((acc, [key, data]) => {
+            const month = getMonth(parseISO(key));
+            if (!acc[month]) acc[month] = { total: 0, count: 0 };
+            acc[month].total += data.totalLiveBorn;
+            acc[month].count += data.farrowings;
+            return acc;
+        }, {} as { [key: string]: { total: number, count: number } });
 
         const liveBornDataChart = Object.entries(monthlyLiveBorn).map(([month, data]) => ({
             period: new Date(0, Number(month)).toLocaleString('es', { month: 'short' }),
@@ -181,12 +240,23 @@ export default function GestationPerformancePage() {
         })).sort((a,b)=> new Date(`1970 ${a.period} 1`) > new Date(`1970 ${b.period} 1`) ? 1 : -1 );
 
 
+        const farrowingRateByBreed = relevantPigs.reduce((acc, pig) => {
+             const breedKey = pig.breed || 'Desconocida';
+             if (!acc[breedKey]) acc[breedKey] = { services: 0, farrowings: 0 };
+             pig.events.forEach(event => {
+                 if (!isWithinInterval(parseISO(event.date), dateRangeForFiltering)) return;
+                 if (event.type === 'Inseminación') acc[breedKey].services++;
+                 if (event.type === 'Parto') acc[breedKey].farrowings++;
+             });
+             return acc;
+        }, {} as { [key: string]: { services: number, farrowings: number } });
+
+
         const farrowingRateDataChart = Object.entries(farrowingRateByBreed).map(([breed, data]) => ({
             name: breed,
             rate: data.services > 0 ? (data.farrowings / data.services) * 100 : 0,
         }));
-
-
+        
         return { kpiData, servicesKpiData, reproductiveLossData, intervalsData, liveBornDataChart, farrowingRateDataChart };
     }, []);
 
@@ -194,9 +264,9 @@ export default function GestationPerformancePage() {
         const pigsFromStorage = localStorage.getItem('pigs');
         if (pigsFromStorage) {
             const allPigs = JSON.parse(pigsFromStorage);
-            setFilteredData(calculateMetrics(allPigs, genetics, dateRange));
+            setFilteredData(calculateMetrics(allPigs, genetics, dateRange, groupBy));
         }
-    }, [dateRange, genetics, calculateMetrics]);
+    }, [dateRange, genetics, groupBy, calculateMetrics]);
     
     if (!filteredData) {
         return (
@@ -220,6 +290,26 @@ export default function GestationPerformancePage() {
     }
 
     const { kpiData, servicesKpiData, reproductiveLossData, intervalsData, liveBornDataChart, farrowingRateDataChart } = filteredData;
+    
+    const KpiTable = ({data}: {data: KpiTableData}) => (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    {data.headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {data.rows.map(row => (
+                    <TableRow key={row.metric}>
+                        <TableCell className={row.isTotal ? "font-bold" : ""}>{row.metric}</TableCell>
+                        {row.values.map((value, index) => (
+                            <TableCell key={index} className={`text-right ${row.isTotal ? "font-bold" : ""}`}>{value !== 'NaN' ? value : 'N/A'}</TableCell>
+                        ))}
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
 
     return (
         <AppLayout>
@@ -236,7 +326,7 @@ export default function GestationPerformancePage() {
                     <CardHeader>
                         <CardTitle>Filtros de Visualización</CardTitle>
                          <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                              <div className="grid gap-2">
                                 <Label htmlFor="start-date">Fecha de Inicio</Label>
                                 <Input id="start-date" type="date" value={dateRange.from} onChange={(e) => handleDateChange('from', e.target.value)} />
@@ -262,6 +352,16 @@ export default function GestationPerformancePage() {
                                     </SelectContent>
                                 </Select>
                              </div>
+                             <div className="grid gap-2">
+                                <Label>Agrupar por</Label>
+                                 <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                         <SelectItem value="year">Año</SelectItem>
+                                         <SelectItem value="month">Mes</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                             </div>
                         </div>
                     </CardHeader>
                 </Card>
@@ -284,53 +384,26 @@ export default function GestationPerformancePage() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Indicadores de Desempeño Detallados</CardTitle>
-                        <CardDescription>Expanda cada sección para ver los detalles de los indicadores.</CardDescription>
+                        <CardDescription>Expanda cada sección para ver los detalles de los indicadores agrupados por {groupBy === 'year' ? 'año' : 'mes'}.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
                             <AccordionItem value="item-1">
                                 <AccordionTrigger>Análisis de Servicios</AccordionTrigger>
                                 <AccordionContent>
-                                    <Table>
-                                        <TableBody>
-                                            {servicesKpiData.map((item) => (
-                                                <TableRow key={item.metric}>
-                                                    <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
-                                                    <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                    <KpiTable data={servicesKpiData} />
                                 </AccordionContent>
                             </AccordionItem>
                              <AccordionItem value="item-2">
                                 <AccordionTrigger>Pérdida Reproductiva</AccordionTrigger>
                                 <AccordionContent>
-                                   <Table>
-                                        <TableBody>
-                                            {reproductiveLossData.map((item) => (
-                                                <TableRow key={item.metric}>
-                                                    <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
-                                                    <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                   <KpiTable data={reproductiveLossData} />
                                 </AccordionContent>
                             </AccordionItem>
                             <AccordionItem value="item-3">
                                 <AccordionTrigger>Intervalos</AccordionTrigger>
                                 <AccordionContent>
-                                    <Table>
-                                        <TableBody>
-                                            {intervalsData.map((item) => (
-                                                <TableRow key={item.metric}>
-                                                    <TableCell>{item.metric}</TableCell>
-                                                    <TableCell className="text-right">{item.value}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                    <KpiTable data={intervalsData} />
                                 </AccordionContent>
                             </AccordionItem>
                             <AccordionItem value="item-4">
@@ -419,3 +492,5 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
+
+    
