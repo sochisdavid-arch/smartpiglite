@@ -78,13 +78,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { href: '/analysis/reproductive-loss', label: 'Pérdida Reproductiva' },
       { href: '/analysis/service-analysis', label: 'Análisis de Servicios' },
       { href: '/analysis/farrowing-rate', label: 'Análisis Tasa de Parición' },
-      { href: '/analysis/farrowing-forecast', label: 'Previsión de Parto' },
       { href: '/analysis/reproductive-loss-analysis', label: 'Análisis Pérdidas Reproductivas' },
       { href: '/analysis/sow-card', label: 'Ficha de la Madre' },
   ];
   
   const lactationAnalysisMenuItems = [
        { href: '/analysis/maternity-performance', label: 'Desempeño de la maternidad' },
+       { href: '/analysis/farrowing-forecast', label: 'Previsión de Parto' },
   ];
   
   const productionAnalysisMenuItems = [
