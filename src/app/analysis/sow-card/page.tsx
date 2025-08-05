@@ -252,8 +252,8 @@ export default function SowCardPage() {
                                                     key={sow.id}
                                                     value={sow.id}
                                                     onSelect={(currentValue) => {
-                                                        const sow = allSows.find(s => s.id.toLowerCase() === currentValue.toLowerCase());
-                                                        setSelectedSow(sow || null);
+                                                        const sowToSelect = allSows.find(s => s.id.toLowerCase() === currentValue.toLowerCase());
+                                                        setSelectedSow(sowToSelect || null);
                                                         setOpen(false);
                                                     }}
                                                 >
@@ -353,7 +353,3 @@ export default function SowCardPage() {
         </AppLayout>
     );
 }
-
-
-
-    
