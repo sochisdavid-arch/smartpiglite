@@ -176,14 +176,14 @@ export default function GestationPerformancePage() {
         // --- Detailed Tables Data ---
         const tableHeaders = ["Métrica", ...periodKeys.map(formatPeriodKey)];
         
-        const createTableRows = (metrics: {key: string, label: string, isPercentage?: boolean, isTotal?: boolean}[], dataSource: (periodData: any, totals: any) => number) => {
+        const createTableRows = (metrics: {key: string, label: string, isPercentage?: boolean, isTotal?: boolean}[], dataSource: (data: any, totals: any, key: string) => number) => {
             return metrics.map(metric => ({
                 metric: metric.label,
                 isTotal: metric.isTotal,
                 isPercentage: metric.isPercentage,
                 values: periodKeys.map(key => {
                     const periodTotals = { services: periodData[key].services };
-                    const value = dataSource(periodData[key], periodTotals);
+                    const value = dataSource(periodData[key], periodTotals, metric.key);
                     return metric.isPercentage ? `${value.toFixed(1)}%` : value.toFixed(metric.isPercentage ? 1 : 0);
                 })
             }));
@@ -195,9 +195,9 @@ export default function GestationPerformancePage() {
                 { key: 'services', label: 'Total de Servicios', isTotal: true },
                 { key: 'heatRepeats', label: 'Reservicios' },
                 { key: 'heatRepeatRate', label: 'Reservicios (%)', isPercentage: true },
-            ], (data, totals) => {
-                if (event.type === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
-                return data[event.type] || 0;
+            ], (data, totals, key) => {
+                if (key === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
+                return data[key] || 0;
             })
         };
 
@@ -209,11 +209,11 @@ export default function GestationPerformancePage() {
                 { key: 'abortions', label: 'Aborto' },
                 { key: 'abortionRate', label: 'Aborto (%)', isPercentage: true },
                  { key: 'totalLosses', label: 'Total de pérdidas reproductivas', isTotal: true },
-            ], (data, totals) => {
-                if (event.type === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
-                if (event.type === 'abortionRate') return totals.services > 0 ? (data.abortions / totals.services) * 100 : 0;
-                if (event.type === 'totalLosses') return data.heatRepeats + data.abortions;
-                return data[event.type] || 0;
+            ], (data, totals, key) => {
+                if (key === 'heatRepeatRate') return totals.services > 0 ? (data.heatRepeats / totals.services) * 100 : 0;
+                if (key === 'abortionRate') return totals.services > 0 ? (data.abortions / totals.services) * 100 : 0;
+                if (key === 'totalLosses') return data.heatRepeats + data.abortions;
+                return data[key] || 0;
             })
         };
         
@@ -492,5 +492,3 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
-
-    
