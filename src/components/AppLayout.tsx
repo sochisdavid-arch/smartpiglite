@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
   ];
   
-  const gestationAnalysisSubMenuItems = [
+  const gestationAnalysisMenuItems = [
       { href: '/analysis/gestation-performance', label: 'Desempeño Gestación' },
       { href: '/analysis/reproductive-loss', label: 'Pérdida Reproductiva' },
       { href: '/analysis/service-analysis', label: 'Análisis de Servicios' },
@@ -80,9 +80,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { href: '/analysis/reproductive-loss-analysis', label: 'Análisis Pérdidas Reproductivas' },
       { href: '/analysis/sow-card', label: 'Ficha de la Madre' },
   ];
+  
+  const productionAnalysisMenuItems = [
+       { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
+  ];
 
-  const isAnalysisActive = pathname.startsWith('/analysis');
-  const isGestationAnalysisActive = gestationAnalysisSubMenuItems.some(item => pathname === item.href);
+  const isGestationAnalysisActive = gestationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
+  const isProductionAnalysisActive = productionAnalysisMenuItems.some(item => pathname.startsWith(item.href));
 
   return (
     <SidebarProvider>
@@ -114,48 +118,53 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            variant={isAnalysisActive ? "default" : "ghost"}
-                            isActive={isAnalysisActive}
+                            variant={isGestationAnalysisActive ? "default" : "ghost"}
+                            isActive={isGestationAnalysisActive}
                             >
                             <div className="flex items-center gap-2">
-                                <LineChart />
-                                <span>Análisis</span>
+                                <Activity />
+                                <span>Análisis Gestación</span>
                             </div>
                             <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
                         </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                         <SidebarMenuSub>
-                           <SidebarMenuSubItem>
-                               <Collapsible>
-                                   <CollapsibleTrigger asChild>
-                                        <SidebarMenuSubButton variant={isGestationAnalysisActive ? "default" : "ghost"} isActive={isGestationAnalysisActive} className="w-full justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Activity />
-                                                <span>Gestación</span>
-                                            </div>
-                                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
-                                        </SidebarMenuSubButton>
-                                   </CollapsibleTrigger>
-                                   <CollapsibleContent>
-                                       <SidebarMenuSub>
-                                            {gestationAnalysisSubMenuItems.map((item) => (
-                                                <SidebarMenuSubItem key={item.href}>
-                                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                                                        <Link href={item.href}>{item.label}</Link>
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                            ))}
-                                       </SidebarMenuSub>
-                                   </CollapsibleContent>
-                               </Collapsible>
-                           </SidebarMenuSubItem>
-
-                           <SidebarMenuSubItem>
-                                <SidebarMenuSubButton asChild isActive={pathname === '/analysis/liquidated-batches'}>
-                                    <Link href="/analysis/liquidated-batches">Lotes Liquidados</Link>
-                                </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
+                            {gestationAnalysisMenuItems.map((item) => (
+                                <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                </Collapsible>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                 <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            className="justify-between"
+                            variant={isProductionAnalysisActive ? "default" : "ghost"}
+                            isActive={isProductionAnalysisActive}
+                            >
+                            <div className="flex items-center gap-2">
+                                <LineChart />
+                                <span>Análisis Producción</span>
+                            </div>
+                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenuSub>
+                            {productionAnalysisMenuItems.map((item) => (
+                                <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
                         </SidebarMenuSub>
                     </CollapsibleContent>
                 </Collapsible>
