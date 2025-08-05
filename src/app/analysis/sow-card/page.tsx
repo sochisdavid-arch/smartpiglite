@@ -53,7 +53,7 @@ interface CycleData {
 
 const processSowHistory = (sow: Pig): { cycles: CycleData[], kpis: any } => {
     const cycles: CycleData[] = [];
-    let currentCycle: Partial<CycleData> = { cycle: 1 };
+    let currentCycle: Partial<CycleData> = { cycle: 1, liveBorn: 0, stillborn: 0, mummified: 0, pigletsWeaned: 0 };
     let lastWeaningDate: string | null = null;
 
     const sortedEvents = [...sow.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -84,7 +84,7 @@ const processSowHistory = (sow: Pig): { cycles: CycleData[], kpis: any } => {
            
             // Reset for next cycle
             lastWeaningDate = event.date;
-            currentCycle = { cycle: (currentCycle.cycle || 0) + 1 };
+            currentCycle = { cycle: (currentCycle.cycle || 0) + 1, liveBorn: 0, stillborn: 0, mummified: 0, pigletsWeaned: 0 };
         }
     });
 
@@ -236,8 +236,15 @@ export default function SowCardPage() {
                     <CardContent>
                         <Popover open={open} onOpenChange={setOpen}>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full max-w-sm justify-between">
-                                    {selectedSow ? selectedSow.id : "Seleccionar madre..."}
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={open}
+                                    className="w-full max-w-sm justify-between"
+                                >
+                                    {selectedSow
+                                        ? allSows.find((sow) => sow.id === selectedSow.id)?.id
+                                        : "Seleccionar madre..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
@@ -257,7 +264,12 @@ export default function SowCardPage() {
                                                         setOpen(false);
                                                     }}
                                                 >
-                                                    <Check className={cn("mr-2 h-4 w-4", selectedSow?.id === sow.id ? "opacity-100" : "opacity-0")}/>
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            selectedSow?.id === sow.id ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
                                                     {sow.id}
                                                 </CommandItem>
                                             ))}
