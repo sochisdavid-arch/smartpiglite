@@ -43,6 +43,9 @@ const geneticLines = [
 
 const allGenetics = [...pigBreeds, ...geneticLines];
 
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 21 }, (_, i) => (currentYear - 10 + i).toString());
+
 export default function GestationPerformancePage() {
     const [period, setPeriod] = React.useState('anual');
     const [year, setYear] = React.useState(new Date().getFullYear().toString());
@@ -247,9 +250,7 @@ export default function GestationPerformancePage() {
                              <Select value={year} onValueChange={setYear}>
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Año" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="2024">2024</SelectItem>
-                                    <SelectItem value="2023">2023</SelectItem>
-                                    <SelectItem value="2022">2022</SelectItem>
+                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                              <Select value={genetics} onValueChange={setGenetics}>
