@@ -15,7 +15,15 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -31,6 +39,7 @@ import {
   Landmark,
   Stethoscope,
   LineChart,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +52,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/components/Logo';
+import { cn } from "@/lib/utils";
+
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -57,8 +68,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/finance', label: 'Financiero', icon: Landmark },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
-    { href: '/analysis/liquidated-batches', label: 'Análisis', icon: LineChart },
   ];
+  
+  const analysisSubMenuItems = [
+      { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
+      { href: '/analysis/gestation-performance', label: 'Desempeño Gestación' },
+  ]
+
+  const isAnalysisActive = pathname.startsWith('/analysis');
 
   return (
     <SidebarProvider>
@@ -75,7 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={pathname.startsWith(item.href) && item.href !== '/'}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
@@ -85,6 +102,37 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+             <SidebarMenuItem>
+                 <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            className="justify-between"
+                            variant={isAnalysisActive ? "default" : "ghost"}
+                            isActive={isAnalysisActive}
+                            >
+                            <div className="flex items-center gap-2">
+                                <LineChart />
+                                <span>Análisis</span>
+                            </div>
+                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenuSub>
+                            {analysisSubMenuItems.map((item) => (
+                                <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton
+                                        asChild
+                                        isActive={pathname === item.href}
+                                    >
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                </Collapsible>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
