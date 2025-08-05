@@ -82,6 +82,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
   
   const productionAnalysisMenuItems = [
+       { href: '/analysis/lactation-analysis', label: 'Análisis de Lactancia' },
        { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
   ];
 
