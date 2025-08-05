@@ -10,10 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Filter, Search, Calendar as CalendarIcon, MoreHorizontal } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub } from 'date-fns';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, startOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface Event {
     id: string;
@@ -47,7 +49,6 @@ export default function ServiceAnalysisPage() {
     const { toast } = useToast();
     const [pigs, setPigs] = React.useState<Pig[]>([]);
     const [serviceRecords, setServiceRecords] = React.useState<ServiceRecord[]>([]);
-    const [filteredRecords, setFilteredRecords] = React.useState<ServiceRecord[]>([]);
 
     const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -61,6 +62,10 @@ export default function ServiceAnalysisPage() {
     const [giltPercentage, setGiltPercentage] = React.useState(0);
     const [repeatPercentage, setRepeatPercentage] = React.useState(0);
     const [weanedServicePercentage, setWeanedServicePercentage] = React.useState(0);
+
+    // Chart Data
+    const [serviceTypeData, setServiceTypeData] = React.useState<{name: string, 'I.A.': number, 'Monta Natural': number}[]>([]);
+    const [serviceEvolutionData, setServiceEvolutionData] = React.useState<{name: string, 'Servicios': number}[]>([]);
 
 
     React.useEffect(() => {
@@ -128,18 +133,35 @@ export default function ServiceAnalysisPage() {
         if (total > 0) {
             const gilts = filtered.filter(s => s.isGilt).length;
             const repeats = filtered.filter(s => s.isRepeat).length;
-            // Destetadas logic is more complex and needs destete events. Placeholder for now.
-            const weanedServices = total - gilts - repeats;
+            const desteteEvents = new Set(pigs.flatMap(p => p.events.filter(e => e.type === 'Destete').map(e => p.id)));
+            const weanedServices = filtered.filter(s => !s.isGilt && !s.isRepeat && desteteEvents.has(s.sowId)).length;
 
             setTotalServices(total);
             setGiltPercentage((gilts / total) * 100);
             setRepeatPercentage((repeats / total) * 100);
             setWeanedServicePercentage((weanedServices / total) * 100);
+            
+            // Prepare Chart Data
+            const iaCount = filtered.filter(s => s.type === 'Inseminación').length;
+            const montaCount = filtered.filter(s => s.type === 'Monta Natural').length;
+            setServiceTypeData([{ name: 'Tipo de Servicio', 'I.A.': iaCount, 'Monta Natural': montaCount }]);
+
+            const months = eachMonthOfInterval({ start, end });
+            const evolutionData = months.map(month => {
+                const monthKey = format(month, 'yyyy-MM');
+                const monthName = format(month, 'MMM yy', { locale: es });
+                const servicesInMonth = filtered.filter(s => format(parseISO(s.date), 'yyyy-MM') === monthKey).length;
+                return { name: monthName, 'Servicios': servicesInMonth };
+            });
+            setServiceEvolutionData(evolutionData);
+
         } else {
             setTotalServices(0);
             setGiltPercentage(0);
             setRepeatPercentage(0);
             setWeanedServicePercentage(0);
+            setServiceTypeData([]);
+            setServiceEvolutionData([]);
         }
 
 
@@ -230,6 +252,99 @@ export default function ServiceAnalysisPage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                <Tabs defaultValue="analysis">
+                    <TabsList>
+                        <TabsTrigger value="analysis">Análisis de servicios</TabsTrigger>
+                        <TabsTrigger value="employee">Servicios por empleado</TabsTrigger>
+                        <TabsTrigger value="boar">Servicios por reproductor</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="analysis" className="mt-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Servicios por tipo</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                     <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={serviceTypeData} layout="vertical">
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                            <XAxis type="number" />
+                                            <YAxis type="category" dataKey="name" width={110} />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Bar dataKey="I.A." fill="hsl(var(--chart-1))" name="I.A." radius={[0, 4, 4, 0]} />
+                                            <Bar dataKey="Monta Natural" fill="hsl(var(--chart-2))" name="Monta Natural" radius={[0, 4, 4, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Evolución de los servicios</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <LineChart data={serviceEvolutionData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="Servicios" stroke="hsl(var(--chart-1))" />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="employee"><p>Análisis por empleado próximamente.</p></TabsContent>
+                    <TabsContent value="boar"><p>Análisis por reproductor próximamente.</p></TabsContent>
+                </Tabs>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Listado de Servicios</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Madre</TableHead>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Ciclo</TableHead>
+                                    <TableHead>Raza</TableHead>
+                                    <TableHead>Nº de Montas</TableHead>
+                                    <TableHead>Empleado</TableHead>
+                                    <TableHead>Tipo de Servicio</TableHead>
+                                    <TableHead>Reservicio</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {serviceRecords.length > 0 ? serviceRecords.map((record, index) => (
+                                    <TableRow key={`${record.sowId}-${index}`}>
+                                        <TableCell>
+                                            <Link href={`/gestation/${record.sowId}`} className="text-primary underline hover:text-primary/80">
+                                                {record.sowId}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>{isValid(parseISO(record.date)) ? format(parseISO(record.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell>{record.cycle}</TableCell>
+                                        <TableCell>{record.breed}</TableCell>
+                                        <TableCell>{record.mounts}</TableCell>
+                                        <TableCell>{record.employee}</TableCell>
+                                        <TableCell>{record.type}</TableCell>
+                                        <TableCell>{record.isRepeat ? 'Sí' : 'No'}</TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">No hay servicios registrados para el período seleccionado.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );
