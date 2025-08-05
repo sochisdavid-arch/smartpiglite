@@ -13,6 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Filter, Download, MoreHorizontal, Activity } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Event {
     id: string;
@@ -125,6 +128,50 @@ export default function ReproductiveLossPage() {
         handleFilter();
     }, [handleFilter]);
     
+    const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
+        const head = [
+            'Madre', 'Ciclo', 'Fecha', 'Tipo de pérdida', 
+            'Días gestación', 'Raza', 'Fecha de servicio', 'Reproductor', 'Emp'
+        ];
+        const body = lossRecords.map(record => [
+            record.sowId,
+            record.cycle,
+            isValid(parseISO(record.lossDate)) ? format(parseISO(record.lossDate), 'dd/MM/yyyy') : 'N/A',
+            record.lossType,
+            record.gestationDays,
+            record.breed,
+            isValid(parseISO(record.serviceDate)) ? format(parseISO(record.serviceDate), 'dd/MM/yyyy') : 'N/A',
+            record.boarId || 'N/A',
+            record.employee || 'N/A'
+        ]);
+
+        const title = "Informe de Pérdida Reproductiva";
+        const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+
+        if (formatType === 'pdf') {
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.text(title, 14, 16);
+            doc.setFontSize(10);
+            doc.text(dateRange, 14, 22);
+            autoTable(doc, {
+                head: [head],
+                body: body,
+                startY: 28,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            doc.save(`perdida_reproductiva_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        if (formatType === 'csv' || formatType === 'xlsx') {
+            const dataToExport = [head, ...body];
+            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Pérdidas");
+            XLSX.writeFile(wb, `perdida_reproductiva_${new Date().toISOString().split('T')[0]}.${formatType}`);
+        }
+    };
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -174,9 +221,9 @@ export default function ReproductiveLossPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem>Exportar a PDF</DropdownMenuItem>
-                                    <DropdownMenuItem>Exportar a CSV</DropdownMenuItem>
-                                    <DropdownMenuItem>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
