@@ -4,9 +4,9 @@
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, LineChart as LineChartIcon, Activity, Repeat, Baby, XCircle } from 'lucide-react';
+import { Activity, Repeat, Baby, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 
 const kpiData = [
   { title: "Tasa de Partos", value: "89.5%", icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
