@@ -6,7 +6,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, PlusCircle, Scale } from 'lucide-react';
 import { getFinancialSummary, FinancialTransaction } from '@/lib/finance';
 import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,16 +31,18 @@ export default function FinancePage() {
     const [filteredTransactions, setFilteredTransactions] = React.useState<FinancialTransaction[]>([]);
     const [summary, setSummary] = React.useState({ income: 0, expenses: 0, balance: 0 });
     const [monthlyData, setMonthlyData] = React.useState<any[]>([]);
+    const [costPerKilo, setCostPerKilo] = React.useState(0);
     const [filter, setFilter] = React.useState('all');
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const { toast } = useToast();
 
     const loadFinancialData = React.useCallback(() => {
-        const { transactions: allTransactions, summary: financialSummary, monthlyData: financialMonthlyData } = getFinancialSummary();
+        const { transactions: allTransactions, summary: financialSummary, monthlyData: financialMonthlyData, costPerKilo: calculatedCostPerKilo } = getFinancialSummary();
         setTransactions(allTransactions);
         setFilteredTransactions(allTransactions);
         setSummary(financialSummary);
         setMonthlyData(financialMonthlyData);
+        setCostPerKilo(calculatedCostPerKilo);
     }, []);
 
     React.useEffect(() => {
@@ -102,7 +104,7 @@ export default function FinancePage() {
                     </Button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
@@ -131,6 +133,16 @@ export default function FinancePage() {
                         <CardContent>
                             <div className={`text-xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'} break-words`}>{formatCurrency(summary.balance)}</div>
                             <p className="text-xs text-muted-foreground">Ingresos - Egresos</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Costo por Kilo Producido</CardTitle>
+                            <Scale className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-xl font-bold text-blue-600 break-words`}>{formatCurrency(costPerKilo)}</div>
+                            <p className="text-xs text-muted-foreground">Costo total / Kilos vendidos</p>
                         </CardContent>
                     </Card>
                 </div>

@@ -3,6 +3,7 @@
 
 import { format, getMonth, getYear, parseISO, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getInventory } from './inventory';
 
 export interface FinancialTransaction {
     id: string;
@@ -15,13 +16,17 @@ export interface FinancialTransaction {
 
 export const getFinancialSummary = () => {
     let transactions: FinancialTransaction[] = [];
+    let totalProductionCost = 0;
+    let totalWeightProduced = 0;
     
     // 1. Get Income from liquidated batches (precebo & ceba)
     try {
         const liquidatedPreceboReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
         const liquidatedCebaReports = JSON.parse(localStorage.getItem('liquidatedCebaReports') || '[]');
         
-        [...liquidatedPreceboReports, ...liquidatedCebaReports].forEach(report => {
+        const allReports = [...liquidatedPreceboReports, ...liquidatedCebaReports];
+
+        allReports.forEach(report => {
             const saleValue = report.finalEvent?.saleValue || report.saleValue;
             if (report.liquidationReason === 'Venta de lote' && saleValue > 0) {
                  transactions.push({
@@ -32,6 +37,7 @@ export const getFinancialSummary = () => {
                     category: `Venta de Lote ${report.batchId.includes('CEBA') ? 'Ceba' : 'Precebo'}`,
                     amount: saleValue,
                 });
+                totalWeightProduced += report.finalTotalWeight || 0;
             }
         });
     } catch (e) { console.error("Error processing batch reports:", e); }
@@ -42,14 +48,16 @@ export const getFinancialSummary = () => {
         pigs.forEach((pig: any) => {
             // Pig Purchase as an expense
             if (pig.purchaseValue > 0) {
-                transactions.push({
+                const purchaseCost = {
                     id: `purchase-pig-${pig.id}`,
                     date: parseISO(pig.arrivalDate),
                     description: `Compra de Animal ${pig.id}`,
-                    type: 'expense',
+                    type: 'expense' as 'expense',
                     category: 'Compra de Animales',
                     amount: pig.purchaseValue,
-                });
+                };
+                transactions.push(purchaseCost);
+                totalProductionCost += purchaseCost.amount;
             }
 
             // Pig Sale events as income
@@ -73,14 +81,16 @@ export const getFinancialSummary = () => {
         const foodPurchases = JSON.parse(localStorage.getItem('foodPurchaseHistory') || '[]');
         foodPurchases.forEach((purchase: any) => {
             if (purchase.totalValue > 0) {
-                transactions.push({
+                const foodCost = {
                     id: `purchase-food-${purchase.id}`,
                     date: parseISO(purchase.entryDate),
                     description: `Compra de ${purchase.productName}`,
-                    type: 'expense',
+                    type: 'expense' as 'expense',
                     category: 'Compra de Alimento',
                     amount: purchase.totalValue,
-                });
+                };
+                transactions.push(foodCost);
+                totalProductionCost += foodCost.amount;
             }
         });
     } catch (e) { console.error("Error processing food purchases:", e); }
@@ -90,24 +100,28 @@ export const getFinancialSummary = () => {
         const personnel = JSON.parse(localStorage.getItem('personnelList') || '[]');
         personnel.forEach((person: any) => {
             if (person.salary > 0) {
-                 transactions.push({
+                 const salaryCost = {
                     id: `salary-${person.id}-${person.hireDate}`,
                     date: parseISO(person.hireDate),
                     description: `Salario Base de ${person.name}`,
-                    type: 'expense',
+                    type: 'expense' as 'expense',
                     category: 'Salarios',
                     amount: person.salary,
-                });
+                };
+                 transactions.push(salaryCost);
+                 totalProductionCost += salaryCost.amount;
             }
              if (person.bonus > 0) {
-                 transactions.push({
+                 const bonusCost = {
                     id: `bonus-${person.id}-${person.hireDate}`,
                     date: parseISO(person.hireDate),
                     description: `Bonificación para ${person.name}`,
-                    type: 'expense',
+                    type: 'expense' as 'expense',
                     category: 'Salarios',
                     amount: person.bonus,
-                });
+                };
+                 transactions.push(bonusCost);
+                 totalProductionCost += bonusCost.amount;
             }
         });
     } catch (e) { console.error("Error processing personnel data:", e); }
@@ -116,10 +130,11 @@ export const getFinancialSummary = () => {
      try {
         const manualTransactions: any[] = JSON.parse(localStorage.getItem('manualTransactions') || '[]');
         manualTransactions.forEach(t => {
-            transactions.push({
-                ...t,
-                date: parseISO(t.date),
-            });
+            const parsedTransaction = { ...t, date: parseISO(t.date) };
+            transactions.push(parsedTransaction);
+            if (parsedTransaction.type === 'expense') {
+                totalProductionCost += parsedTransaction.amount;
+            }
         });
     } catch(e) { console.error("Error processing manual transactions:", e)}
 
@@ -153,13 +168,14 @@ export const getFinancialSummary = () => {
     });
 
     const monthlyData = Array.from(monthlyDataMap.values()).sort((a,b) => {
-        // A more robust way to sort by month-year
         const [aMonth, aYear] = a.name.split(' ');
         const [bMonth, bYear] = b.name.split(' ');
-        const aDate = new Date(parseInt(aYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(aMonth.toLowerCase())));
-        const bDate = new Date(parseInt(bYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(bMonth.toLowerCase())));
+        const aDate = new Date(parseInt(aYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(aMonth.replace('.','').toLowerCase())));
+        const bDate = new Date(parseInt(bYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(bMonth.replace('.','').toLowerCase())));
         return aDate.getTime() - bDate.getTime();
     });
 
-    return { transactions, summary, monthlyData };
+    const costPerKilo = totalWeightProduced > 0 ? totalProductionCost / totalWeightProduced : 0;
+
+    return { transactions, summary, monthlyData, costPerKilo };
 };
