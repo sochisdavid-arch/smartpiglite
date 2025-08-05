@@ -376,7 +376,13 @@ export default function GestationPerformancePage() {
                                             )
                                         }
                                         
-                                        const categoryKey = metric.key.includes('Servicio') ? 'servicios' : metric.key.split('_')[0].replace(/([A-Z])/g, ' $1').split(' ')[0].toLowerCase();
+                                        const categoryKey = metric.key.includes('Servicio') || metric.key.startsWith('ia') || metric.key.startsWith('montaNatural') || metric.key.startsWith('compraGestante') ? 'servicios'
+                                            : metric.key.includes('Parto') ? 'partos'
+                                            : metric.key.includes('Celo') || metric.key.includes('aborto') || metric.key.includes('Vacia') || metric.key.includes('descarte') || metric.key.includes('muerte') || metric.key.includes('Perdida') ? 'perdidaReproductiva'
+                                            : metric.key.toLowerCase().includes('intervalo') ? 'intervalos'
+                                            : metric.key.toLowerCase().includes('indice') ? 'indicesComplementarios'
+                                            : 'default'; // Fallback category
+
                                         if (!openCategories[categoryKey]) return null;
 
                                         let total = 0;
@@ -401,31 +407,41 @@ export default function GestationPerformancePage() {
                                         } else if (avgTotal) {
                                             let totalNumerator = 0;
                                             let totalDenominator = 0;
-                                            metrics.forEach(m => {
-                                                const numeratorKey = metric.key.replace('_p', '');
-                                                let denominatorKey: string | undefined;
+                                            
+                                            // Special calculation for percentages to get a weighted average
+                                            if(metric.key.includes('_p')) {
+                                                periodHeaders.forEach(header => {
+                                                    const periodMetrics = metrics.get(header);
+                                                    if(periodMetrics) {
+                                                        const numeratorKey = metric.key.replace('_p', '');
+                                                        let denominatorKey: string | undefined;
 
-                                                if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p'].includes(metric.key)) {
-                                                    denominatorKey = 'totalServicios';
-                                                } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
-                                                    denominatorKey = 'totalServiciosPostDestete'; // Special case
+                                                        if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p'].includes(metric.key)) {
+                                                            denominatorKey = 'totalServicios';
+                                                        } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
+                                                            denominatorKey = 'totalServiciosPostDestete'; // Special case
+                                                        }
+                                                        
+                                                        if(numeratorKey && denominatorKey && periodMetrics[denominatorKey]) {
+                                                             totalNumerator += periodMetrics[numeratorKey] || 0;
+                                                             if (denominatorKey === 'totalServiciosPostDestete') {
+                                                                 totalDenominator += (periodMetrics['servicio7dias'] || 0) + (periodMetrics['servicioMas7dias'] || 0);
+                                                             } else {
+                                                                 totalDenominator += periodMetrics[denominatorKey] || 0;
+                                                             }
+                                                        }
+                                                    }
+                                                });
+                                                 if (totalDenominator > 0) {
+                                                    finalTotalValue = (totalNumerator / totalDenominator) * 100;
+                                                } else {
+                                                    finalTotalValue = 0;
                                                 }
-
-                                                totalNumerator += m[numeratorKey] || 0;
-                                                if (denominatorKey === 'totalServiciosPostDestete') {
-                                                    totalDenominator += (m['servicio7dias'] || 0) + (m['servicioMas7dias'] || 0);
-                                                } else if (denominatorKey) {
-                                                    totalDenominator += m[denominatorKey] || 0;
-                                                }
-                                            });
-
-                                            if (['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key)) {
-                                                finalTotalValue = average; // For these metrics, average is more representative than a re-calculated total
-                                            } else if (totalDenominator > 0) {
-                                                finalTotalValue = (totalNumerator / totalDenominator) * 100;
                                             } else {
-                                                finalTotalValue = 0;
+                                                 // For non-percentage averages, the simple average is usually representative enough
+                                                 finalTotalValue = average;
                                             }
+                                           
                                         }
                                         
                                         return (
@@ -448,5 +464,4 @@ export default function GestationPerformancePage() {
             </div>
         </AppLayout>
     );
-
-    
+}
