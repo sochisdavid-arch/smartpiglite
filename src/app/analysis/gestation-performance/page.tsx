@@ -14,7 +14,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { differenceInDays, parseISO, getMonth, getYear, isWithinInterval, startOfYear, endOfYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { differenceInDays, parseISO, getMonth, isWithinInterval, startOfYear, endOfYear, format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+
 
 interface Event {
     id: string;
@@ -43,16 +50,21 @@ const geneticLines = [
 
 const allGenetics = [...pigBreeds, ...geneticLines];
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 121 }, (_, i) => (currentYear - 100 + i).toString());
-
 export default function GestationPerformancePage() {
-    const [period, setPeriod] = React.useState('anual');
-    const [year, setYear] = React.useState(new Date().getFullYear().toString());
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+        from: startOfYear(new Date()),
+        to: endOfYear(new Date()),
+    });
     const [genetics, setGenetics] = React.useState('todas');
     const [filteredData, setFilteredData] = React.useState<any>(null);
 
-    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, dateRange: { start: Date, end: Date }) => {
+    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, range?: DateRange) => {
+        if (!range || !range.from || !range.to) {
+            return null;
+        }
+
+        const dateRangeForFiltering = { start: range.from, end: range.to };
+
         let relevantPigs = pigs;
         if (selectedGenetics !== 'todas') {
             relevantPigs = pigs.filter(p => 
@@ -84,7 +96,7 @@ export default function GestationPerformancePage() {
 
             pig.events.forEach((event, index) => {
                 const eventDate = parseISO(event.date);
-                if (!isWithinInterval(eventDate, dateRange)) return;
+                if (!isWithinInterval(eventDate, dateRangeForFiltering)) return;
 
                 if (event.type === 'Inseminación') {
                     services++;
@@ -181,22 +193,9 @@ export default function GestationPerformancePage() {
         const pigsFromStorage = localStorage.getItem('pigs');
         if (pigsFromStorage) {
             const allPigs = JSON.parse(pigsFromStorage);
-            const selectedYear = parseInt(year);
-            let dateRange;
-            switch(period) {
-                case 'mensual':
-                    dateRange = { start: startOfMonth(new Date(selectedYear, 0)), end: endOfMonth(new Date(selectedYear, 11)) }; // Placeholder for now
-                    break;
-                case 'semanal':
-                     dateRange = { start: startOfWeek(new Date(selectedYear, 0, 1)), end: endOfWeek(new Date(selectedYear, 11, 31)) }; // Placeholder
-                    break;
-                default: // anual
-                    dateRange = { start: startOfYear(new Date(selectedYear, 0)), end: endOfYear(new Date(selectedYear, 11)) };
-            }
-            
             setFilteredData(calculateMetrics(allPigs, genetics, dateRange));
         }
-    }, [period, year, genetics, calculateMetrics]);
+    }, [dateRange, genetics, calculateMetrics]);
     
     if (!filteredData) {
         return (
@@ -237,22 +236,44 @@ export default function GestationPerformancePage() {
                         <CardTitle>Filtros de Visualización</CardTitle>
                          <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
                         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                            <Select value={period} onValueChange={setPeriod}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Periodo" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="anual">Anual</SelectItem>
-                                    <SelectItem value="semestral" disabled>Semestral</SelectItem>
-                                    <SelectItem value="trimestral" disabled>Trimestral</SelectItem>
-                                    <SelectItem value="mensual">Mensual</SelectItem>
-                                    <SelectItem value="semanal" disabled>Semanal</SelectItem>
-                                </SelectContent>
-                            </Select>
-                             <Select value={year} onValueChange={setYear}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Año" /></SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                             <div className={cn("grid gap-2")}>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <Button
+                                        id="date"
+                                        variant={"outline"}
+                                        className={cn(
+                                        "justify-start text-left font-normal",
+                                        !dateRange && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {dateRange?.from ? (
+                                        dateRange.to ? (
+                                            <>
+                                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                                            {format(dateRange.to, "LLL dd, y")}
+                                            </>
+                                        ) : (
+                                            format(dateRange.from, "LLL dd, y")
+                                        )
+                                        ) : (
+                                        <span>Seleccione un rango</span>
+                                        )}
+                                    </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={dateRange?.from}
+                                        selected={dateRange}
+                                        onSelect={setDateRange}
+                                        numberOfMonths={2}
+                                    />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                              <Select value={genetics} onValueChange={setGenetics}>
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
                                 <SelectContent>
@@ -423,6 +444,4 @@ export default function GestationPerformancePage() {
             </div>
         </AppLayout>
     );
-
-    
-
+}
