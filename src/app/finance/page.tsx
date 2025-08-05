@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formatCurrency = (value?: number) => {
     if (value === undefined || value === null) return '$0';
@@ -222,14 +223,15 @@ export default function FinancePage() {
                 </Card>
             </div>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Agregar Nuevo Movimiento</DialogTitle>
-                            <DialogDescription>
-                                Registre un ingreso o egreso manual.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleTransactionSubmit} id="transaction-form" className="space-y-4 py-4">
+                <DialogContent className="max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Agregar Nuevo Movimiento</DialogTitle>
+                        <DialogDescription>
+                            Registre un ingreso o egreso manual.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="flex-1 -mx-6 px-6">
+                        <form onSubmit={handleTransactionSubmit} id="transaction-form" className="space-y-4 py-4 pr-2">
                             <div className="space-y-2">
                                 <Label>Tipo de Movimiento</Label>
                                 <RadioGroup name="type" required defaultValue="expense" className="flex gap-4">
@@ -255,17 +257,20 @@ export default function FinancePage() {
                                 <Label htmlFor="category">Categoría</Label>
                                 <Input id="category" name="category" type="text" required placeholder="Ej: Servicios Públicos, Inversión Externa" />
                             </div>
-                             <div className="space-y-2">
+                                <div className="space-y-2">
                                 <Label htmlFor="description">Descripción</Label>
                                 <Input id="description" name="description" type="text" required placeholder="Ej: Pago factura de energía" />
                             </div>
                         </form>
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                            <Button type="submit" form="transaction-form">Guardar Movimiento</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </ScrollArea>
+                    <DialogFooter className="flex-shrink-0 pt-4 border-t -mx-6 px-6 bg-background">
+                        <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                        <Button type="submit" form="transaction-form">Guardar Movimiento</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
+
+    
