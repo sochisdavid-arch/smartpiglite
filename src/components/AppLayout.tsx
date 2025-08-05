@@ -82,11 +82,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { href: '/analysis/sow-card', label: 'Ficha de la Madre' },
   ];
   
+  const lactationAnalysisMenuItems = [
+       { href: '/analysis/maternity-performance', label: 'Desempeño de la maternidad' },
+  ];
+  
   const productionAnalysisMenuItems = [
        { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
   ];
 
   const isGestationAnalysisActive = gestationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
+  const isLactationAnalysisActive = lactationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isProductionAnalysisActive = productionAnalysisMenuItems.some(item => pathname.startsWith(item.href));
 
   return (
@@ -143,15 +148,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </Collapsible>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/analysis/lactation-analysis'}
-                >
-                    <Link href="/analysis/lactation-analysis">
-                        <Activity />
-                        <span>Análisis de Lactancia</span>
-                    </Link>
-                </SidebarMenuButton>
+                 <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            className="justify-between"
+                            variant={isLactationAnalysisActive ? "default" : "ghost"}
+                            isActive={isLactationAnalysisActive}
+                            >
+                            <div className="flex items-center gap-2">
+                                <Activity />
+                                <span>Análisis Lactancia</span>
+                            </div>
+                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenuSub>
+                            {lactationAnalysisMenuItems.map((item) => (
+                                <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                </Collapsible>
             </SidebarMenuItem>
              <SidebarMenuItem>
                  <Collapsible>
