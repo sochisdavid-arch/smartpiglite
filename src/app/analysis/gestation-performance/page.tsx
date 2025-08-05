@@ -4,7 +4,9 @@
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, LineChart, Activity, Repeat, Baby, XCircle } from 'lucide-react';
+import { BarChart, LineChart as LineChartIcon, Activity, Repeat, Baby, XCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 
 const kpiData = [
   { title: "Tasa de Partos", value: "89.5%", icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
@@ -15,7 +17,28 @@ const kpiData = [
   { title: "Intervalo Destete-Servicio (IDS)", value: "5.8 días", icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
 ];
 
+// Mock data for charts
+const farrowingRateData = [
+    { breed: 'Duroc', rate: 88 },
+    { breed: 'Landrace', rate: 92 },
+    { breed: 'Yorkshire', rate: 90 },
+    { breed: 'Pietrain', rate: 85 },
+];
+
+const liveBornData = [
+    { period: 'Ene', value: 12.5 },
+    { period: 'Feb', value: 12.8 },
+    { period: 'Mar', value: 13.1 },
+    { period: 'Abr', value: 12.9 },
+    { period: 'May', value: 13.5 },
+    { period: 'Jun', value: 13.2 },
+];
+
+
 export default function GestationPerformancePage() {
+    const [period, setPeriod] = React.useState('anual');
+    const [year, setYear] = React.useState(new Date().getFullYear().toString());
+    const [breed, setBreed] = React.useState('todas');
 
     return (
         <AppLayout>
@@ -43,20 +66,89 @@ export default function GestationPerformancePage() {
                     ))}
                 </div>
 
-                 <Card>
+                <Card>
                     <CardHeader>
-                        <CardTitle>Próximamente: Gráficos de Tendencias</CardTitle>
-                        <CardDescription>
-                            Visualice la evolución de los principales indicadores a lo largo del tiempo para identificar patrones y tomar decisiones informadas.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex justify-center items-center h-64 bg-muted rounded-lg">
-                        <div className="text-center text-muted-foreground">
-                            <BarChart className="h-12 w-12 mx-auto mb-2"/>
-                            <p>Gráficos de tendencias estarán disponibles en una futura actualización.</p>
+                        <CardTitle>Filtros de Visualización</CardTitle>
+                         <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                            <Select value={period} onValueChange={setPeriod}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Periodo" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="anual">Anual</SelectItem>
+                                    <SelectItem value="semestral">Semestral</SelectItem>
+                                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                                    <SelectItem value="mensual">Mensual</SelectItem>
+                                    <SelectItem value="semanal">Semanal</SelectItem>
+                                </SelectContent>
+                            </Select>
+                             <Select value={year} onValueChange={setYear}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Año" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="2024">2024</SelectItem>
+                                    <SelectItem value="2023">2023</SelectItem>
+                                    <SelectItem value="2022">2022</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={breed} onValueChange={setBreed}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Raza" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="todas">Todas las Razas</SelectItem>
+                                    <SelectItem value="duroc">Duroc</SelectItem>
+                                    <SelectItem value="landrace">Landrace</SelectItem>
+                                    <SelectItem value="yorkshire">Yorkshire</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    </CardContent>
+                    </CardHeader>
                 </Card>
+
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Tasa de Partos por Raza</CardTitle>
+                            <CardDescription>Comparativo de la tasa de partos (%) entre las principales razas.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={farrowingRateData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                    <XAxis dataKey="breed" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                    <YAxis unit="%" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                    <Tooltip
+                                        contentStyle={{
+                                        backgroundColor: 'hsl(var(--card))',
+                                        borderColor: 'hsl(var(--border))',
+                                        }}
+                                    />
+                                    <Bar dataKey="rate" fill="hsl(var(--chart-1))" name="Tasa de Partos" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Evolución de Nacidos Vivos</CardTitle>
+                            <CardDescription>Promedio de nacidos vivos por parto a lo largo del tiempo.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={liveBornData}>
+                                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                     <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                     <Tooltip
+                                        contentStyle={{
+                                        backgroundColor: 'hsl(var(--card))',
+                                        borderColor: 'hsl(var(--border))',
+                                        }}
+                                    />
+                                     <Legend />
+                                     <Line type="monotone" dataKey="value" name="Nacidos Vivos" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }}/>
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                 </div>
             </div>
         </AppLayout>
     );
