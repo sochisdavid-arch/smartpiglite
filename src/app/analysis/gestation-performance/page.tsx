@@ -58,10 +58,6 @@ const METRIC_DEFINITIONS = [
     { key: 'multiplesMontas_p', label: '% Múltiples montas / I.A.', isPercentage: true },
     { key: 'montasPorServicio', label: 'Nº de montas / I.A. por servicio' },
     
-    { key: 'partos', label: 'PARTOS', isHeader: true },
-    { key: 'totalPartos', label: 'Total de Partos' },
-    { key: 'tasaPartos', label: 'Tasa de Partos (%)', isPercentage: true },
-    
     { key: 'perdidaReproductiva', label: 'PÉRDIDA REPRODUCTIVA', isHeader: true },
     { key: 'repeticionCelo', label: 'Repetición de celo' },
     { key: 'repeticionCelo_p', label: 'Repetición de celo (%)', isPercentage: true },
@@ -164,8 +160,7 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
                 }
                 
                 if (event.type === 'Parto') {
-                    initMetric('totalPartos');
-                    metrics['totalPartos']++;
+                    // This event type can be used for other calculations if needed, but won't be displayed directly.
                 }
                 if (event.type === 'Aborto') {
                     initMetric('abortos');
@@ -197,7 +192,6 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
             metrics['ia_p'] = (metrics['ia'] || 0) / totalServicios * 100;
             metrics['montaNatural_p'] = (metrics['montaNatural'] || 0) / totalServicios * 100;
             metrics['compraGestante_p'] = (metrics['compraGestante'] || 0) / totalServicios * 100;
-            metrics['tasaPartos'] = (metrics['totalPartos'] || 0) / totalServicios * 100;
             metrics['repeticionCelo_p'] = (metrics['repeticionCelo'] || 0) / totalServicios * 100;
             metrics['abortos_p'] = (metrics['abortos'] || 0) / totalServicios * 100;
             metrics['detectadaVacia_p'] = (metrics['detectadaVacia'] || 0) / totalServicios * 100;
@@ -210,7 +204,6 @@ const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: Gro
              metrics['ia_p'] = 0;
              metrics['montaNatural_p'] = 0;
              metrics['compraGestante_p'] = 0;
-             metrics['tasaPartos'] = 0;
              metrics['repeticionCelo_p'] = 0;
              metrics['abortos_p'] = 0;
              metrics['detectadaVacia_p'] = 0;
@@ -255,7 +248,6 @@ export default function GestationPerformancePage() {
 
     const [openCategories, setOpenCategories] = React.useState<{[key: string]: boolean}>({
         'servicios': true,
-        'partos': true,
         'perdidaReproductiva': true,
         'intervalos': true,
         'indicesComplementarios': true,
@@ -324,7 +316,6 @@ export default function GestationPerformancePage() {
     
     const getCategoryKey = (metricKey: string) => {
         if (['ia', 'ia_p', 'montaNatural', 'montaNatural_p', 'compraGestante', 'compraGestante_p', 'totalServicios', 'reservicios', 'reservicios_p', 'primerizasServidas', 'primerizasServidas_p', 'multiplesMontas_p', 'montasPorServicio', 'servicio7dias', 'servicio7dias_p', 'servicioMas7dias', 'servicioMas7dias_p'].includes(metricKey)) return 'servicios';
-        if (['totalPartos', 'tasaPartos'].includes(metricKey)) return 'partos';
         if (['repeticionCelo', 'repeticionCelo_p', 'abortos', 'abortos_p', 'detectadaVacia', 'detectadaVacia_p', 'descarteGestante', 'descarteGestante_p', 'muerteGestante', 'muerteGestante_p', 'totalPerdidas'].includes(metricKey)) return 'perdidaReproductiva';
         if (['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio'].includes(metricKey)) return 'intervalos';
         if (['pesoMadreServicio', 'alimentoConsumido', 'consumoHembraDia'].includes(metricKey)) return 'indicesComplementarios';
@@ -451,7 +442,7 @@ export default function GestationPerformancePage() {
                                                 let numeratorKey = metric.key.replace('_p', '');
                                                 let denominatorKey: string | undefined;
 
-                                                 if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'tasaPartos', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p', 'primerizasServidas_p'].includes(metric.key)) {
+                                                 if (['ia_p', 'montaNatural_p', 'compraGestante_p', 'repeticionCelo_p', 'abortos_p', 'detectadaVacia_p', 'descarteGestante_p', 'muerteGestante_p', 'reservicios_p', 'primerizasServidas_p'].includes(metric.key)) {
                                                     denominatorKey = 'totalServicios';
                                                 } else if (['servicio7dias_p', 'servicioMas7dias_p'].includes(metric.key)) {
                                                     // This one needs a custom denominator based on the sum of its parts
@@ -506,5 +497,3 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
-
-    
