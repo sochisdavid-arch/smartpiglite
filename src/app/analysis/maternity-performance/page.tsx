@@ -77,6 +77,12 @@ const METRIC_DEFINITIONS = [
     { key: 'bajaViabilidadMedia', label: 'Lechones de baja viabilidad (media)' },
 
     { key: 'indicesParto', label: 'ÍNDICES COMPLEMENTARIOS DE PARTO', isHeader: true },
+    { key: 'duracionParto', label: 'Duración del parto (min)'},
+    { key: 'intervaloNacimientos', label: 'Intervalo entre nacimientos (min)'},
+    { key: 'atencionParto', label: 'Lechones con atención al nacer (%)', isPercentage: true},
+    { key: 'consumoCalostro', label: 'Consumo de calostro'},
+    { key: 'pesoMadreParto', label: 'Peso de la madre al parto (Kg)'},
+
 
     { key: 'destete', label: 'DESTETE', isHeader: true },
     { key: 'totalDestetes', label: 'Total de destetes' },
