@@ -77,12 +77,12 @@ const METRIC_DEFINITIONS = [
     { key: 'bajaViabilidadMedia', label: 'Lechones de baja viabilidad (media)' },
 
     { key: 'indicesParto', label: 'ÍNDICES COMPLEMENTARIOS DE PARTO', isHeader: true },
-    { key: 'duracionParto', label: 'Duración del parto (min)'},
-    { key: 'intervaloNacimientos', label: 'Intervalo entre nacimientos (min)'},
-    { key: 'atencionParto', label: 'Lechones con atención al nacer (%)', isPercentage: true},
-    { key: 'consumoCalostro', label: 'Consumo de calostro'},
-    { key: 'pesoMadreParto', label: 'Peso de la madre al parto (Kg)'},
-
+    { key: 'cicloMedioParto', label: 'Ciclo medio' },
+    { key: 'mediaDuracionHoras', label: 'Media de duración (horas)' },
+    { key: 'periodoGestacion', label: 'Periodo de gestación' },
+    { key: 'intervaloEntrePartos', label: 'Intervalo entre partos' },
+    { key: 'pesoMadreParto', label: 'Peso de la madre en el parto' },
+    { key: 'variacionPesoServicioParto', label: 'Variación del peso (servicio, parto)', isPercentage: true },
 
     { key: 'destete', label: 'DESTETE', isHeader: true },
     { key: 'totalDestetes', label: 'Total de destetes' },
@@ -369,3 +369,5 @@ export default function MaternityPerformancePage() {
         </AppLayout>
     );
 }
+
+    
