@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Repeat, Baby, XCircle } from 'lucide-react';
+import { Activity, Repeat, Baby, XCircle, LineChart, BarChart as BarChartIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart as RechartsLineChart } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,63 +14,24 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { differenceInDays, parseISO, getMonth, getYear, isWithinInterval, startOfYear, endOfYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
+interface Event {
+    id: string;
+    type: "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte" | "Destete";
+    date: string;
+    liveBorn?: number;
+    stillborn?: number;
+    mummified?: number;
+    details?: string;
+}
 
-const kpiData = [
-  { title: "Tasa de Partos", value: "89.5%", icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
-  { title: "Promedio Nacidos Vivos / Parto", value: "12.8", icon: Baby, description: "Promedio de lechones nacidos vivos por cada parto." },
-  { title: "Días No Productivos (DNP)", value: "25 días", icon: Activity, description: "Promedio de días que una cerda no está gestando ni lactando." },
-  { title: "Tasa de Repetición de Celo", value: "7.2%", icon: Repeat, description: "Porcentaje de cerdas que repiten celo después de la inseminación." },
-  { title: "Tasa de Abortos", value: "2.1%", icon: XCircle, description: "Porcentaje de gestaciones que terminan en aborto." },
-  { title: "Intervalo Destete-Servicio (IDS)", value: "5.8 días", icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
-];
-
-const servicesKpiData = [
-    { metric: "I.A.", value: "120" },
-    { metric: "I.A. (%)", value: "92.3%" },
-    { metric: "Monta natural", value: "10" },
-    { metric: "Monta natural (%)", value: "7.7%" },
-    { metric: "Compra de gestante", value: "5" },
-    { metric: "Compra de gestante (%)", value: "3.8%" },
-    { metric: "Total de Servicios", value: "130", isTotal: true },
-    { metric: "Servicio hasta 7 días", value: "115" },
-    { metric: "Servicio hasta 7 días (%)", value: "88.5%" },
-    { metric: "Servicios por encima 7 días", value: "15" },
-    { metric: "Servicios por encima 7 días (%)", value: "11.5%" },
-    { metric: "Reservicios", value: "8" },
-    { metric: "Reservicios (%)", value: "6.2%" },
-    { metric: "Primerizas servidas", value: "25" },
-    { metric: "Primerizas cubiertas (%)", value: "19.2%" },
-    { metric: "% Múltiples montas / I.A.", value: "45.0%" },
-    { metric: "Nº de montas / I.A. por servicio", value: "2.10" },
-];
-
-const reproductiveLossData = [
-    { metric: "Repetición de celo", value: "9" },
-    { metric: "Repetición de celo (%)", value: "7.2%" },
-    { metric: "Aborto", value: "3" },
-    { metric: "Aborto (%)", value: "2.1%" },
-    { metric: "Detectada vacía", value: "2" },
-    { metric: "Detectada vacía (%)", value: "1.5%" },
-    { metric: "Descarte de gestante", value: "1" },
-    { metric: "Descarte de gestante (%)", value: "0.8%" },
-    { metric: "Muerte de gestante", value: "1" },
-    { metric: "Muerte de gestante (%)", value: "0.8%" },
-    { metric: "Total de pérdidas reproductivas", value: "16", isTotal: true },
-];
-
-const intervalsData = [
-    { metric: "Destete - Servicio", value: "5.8 días" },
-    { metric: "Destete - Preñez", value: "8.2 días" },
-    { metric: "Entrada - 1er Servicio", value: "240 días" },
-    { metric: "Edad - 1er Servicio", value: "35 semanas" },
-];
-
-const complementaryData = [
-    { metric: "Peso de la madre en el servicio", value: "185 kg" },
-    { metric: "Alimento consumido (Kg)", value: "350 kg" },
-    { metric: "Consumo hembra/dia (Kg)", value: "3.0 kg" },
-];
+interface Pig {
+    id: string;
+    breed: string;
+    birthDate: string;
+    events: Event[];
+}
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
@@ -80,29 +41,182 @@ const geneticLines = [
   "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
 ];
 
-
-// Mock data for charts
-const farrowingRateData = [
-    { name: 'Duroc', rate: 88 },
-    { name: 'Landrace', rate: 92 },
-    { name: 'Yorkshire', rate: 90 },
-    { name: 'Pietrain', rate: 85 },
-];
-
-const liveBornData = [
-    { period: 'Ene', value: 12.5 },
-    { period: 'Feb', value: 12.8 },
-    { period: 'Mar', value: 13.1 },
-    { period: 'Abr', value: 12.9 },
-    { period: 'May', value: 13.5 },
-    { period: 'Jun', value: 13.2 },
-];
-
+const allGenetics = [...pigBreeds, ...geneticLines];
 
 export default function GestationPerformancePage() {
     const [period, setPeriod] = React.useState('anual');
     const [year, setYear] = React.useState(new Date().getFullYear().toString());
     const [genetics, setGenetics] = React.useState('todas');
+    const [filteredData, setFilteredData] = React.useState<any>(null);
+
+    const calculateMetrics = React.useCallback((pigs: Pig[], selectedGenetics: string, dateRange: { start: Date, end: Date }) => {
+        let relevantPigs = pigs;
+        if (selectedGenetics !== 'todas') {
+            relevantPigs = pigs.filter(p => 
+                p.breed.toLowerCase() === selectedGenetics.toLowerCase() ||
+                p.breed.toLowerCase().replace(/ /g, '-') === selectedGenetics.toLowerCase()
+            );
+        }
+
+        let services = 0;
+        let successfulServices = 0;
+        let totalLiveBorn = 0;
+        let farrowings = 0;
+        let abortions = 0;
+        let heatRepeats = 0;
+        let emptyDetections = 0; // Not tracked yet
+        let sowDiscards = 0; // Not tracked yet
+        let sowDeaths = 0; // Not tracked yet
+        let idsSum = 0;
+        let idsCount = 0;
+
+        const monthlyLiveBorn: { [key: string]: { total: number, count: number } } = {};
+        const farrowingRateByBreed: { [key: string]: { services: number, farrowings: number } } = {};
+
+        relevantPigs.forEach(pig => {
+            const breedKey = pig.breed || 'Desconocida';
+            if (!farrowingRateByBreed[breedKey]) {
+                farrowingRateByBreed[breedKey] = { services: 0, farrowings: 0 };
+            }
+
+            pig.events.forEach((event, index) => {
+                const eventDate = parseISO(event.date);
+                if (!isWithinInterval(eventDate, dateRange)) return;
+
+                if (event.type === 'Inseminación') {
+                    services++;
+                    farrowingRateByBreed[breedKey].services++;
+                }
+                if (event.type === 'Parto') {
+                    farrowings++;
+                    farrowingRateByBreed[breedKey].farrowings++;
+                    totalLiveBorn += event.liveBorn || 0;
+                    
+                    const month = getMonth(eventDate);
+                    if (!monthlyLiveBorn[month]) {
+                        monthlyLiveBorn[month] = { total: 0, count: 0 };
+                    }
+                    monthlyLiveBorn[month].total += event.liveBorn || 0;
+                    monthlyLiveBorn[month].count++;
+                }
+                if (event.type === 'Aborto') {
+                    abortions++;
+                }
+                if (event.type === 'Celo no Servido' || (event.type === 'Celo' && pig.events[index-1]?.type !== 'Inseminación')) {
+                    heatRepeats++;
+                }
+                if (event.type === 'Destete' && index > 0 && pig.events[index - 1].type === 'Inseminación') {
+                    const inseminationDate = parseISO(pig.events[index-1].date);
+                    const diff = differenceInDays(inseminationDate, eventDate);
+                    if (diff > 0) {
+                        idsSum += diff;
+                        idsCount++;
+                    }
+                }
+            });
+        });
+        
+        successfulServices = farrowings;
+        const totalServicesForRate = services;
+
+        const farrowingRate = totalServicesForRate > 0 ? (successfulServices / totalServicesForRate) * 100 : 0;
+        const avgLiveBorn = farrowings > 0 ? totalLiveBorn / farrowings : 0;
+        const avgIds = idsCount > 0 ? idsSum / idsCount : 0;
+        const dnp = avgIds + 21; // Simplified DNP
+        const heatRepeatRate = services > 0 ? (heatRepeats / services) * 100 : 0;
+        const abortionRate = services > 0 ? (abortions / services) * 100 : 0;
+        
+        const reproductiveLosses = heatRepeats + abortions + emptyDetections + sowDiscards + sowDeaths;
+
+        const servicesKpiData = [
+            { metric: "I.A.", value: services },
+            { metric: "I.A. (%)", value: `100.0%` }, // Assuming all are IA for now
+            { metric: "Monta natural", value: "0" },
+            { metric: "Monta natural (%)", value: "0.0%" },
+            { metric: "Total de Servicios", value: services, isTotal: true },
+            { metric: "Reservicios", value: heatRepeats },
+            { metric: "Reservicios (%)", value: `${heatRepeatRate.toFixed(1)}%` },
+        ];
+        
+        const reproductiveLossData = [
+            { metric: "Repetición de celo", value: heatRepeats },
+            { metric: "Repetición de celo (%)", value: `${heatRepeatRate.toFixed(1)}%` },
+            { metric: "Aborto", value: abortions },
+            { metric: "Aborto (%)", value: `${abortionRate.toFixed(1)}%` },
+            { metric: "Total de pérdidas reproductivas", value: reproductiveLosses, isTotal: true },
+        ];
+
+        const intervalsData = [
+            { metric: "Destete - Servicio", value: `${avgIds.toFixed(1)} días` },
+        ];
+
+        const kpiData = [
+            { title: "Tasa de Partos", value: `${farrowingRate.toFixed(1)}%`, icon: Baby, description: "Porcentaje de servicios que finalizan en parto." },
+            { title: "Promedio Nacidos Vivos / Parto", value: avgLiveBorn.toFixed(1), icon: Baby, description: "Promedio de lechones nacidos vivos por cada parto." },
+            { title: "Días No Productivos (DNP)", value: `${dnp.toFixed(1)} días`, icon: Activity, description: "Promedio de días que una cerda no está gestando ni lactando." },
+            { title: "Tasa de Repetición de Celo", value: `${heatRepeatRate.toFixed(1)}%`, icon: Repeat, description: "Porcentaje de cerdas que repiten celo." },
+            { title: "Tasa de Abortos", value: `${abortionRate.toFixed(1)}%`, icon: XCircle, description: "Porcentaje de gestaciones que terminan en aborto." },
+            { title: "Intervalo Destete-Servicio (IDS)", value: `${avgIds.toFixed(1)} días`, icon: Activity, description: "Tiempo promedio desde el destete hasta la siguiente cubrición." },
+        ];
+
+        const liveBornDataChart = Object.entries(monthlyLiveBorn).map(([month, data]) => ({
+            period: new Date(0, Number(month)).toLocaleString('es', { month: 'short' }),
+            value: data.count > 0 ? data.total / data.count : 0,
+        })).sort((a,b)=> new Date(`1970 ${a.period} 1`) > new Date(`1970 ${b.period} 1`) ? 1 : -1 );
+
+
+        const farrowingRateDataChart = Object.entries(farrowingRateByBreed).map(([breed, data]) => ({
+            name: breed,
+            rate: data.services > 0 ? (data.farrowings / data.services) * 100 : 0,
+        }));
+
+
+        return { kpiData, servicesKpiData, reproductiveLossData, intervalsData, liveBornDataChart, farrowingRateDataChart };
+    }, []);
+
+    React.useEffect(() => {
+        const pigsFromStorage = localStorage.getItem('pigs');
+        if (pigsFromStorage) {
+            const allPigs = JSON.parse(pigsFromStorage);
+            const selectedYear = parseInt(year);
+            let dateRange;
+            switch(period) {
+                case 'mensual':
+                    dateRange = { start: startOfMonth(new Date(selectedYear, 0)), end: endOfMonth(new Date(selectedYear, 11)) }; // Placeholder for now
+                    break;
+                case 'semanal':
+                     dateRange = { start: startOfWeek(new Date(selectedYear, 0, 1)), end: endOfWeek(new Date(selectedYear, 11, 31)) }; // Placeholder
+                    break;
+                default: // anual
+                    dateRange = { start: startOfYear(new Date(selectedYear, 0)), end: endOfYear(new Date(selectedYear, 11)) };
+            }
+            
+            setFilteredData(calculateMetrics(allPigs, genetics, dateRange));
+        }
+    }, [period, year, genetics, calculateMetrics]);
+    
+    if (!filteredData) {
+        return (
+            <AppLayout>
+                <div className="flex flex-col gap-6">
+                    <h1 className="text-3xl font-bold tracking-tight">Análisis de Desempeño de Gestación</h1>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Cargando Datos...</CardTitle>
+                            <CardDescription>Por favor espere mientras se procesan los datos de la granja.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="flex items-center justify-center h-48">
+                                <Activity className="h-12 w-12 animate-spin text-primary" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </AppLayout>
+        )
+    }
+
+    const { kpiData, servicesKpiData, reproductiveLossData, intervalsData, liveBornDataChart, farrowingRateDataChart } = filteredData;
 
     return (
         <AppLayout>
@@ -114,6 +228,47 @@ export default function GestationPerformancePage() {
                     Analice las informaciones de desempeño de la gestación, a través de los indicadores de servicio y pérdidas reproductivas.
                     Estos indicadores son clave para optimizar la eficiencia reproductiva de la granja.
                 </CardDescription>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Filtros de Visualización</CardTitle>
+                         <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
+                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            <Select value={period} onValueChange={setPeriod}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Periodo" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="anual">Anual</SelectItem>
+                                    <SelectItem value="semestral" disabled>Semestral</SelectItem>
+                                    <SelectItem value="trimestral" disabled>Trimestral</SelectItem>
+                                    <SelectItem value="mensual">Mensual</SelectItem>
+                                    <SelectItem value="semanal" disabled>Semanal</SelectItem>
+                                </SelectContent>
+                            </Select>
+                             <Select value={year} onValueChange={setYear}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Año" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="2024">2024</SelectItem>
+                                    <SelectItem value="2023">2023</SelectItem>
+                                    <SelectItem value="2022">2022</SelectItem>
+                                </SelectContent>
+                            </Select>
+                             <Select value={genetics} onValueChange={setGenetics}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
+                                <SelectContent>
+                                     <SelectItem value="todas">Todas las Genéticas</SelectItem>
+                                     <SelectGroup>
+                                        <SelectLabel>Razas</SelectLabel>
+                                        {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
+                                     </SelectGroup>
+                                     <SelectGroup>
+                                        <SelectLabel>Líneas Genéticas</SelectLabel>
+                                        {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
+                                     </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardHeader>
+                </Card>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {kpiData.map((kpi, index) => (
@@ -187,60 +342,24 @@ export default function GestationPerformancePage() {
                                 <AccordionContent>
                                      <Table>
                                         <TableBody>
-                                            {complementaryData.map((item) => (
-                                                <TableRow key={item.metric}>
-                                                    <TableCell>{item.metric}</TableCell>
-                                                    <TableCell className="text-right">{item.value}</TableCell>
-                                                </TableRow>
-                                            ))}
+                                            <TableRow>
+                                                <TableCell>Peso de la madre en el servicio</TableCell>
+                                                <TableCell className="text-right">N/A</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>Alimento consumido (Kg)</TableCell>
+                                                <TableCell className="text-right">N/A</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>Consumo hembra/dia (Kg)</TableCell>
+                                                <TableCell className="text-right">N/A</TableCell>
+                                            </TableRow>
                                         </TableBody>
                                     </Table>
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
                     </CardContent>
-                </Card>
-
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Filtros de Visualización</CardTitle>
-                         <CardDescription>Seleccione los filtros para visualizar los gráficos de tendencias.</CardDescription>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                            <Select value={period} onValueChange={setPeriod}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Periodo" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="anual">Anual</SelectItem>
-                                    <SelectItem value="semestral">Semestral</SelectItem>
-                                    <SelectItem value="trimestral">Trimestral</SelectItem>
-                                    <SelectItem value="mensual">Mensual</SelectItem>
-                                    <SelectItem value="semanal">Semanal</SelectItem>
-                                </SelectContent>
-                            </Select>
-                             <Select value={year} onValueChange={setYear}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Año" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="2024">2024</SelectItem>
-                                    <SelectItem value="2023">2023</SelectItem>
-                                    <SelectItem value="2022">2022</SelectItem>
-                                </SelectContent>
-                            </Select>
-                             <Select value={genetics} onValueChange={setGenetics}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Genética" /></SelectTrigger>
-                                <SelectContent>
-                                     <SelectItem value="todas">Todas las Genéticas</SelectItem>
-                                     <SelectGroup>
-                                        <SelectLabel>Razas</SelectLabel>
-                                        {pigBreeds.map(b => <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>)}
-                                     </SelectGroup>
-                                     <SelectGroup>
-                                        <SelectLabel>Líneas Genéticas</SelectLabel>
-                                        {geneticLines.map(gl => <SelectItem key={gl} value={gl.toLowerCase().replace(/ /g, '-')}>{gl}</SelectItem>)}
-                                     </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardHeader>
                 </Card>
 
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -250,20 +369,25 @@ export default function GestationPerformancePage() {
                             <CardDescription>Comparativo de la tasa de partos (%) entre las diferentes genéticas.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={farrowingRateData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
-                                    <YAxis unit="%" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
-                                    <Tooltip
-                                        contentStyle={{
-                                        backgroundColor: 'hsl(var(--card))',
-                                        borderColor: 'hsl(var(--border))',
-                                        }}
-                                    />
-                                    <Bar dataKey="rate" fill="hsl(var(--chart-1))" name="Tasa de Partos" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                             {farrowingRateDataChart.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={farrowingRateDataChart}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                        <YAxis unit="%" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                                            formatter={(value) => `${(value as number).toFixed(1)}%`}
+                                        />
+                                        <Bar dataKey="rate" fill="hsl(var(--chart-1))" name="Tasa de Partos" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+                                    <BarChartIcon className="h-10 w-10 mb-2"/>
+                                    <p>No hay datos suficientes para mostrar el gráfico.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                      <Card>
@@ -272,25 +396,31 @@ export default function GestationPerformancePage() {
                             <CardDescription>Promedio de nacidos vivos por parto a lo largo del tiempo.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <RechartsLineChart data={liveBornData}>
-                                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                     <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
-                                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
-                                     <Tooltip
-                                        contentStyle={{
-                                        backgroundColor: 'hsl(var(--card))',
-                                        borderColor: 'hsl(var(--border))',
-                                        }}
-                                    />
-                                     <Legend />
-                                     <Line type="monotone" dataKey="value" name="Nacidos Vivos" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }}/>
-                                </RechartsLineChart>
-                            </ResponsiveContainer>
+                            {liveBornDataChart.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <RechartsLineChart data={liveBornDataChart}>
+                                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                         <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false}/>
+                                         <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 1', 'dataMax + 1']} />
+                                         <Tooltip
+                                            contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                                            formatter={(value) => (value as number).toFixed(1)}
+                                        />
+                                         <Legend />
+                                         <Line type="monotone" dataKey="value" name="Nacidos Vivos" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }}/>
+                                    </RechartsLineChart>
+                                </ResponsiveContainer>
+                             ) : (
+                                <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+                                    <LineChart className="h-10 w-10 mb-2"/>
+                                    <p>No hay datos suficientes para mostrar el gráfico.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                  </div>
             </div>
         </AppLayout>
     );
-}
+
+    
