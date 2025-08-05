@@ -40,7 +40,8 @@ import {
   Stethoscope,
   LineChart,
   ChevronDown,
-  UserSearch
+  UserSearch,
+  Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,17 +72,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
   ];
   
-  const analysisSubMenuItems = [
-      { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
+  const gestationAnalysisSubMenuItems = [
       { href: '/analysis/gestation-performance', label: 'Desempeño Gestación' },
       { href: '/analysis/reproductive-loss', label: 'Pérdida Reproductiva' },
       { href: '/analysis/service-analysis', label: 'Análisis de Servicios' },
       { href: '/analysis/farrowing-rate', label: 'Análisis Tasa de Parición' },
       { href: '/analysis/reproductive-loss-analysis', label: 'Análisis Pérdidas Reproductivas' },
       { href: '/analysis/sow-card', label: 'Ficha de la Madre' },
-  ]
+  ];
 
   const isAnalysisActive = pathname.startsWith('/analysis');
+  const isGestationAnalysisActive = gestationAnalysisSubMenuItems.some(item => pathname === item.href);
 
   return (
     <SidebarProvider>
@@ -125,16 +126,36 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                         <SidebarMenuSub>
-                            {analysisSubMenuItems.map((item) => (
-                                <SidebarMenuSubItem key={item.href}>
-                                    <SidebarMenuSubButton
-                                        asChild
-                                        isActive={pathname === item.href}
-                                    >
-                                        <Link href={item.href}>{item.label}</Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            ))}
+                           <SidebarMenuSubItem>
+                               <Collapsible>
+                                   <CollapsibleTrigger asChild>
+                                        <SidebarMenuSubButton variant={isGestationAnalysisActive ? "default" : "ghost"} isActive={isGestationAnalysisActive} className="w-full justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Activity />
+                                                <span>Gestación</span>
+                                            </div>
+                                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                                        </SidebarMenuSubButton>
+                                   </CollapsibleTrigger>
+                                   <CollapsibleContent>
+                                       <SidebarMenuSub>
+                                            {gestationAnalysisSubMenuItems.map((item) => (
+                                                <SidebarMenuSubItem key={item.href}>
+                                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                                        <Link href={item.href}>{item.label}</Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            ))}
+                                       </SidebarMenuSub>
+                                   </CollapsibleContent>
+                               </Collapsible>
+                           </SidebarMenuSubItem>
+
+                           <SidebarMenuSubItem>
+                                <SidebarMenuSubButton asChild isActive={pathname === '/analysis/liquidated-batches'}>
+                                    <Link href="/analysis/liquidated-batches">Lotes Liquidados</Link>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
                         </SidebarMenuSub>
                     </CollapsibleContent>
                 </Collapsible>
