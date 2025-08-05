@@ -303,7 +303,7 @@ export default function MaternityPerformancePage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button className="w-full lg:w-auto"><Filter className="mr-2 h-4 w-4" />Filtrar</Button>
+                            <Button onClick={handleFilter} className="w-full lg:w-auto"><Filter className="mr-2 h-4 w-4" />Filtrar</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -369,5 +369,7 @@ export default function MaternityPerformancePage() {
         </AppLayout>
     );
 }
+
+    
 
     
