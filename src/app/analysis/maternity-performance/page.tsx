@@ -119,6 +119,11 @@ const METRIC_DEFINITIONS = [
     { key: 'alimentoConsumidoLechones', label: 'Alimento consum. lechones (Kg)' },
 ];
 
+const pigBreeds = [
+  "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "Otro"
+];
 
 const formatPeriodKey = (date: Date, unit: GroupingUnit): string => {
     switch (unit) {
@@ -166,7 +171,6 @@ export default function MaternityPerformancePage() {
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [groupBy, setGroupBy] = React.useState<GroupingUnit>('month');
     const [breedFilter, setBreedFilter] = React.useState('all');
-    const [breedOptions, setBreedOptions] = React.useState<string[]>([]);
 
     const [openCategories, setOpenCategories] = React.useState<{[key: string]: boolean}>({
         'partos': true, 'nacimientos': true, 'indicesParto': true, 'destete': true,
@@ -177,15 +181,18 @@ export default function MaternityPerformancePage() {
         const pigsFromStorage = localStorage.getItem('pigs');
         const allPigs: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
         setPigs(allPigs);
-        const breeds = new Set(allPigs.map(p => p.breed));
-        setBreedOptions(['all', ...Array.from(breeds)]);
     }, []);
 
     const handleFilter = React.useCallback(() => {
         const start = startOfDay(parseISO(startDate));
         const end = endOfDay(parseISO(endDate));
         
-        const calculatedMetrics = calculateMetrics(pigs, start, end, groupBy);
+        let filteredPigs = pigs;
+        if(breedFilter !== 'all') {
+            filteredPigs = pigs.filter(p => p.breed === breedFilter);
+        }
+
+        const calculatedMetrics = calculateMetrics(filteredPigs, start, end, groupBy);
         setMetrics(calculatedMetrics);
 
         let headers: Date[] = [];
@@ -234,7 +241,8 @@ export default function MaternityPerformancePage() {
              if (metric.isHeader) {
                 return { isHeader: true, label: metric.label, key: metric.key };
             }
-             const categoryKey = METRIC_DEFINITIONS.find(m => m.isHeader && m.key !== metric.key && METRIC_DEFINITIONS.indexOf(m) < METRIC_DEFINITIONS.indexOf(metric))?.key || 'default';
+             const categoryKey = METRIC_DEFINITIONS.find((m, index) => m.isHeader && index < METRIC_DEFINITIONS.findIndex(def => def.key === metric.key) && METRIC_DEFINITIONS.slice(index + 1).some(sub => sub.key === metric.key))?.key || 'default';
+
 
             return {
                 isHeader: false, label: metric.label, goal: '-',
@@ -299,7 +307,8 @@ export default function MaternityPerformancePage() {
                                 <Select value={breedFilter} onValueChange={setBreedFilter}>
                                     <SelectTrigger id="breed-filter"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {breedOptions.map(b => <SelectItem key={b} value={b}>{b === 'all' ? 'Todas las razas' : b}</SelectItem>)}
+                                        <SelectItem value="all">Todas las razas</SelectItem>
+                                        {pigBreeds.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -327,7 +336,7 @@ export default function MaternityPerformancePage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[250px] sticky left-0 bg-card z-10">Mes</TableHead>
+                                        <TableHead className="w-[250px] sticky left-0 bg-card z-10">Métricas</TableHead>
                                         <TableHead className="w-[100px] text-center">Metas</TableHead>
                                         {visiblePeriods.map(p => (
                                             <TableHead key={p} className="min-w-[100px] text-center">{getPeriodLabel(p, groupBy)}</TableHead>
@@ -376,3 +385,5 @@ export default function MaternityPerformancePage() {
         </AppLayout>
     );
 }
+
+    

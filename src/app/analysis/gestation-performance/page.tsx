@@ -88,6 +88,11 @@ const METRIC_DEFINITIONS = [
     { key: 'consumoHembraDia', label: 'Consumo hembra/día (Kg)' },
 ];
 
+const pigBreeds = [
+  "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "Otro"
+];
 
 const formatPeriodKey = (date: Date, unit: GroupingUnit): string => {
     switch (unit) {
@@ -249,7 +254,6 @@ export default function GestationPerformancePage() {
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [groupBy, setGroupBy] = React.useState<GroupingUnit>('month');
     const [breedFilter, setBreedFilter] = React.useState('all');
-    const [breedOptions, setBreedOptions] = React.useState<string[]>([]);
 
     const [openCategories, setOpenCategories] = React.useState<{[key: string]: boolean}>({
         'servicios': true,
@@ -262,8 +266,6 @@ export default function GestationPerformancePage() {
         const pigsFromStorage = localStorage.getItem('pigs');
         const allPigs: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
         setPigs(allPigs);
-        const breeds = new Set(allPigs.map(p => p.breed));
-        setBreedOptions(['all', ...Array.from(breeds)]);
     }, []);
 
     const handleFilter = React.useCallback(() => {
@@ -491,7 +493,8 @@ export default function GestationPerformancePage() {
                                 <Select value={breedFilter} onValueChange={setBreedFilter}>
                                     <SelectTrigger id="breed-filter"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {breedOptions.map(b => <SelectItem key={b} value={b}>{b === 'all' ? 'Todas las razas' : b}</SelectItem>)}
+                                        <SelectItem value="all">Todas las razas</SelectItem>
+                                        {pigBreeds.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -633,3 +636,5 @@ export default function GestationPerformancePage() {
         </AppLayout>
     );
 }
+
+    
