@@ -17,93 +17,112 @@ export const getFinancialSummary = () => {
     let transactions: FinancialTransaction[] = [];
     
     // 1. Get Income from liquidated batches (precebo & ceba)
-    const liquidatedPreceboReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
-    const liquidatedCebaReports = JSON.parse(localStorage.getItem('liquidatedCebaReports') || '[]');
-    
-    [...liquidatedPreceboReports, ...liquidatedCebaReports].forEach(report => {
-        if (report.liquidationReason === 'Venta de lote' && report.finalEvent?.saleValue > 0) {
-             transactions.push({
-                id: `sale-batch-${report.batchId}`,
-                date: parseISO(report.endDate),
-                description: `Venta de Lote ${report.batchId}`,
-                type: 'income',
-                category: `Venta de Lote ${report.batchId.includes('CEBA') ? 'Ceba' : 'Precebo'}`,
-                amount: report.finalEvent.saleValue,
-            });
-        }
-    });
-
-    // 2. Get Income/Expenses from individual pig events (Venta, Descarte, Muerte) and Purchase
-    const pigs = JSON.parse(localStorage.getItem('pigs') || '[]');
-    pigs.forEach((pig: any) => {
-        // Pig Purchase as an expense
-        if (pig.purchaseValue > 0) {
-            transactions.push({
-                id: `purchase-pig-${pig.id}`,
-                date: parseISO(pig.arrivalDate),
-                description: `Compra de Animal ${pig.id}`,
-                type: 'expense',
-                category: 'Compra de Animales',
-                amount: pig.purchaseValue,
-            });
-        }
-
-        // Pig Sale events as income
-        pig.events.forEach((event: any) => {
-            if (event.type === 'Venta' && event.saleValue > 0) {
-                transactions.push({
-                    id: `sale-pig-${pig.id}-${event.id}`,
-                    date: parseISO(event.date),
-                    description: `Venta de Animal ${pig.id}`,
+    try {
+        const liquidatedPreceboReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
+        const liquidatedCebaReports = JSON.parse(localStorage.getItem('liquidatedCebaReports') || '[]');
+        
+        [...liquidatedPreceboReports, ...liquidatedCebaReports].forEach(report => {
+            const saleValue = report.finalEvent?.saleValue || report.saleValue;
+            if (report.liquidationReason === 'Venta de lote' && saleValue > 0) {
+                 transactions.push({
+                    id: `sale-batch-${report.batchId}`,
+                    date: parseISO(report.endDate),
+                    description: `Venta de Lote ${report.batchId}`,
                     type: 'income',
-                    category: 'Venta de Animales',
-                    amount: event.saleValue,
+                    category: `Venta de Lote ${report.batchId.includes('CEBA') ? 'Ceba' : 'Precebo'}`,
+                    amount: saleValue,
                 });
             }
         });
-    });
+    } catch (e) { console.error("Error processing batch reports:", e); }
+
+    // 2. Get Income/Expenses from individual pig events (Venta, Descarte, Muerte) and Purchase
+    try {
+        const pigs = JSON.parse(localStorage.getItem('pigs') || '[]');
+        pigs.forEach((pig: any) => {
+            // Pig Purchase as an expense
+            if (pig.purchaseValue > 0) {
+                transactions.push({
+                    id: `purchase-pig-${pig.id}`,
+                    date: parseISO(pig.arrivalDate),
+                    description: `Compra de Animal ${pig.id}`,
+                    type: 'expense',
+                    category: 'Compra de Animales',
+                    amount: pig.purchaseValue,
+                });
+            }
+
+            // Pig Sale events as income
+            pig.events.forEach((event: any) => {
+                if ((event.type === 'Venta' || event.type === 'Venta de lote') && event.saleValue > 0) {
+                    transactions.push({
+                        id: `sale-pig-${pig.id}-${event.id}`,
+                        date: parseISO(event.date),
+                        description: `Venta de Animal ${pig.id}`,
+                        type: 'income',
+                        category: 'Venta de Animales',
+                        amount: event.saleValue,
+                    });
+                }
+            });
+        });
+    } catch (e) { console.error("Error processing pig data:", e); }
 
     // 3. Get Expenses from food purchases
-    const foodPurchases = JSON.parse(localStorage.getItem('foodPurchaseHistory') || '[]');
-    foodPurchases.forEach((purchase: any) => {
-        if (purchase.totalValue > 0) {
-            transactions.push({
-                id: `purchase-food-${purchase.id}`,
-                date: parseISO(purchase.entryDate),
-                description: `Compra de ${purchase.productName}`,
-                type: 'expense',
-                category: 'Compra de Alimento',
-                amount: purchase.totalValue,
-            });
-        }
-    });
+    try {
+        const foodPurchases = JSON.parse(localStorage.getItem('foodPurchaseHistory') || '[]');
+        foodPurchases.forEach((purchase: any) => {
+            if (purchase.totalValue > 0) {
+                transactions.push({
+                    id: `purchase-food-${purchase.id}`,
+                    date: parseISO(purchase.entryDate),
+                    description: `Compra de ${purchase.productName}`,
+                    type: 'expense',
+                    category: 'Compra de Alimento',
+                    amount: purchase.totalValue,
+                });
+            }
+        });
+    } catch (e) { console.error("Error processing food purchases:", e); }
     
     // 4. Get Expenses from personnel salaries
-    const personnel = JSON.parse(localStorage.getItem('personnelList') || '[]');
-    // NOTE: This is a simplified model. A real app would track monthly payroll.
-    // Here, we just add their base salary as a one-time expense for demonstration.
-    personnel.forEach((person: any) => {
-        if (person.salary > 0) {
-             transactions.push({
-                id: `salary-${person.id}-${person.hireDate}`,
-                date: parseISO(person.hireDate),
-                description: `Salario Base de ${person.name}`,
-                type: 'expense',
-                category: 'Salarios',
-                amount: person.salary,
+    try {
+        const personnel = JSON.parse(localStorage.getItem('personnelList') || '[]');
+        personnel.forEach((person: any) => {
+            if (person.salary > 0) {
+                 transactions.push({
+                    id: `salary-${person.id}-${person.hireDate}`,
+                    date: parseISO(person.hireDate),
+                    description: `Salario Base de ${person.name}`,
+                    type: 'expense',
+                    category: 'Salarios',
+                    amount: person.salary,
+                });
+            }
+             if (person.bonus > 0) {
+                 transactions.push({
+                    id: `bonus-${person.id}-${person.hireDate}`,
+                    date: parseISO(person.hireDate),
+                    description: `Bonificación para ${person.name}`,
+                    type: 'expense',
+                    category: 'Salarios',
+                    amount: person.bonus,
+                });
+            }
+        });
+    } catch (e) { console.error("Error processing personnel data:", e); }
+
+    // 5. Get manual transactions
+     try {
+        const manualTransactions: any[] = JSON.parse(localStorage.getItem('manualTransactions') || '[]');
+        manualTransactions.forEach(t => {
+            transactions.push({
+                ...t,
+                date: parseISO(t.date),
             });
-        }
-         if (person.bonus > 0) {
-             transactions.push({
-                id: `bonus-${person.id}-${person.hireDate}`,
-                date: parseISO(person.hireDate), // Assume bonus paid on hire for simplicity
-                description: `Bonificación para ${person.name}`,
-                type: 'expense',
-                category: 'Salarios',
-                amount: person.bonus,
-            });
-        }
-    });
+        });
+    } catch(e) { console.error("Error processing manual transactions:", e)}
+
 
     // Sort transactions by date
     transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -134,8 +153,11 @@ export const getFinancialSummary = () => {
     });
 
     const monthlyData = Array.from(monthlyDataMap.values()).sort((a,b) => {
-        const aDate = new Date(a.name.split(' ')[1], Object.values(es.localize!.month).indexOf(a.name.split(' ')[0]));
-        const bDate = new Date(b.name.split(' ')[1], Object.values(es.localize!.month).indexOf(b.name.split(' ')[0]));
+        // A more robust way to sort by month-year
+        const [aMonth, aYear] = a.name.split(' ');
+        const [bMonth, bYear] = b.name.split(' ');
+        const aDate = new Date(parseInt(aYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(aMonth.toLowerCase())));
+        const bDate = new Date(parseInt(bYear), Object.values(es.localize!.month).findIndex(m => m.toLowerCase().startsWith(bMonth.toLowerCase())));
         return aDate.getTime() - bDate.getTime();
     });
 

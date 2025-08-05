@@ -6,12 +6,18 @@ import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { getFinancialSummary, FinancialTransaction } from '@/lib/finance';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from '@/hooks/use-toast';
 
 const formatCurrency = (value?: number) => {
     if (value === undefined || value === null) return '$0';
@@ -24,8 +30,10 @@ export default function FinancePage() {
     const [summary, setSummary] = React.useState({ income: 0, expenses: 0, balance: 0 });
     const [monthlyData, setMonthlyData] = React.useState<any[]>([]);
     const [filter, setFilter] = React.useState('all');
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const { toast } = useToast();
 
-    React.useEffect(() => {
+    const loadFinancialData = React.useCallback(() => {
         const { transactions: allTransactions, summary: financialSummary, monthlyData: financialMonthlyData } = getFinancialSummary();
         setTransactions(allTransactions);
         setFilteredTransactions(allTransactions);
@@ -34,17 +42,63 @@ export default function FinancePage() {
     }, []);
 
     React.useEffect(() => {
+        loadFinancialData();
+    }, [loadFinancialData]);
+
+    React.useEffect(() => {
         if (filter === 'all') {
             setFilteredTransactions(transactions);
         } else {
             setFilteredTransactions(transactions.filter(t => t.type === filter));
         }
     }, [filter, transactions]);
+    
+    const handleTransactionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const type = formData.get('type') as 'income' | 'expense';
+        const date = formData.get('date') as string;
+        const amount = Number(formData.get('amount'));
+        const category = formData.get('category') as string;
+        const description = formData.get('description') as string;
+        
+        if(!type || !date || !amount || !category || !description) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Todos los campos son requeridos.' });
+            return;
+        }
+
+        const newTransaction: FinancialTransaction = {
+            id: `manual-${Date.now()}`,
+            date: parseISO(date),
+            description,
+            type,
+            category,
+            amount,
+        };
+
+        const manualTransactions = JSON.parse(localStorage.getItem('manualTransactions') || '[]');
+        manualTransactions.push(newTransaction);
+        localStorage.setItem('manualTransactions', JSON.stringify(manualTransactions));
+
+        toast({
+            title: '¡Movimiento Registrado!',
+            description: 'La transacción ha sido añadida correctamente.'
+        });
+
+        setIsFormOpen(false);
+        loadFinancialData();
+    };
 
     return (
         <AppLayout>
             <div className="flex flex-col gap-8">
-                <h1 className="text-3xl font-bold tracking-tight">Análisis Financiero</h1>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight">Análisis Financiero</h1>
+                    <Button onClick={() => setIsFormOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Movimiento
+                    </Button>
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card>
@@ -167,6 +221,51 @@ export default function FinancePage() {
                     </CardContent>
                 </Card>
             </div>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Agregar Nuevo Movimiento</DialogTitle>
+                            <DialogDescription>
+                                Registre un ingreso o egreso manual.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleTransactionSubmit} id="transaction-form" className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Tipo de Movimiento</Label>
+                                <RadioGroup name="type" required defaultValue="expense" className="flex gap-4">
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="income" id="income" />
+                                        <Label htmlFor="income">Ingreso</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="expense" id="expense" />
+                                        <Label htmlFor="expense">Egreso</Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="date">Fecha</Label>
+                                <Input id="date" name="date" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="amount">Monto ($)</Label>
+                                <Input id="amount" name="amount" type="number" step="0.01" required placeholder="Ej: 50000" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="category">Categoría</Label>
+                                <Input id="category" name="category" type="text" required placeholder="Ej: Servicios Públicos, Inversión Externa" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="description">Descripción</Label>
+                                <Input id="description" name="description" type="text" required placeholder="Ej: Pago factura de energía" />
+                            </div>
+                        </form>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                            <Button type="submit" form="transaction-form">Guardar Movimiento</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
         </AppLayout>
     );
 }
