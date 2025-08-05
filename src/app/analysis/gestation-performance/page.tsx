@@ -39,6 +39,27 @@ const servicesKpiData = [
     { metric: "Nº de montas / I.A. por servicio", value: "2.10" },
 ];
 
+const reproductiveLossData = [
+    { metric: "Repetición de celo", value: "9" },
+    { metric: "Repetición de celo (%)", value: "7.2%" },
+    { metric: "Aborto", value: "3" },
+    { metric: "Aborto (%)", value: "2.1%" },
+    { metric: "Detectada vacía", value: "2" },
+    { metric: "Detectada vacía (%)", value: "1.5%" },
+    { metric: "Descarte de gestante", value: "1" },
+    { metric: "Descarte de gestante (%)", value: "0.8%" },
+    { metric: "Muerte de gestante", value: "1" },
+    { metric: "Muerte de gestante (%)", value: "0.8%" },
+    { metric: "Total de pérdidas reproductivas", value: "16", isTotal: true },
+];
+
+const intervalsData = [
+    { metric: "Destete - Servicio", value: "5.8 días" },
+    { metric: "Destete - Preñez", value: "8.2 días" },
+    { metric: "Entrada - 1er Servicio", value: "240 días" },
+    { metric: "Edad - 1er Servicio", value: "35 semanas" },
+];
+
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain",
@@ -139,24 +160,59 @@ export default function GestationPerformancePage() {
                     </CardHeader>
                 </Card>
 
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Análisis de Servicios</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableBody>
-                                {servicesKpiData.map((item) => (
-                                    <TableRow key={item.metric}>
-                                        <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
-                                        <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Análisis de Servicios</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableBody>
+                                    {servicesKpiData.map((item) => (
+                                        <TableRow key={item.metric}>
+                                            <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
+                                            <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Pérdida Reproductiva</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableBody>
+                                    {reproductiveLossData.map((item) => (
+                                        <TableRow key={item.metric}>
+                                            <TableCell className={item.isTotal ? "font-bold" : ""}>{item.metric}</TableCell>
+                                            <TableCell className={`text-right ${item.isTotal ? "font-bold" : ""}`}>{item.value}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Intervalos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableBody>
+                                    {intervalsData.map((item) => (
+                                        <TableRow key={item.metric}>
+                                            <TableCell>{item.metric}</TableCell>
+                                            <TableCell className="text-right">{item.value}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                 </div>
 
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
@@ -208,6 +264,5 @@ export default function GestationPerformancePage() {
             </div>
         </AppLayout>
     );
-}
 
     
