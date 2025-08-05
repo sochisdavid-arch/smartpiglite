@@ -74,6 +74,17 @@ const METRIC_DEFINITIONS = [
     { key: 'muerteGestante', label: 'Muerte de gestante' },
     { key: 'muerteGestante_p', label: 'Muerte de gestante (%)', isPercentage: true },
     { key: 'totalPerdidas', label: 'Total de pérdidas reproductivas', isBold: true },
+    
+    { key: 'intervalos', label: 'INTERVALOS', isHeader: true },
+    { key: 'desteteServicio', label: 'Destete - Servicio' },
+    { key: 'destetePrenez', label: 'Destete - Preñez' },
+    { key: 'entrada1erServicio', label: 'Entrada - 1er Servicio' },
+    { key: 'edad1erServicio', label: 'Edad - 1er Servicio' },
+
+    { key: 'indicesComplementarios', label: 'ÍNDICES COMPLEMENTARIOS', isHeader: true },
+    { key: 'pesoMadreServicio', label: 'Peso de la madre en el servicio' },
+    { key: 'alimentoConsumido', label: 'Alimento consumido (Kg)' },
+    { key: 'consumoHembraDia', label: 'Consumo hembra/día (Kg)' },
 ];
 
 
@@ -235,6 +246,8 @@ export default function GestationPerformancePage() {
         'servicios': true,
         'partos': true,
         'perdidaReproductiva': true,
+        'intervalos': true,
+        'indicesComplementarios': true,
     });
     
     React.useEffect(() => {
@@ -363,7 +376,7 @@ export default function GestationPerformancePage() {
                                             )
                                         }
                                         
-                                        const categoryKey = metric.key.split('_')[0];
+                                        const categoryKey = metric.key.includes('Servicio') ? 'servicios' : metric.key.split('_')[0].replace(/([A-Z])/g, ' $1').split(' ')[0].toLowerCase();
                                         if (!openCategories[categoryKey]) return null;
 
                                         let total = 0;
@@ -379,8 +392,8 @@ export default function GestationPerformancePage() {
 
                                         const average = count > 0 ? total / count : 0;
                                         
-                                        const sumTotal = !metric.key.includes('_p') && metric.key !== 'montasPorServicio';
-                                        const avgTotal = metric.key.includes('_p') || metric.key === 'montasPorServicio';
+                                        const sumTotal = !metric.key.includes('_p') && !['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key);
+                                        const avgTotal = metric.key.includes('_p') || ['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key);
 
                                         let finalTotalValue: number | undefined;
                                         if (sumTotal) {
@@ -406,8 +419,8 @@ export default function GestationPerformancePage() {
                                                 }
                                             });
 
-                                            if (metric.key === 'montasPorServicio') {
-                                                finalTotalValue = average; // For this specific metric, average is more representative than a re-calculated total
+                                            if (['desteteServicio', 'destetePrenez', 'entrada1erServicio', 'edad1erServicio', 'pesoMadreServicio', 'consumoHembraDia', 'montasPorServicio'].includes(metric.key)) {
+                                                finalTotalValue = average; // For these metrics, average is more representative than a re-calculated total
                                             } else if (totalDenominator > 0) {
                                                 finalTotalValue = (totalNumerator / totalDenominator) * 100;
                                             } else {
@@ -435,4 +448,5 @@ export default function GestationPerformancePage() {
             </div>
         </AppLayout>
     );
-}
+
+    
