@@ -191,7 +191,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             >
                             <div className="flex items-center gap-2">
                                 <LineChart />
-                                <span>Análisis Producción</span>
+                                <span>Análisis de Precebo y Ceba</span>
                             </div>
                             <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
                         </SidebarMenuButton>
