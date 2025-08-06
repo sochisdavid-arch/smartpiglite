@@ -4,7 +4,6 @@ import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Activity, GitCommitHorizontal, PiggyBank, CalendarOff, Weight, TrendingUp, Baby, ShieldAlert } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 
 interface Event {
@@ -39,11 +38,10 @@ interface KpiData {
   totalPigs: number;
 }
 
-const KpiCard = ({ title, value, unit, icon: Icon, description }: { title: string, value: string, unit?: string, icon: React.ElementType, description: string }) => (
+const KpiCard = ({ title, value, unit, description }: { title: string, value: string, unit?: string, description: string }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
             <div className="text-2xl font-bold">{value} <span className="text-lg text-muted-foreground">{unit}</span></div>
@@ -139,14 +137,14 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard title="DHA" value={kpiData?.dha.toFixed(2) || '0.00'} icon={TrendingUp} description="Destetos / Hembra / Año."/>
-          <KpiCard title="NV/P" value={kpiData?.avgLiveBorn.toFixed(2) || '0.00'} icon={Baby} description="Nacidos Vivos / Parto."/>
-          <KpiCard title="Dest./P" value={kpiData?.avgWeaned.toFixed(2) || '0.00'} icon={Activity} description="Destetados / Parto."/>
-          <KpiCard title="PHA" value={kpiData?.pha.toFixed(2) || '0.00'} icon={GitCommitHorizontal} description="Partos / Hembra / Año."/>
-          <KpiCard title="IDS" value={kpiData?.ids.toFixed(1) || '0.0'} unit="días" icon={ShieldAlert} description="Int. Destete - Servicio."/>
-          <KpiCard title="DNP" value={kpiData?.npd.toFixed(1) || '0.0'} unit="días" icon={CalendarOff} description="Días No Productivos."/>
-          <KpiCard title="Kg/DHA" value={kpiData?.kgDha.toFixed(2) || '0.00'} unit="kg" icon={Weight} description="Kg Destetados / Hembra / Año."/>
-          <KpiCard title="Cerdos Totales" value={kpiData?.totalPigs.toString() || '0'} icon={PiggyBank} description="Total de animales en la granja."/>
+          <KpiCard title="DHA" value={kpiData?.dha.toFixed(2) || '0.00'} description="Destetos / Hembra / Año."/>
+          <KpiCard title="NV/P" value={kpiData?.avgLiveBorn.toFixed(2) || '0.00'} description="Nacidos Vivos / Parto."/>
+          <KpiCard title="Dest./P" value={kpiData?.avgWeaned.toFixed(2) || '0.00'} description="Destetados / Parto."/>
+          <KpiCard title="PHA" value={kpiData?.pha.toFixed(2) || '0.00'} description="Partos / Hembra / Año."/>
+          <KpiCard title="IDS" value={kpiData?.ids.toFixed(1) || '0.0'} unit="días" description="Int. Destete - Servicio."/>
+          <KpiCard title="DNP" value={kpiData?.npd.toFixed(1) || '0.0'} unit="días" description="Días No Productivos."/>
+          <KpiCard title="Kg/DHA" value={kpiData?.kgDha.toFixed(2) || '0.00'} unit="kg" description="Kg Destetados / Hembra / Año."/>
+          <KpiCard title="Cerdos Totales" value={kpiData?.totalPigs.toString() || '0'} description="Total de animales en la granja."/>
         </div>
         <Card>
             <CardHeader>
