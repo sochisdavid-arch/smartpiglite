@@ -107,7 +107,6 @@ const processSowHistory = (sow: Pig): SowData => {
         }
     }
 
-    // Add the current open cycle if it has a service but no weaning yet
     if(currentCycle.serviceDate && !currentCycle.weaningDate) {
          currentCycle.servicesInCycle = currentCycle.services?.length;
          cycles.push({ ...currentCycle } as CycleData);
@@ -194,107 +193,92 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
 
             {/* Main Table */}
             <div className='flex flex-col border-2 border-black border-t-0'>
-                <div className="flex border-b-2 border-black">
-                    <div className="w-[140px] font-bold text-center p-1">PARTOS</div>
-                    <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">{lastCycle.cycle || 1}</div>
-                    <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">PROMEDIO</div>
-                    {/* Empty cells for alignment */}
-                </div>
-                
                 <div className="flex">
-                    {/* Left Column of Data */}
-                    <div className='w-[300px] border-r-2 border-black'>
-                        <MainTableRow label="Fecha Parto" cycleData={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
-                        <MainTableRow label="Total Nacidos" cycleData={lastCycle.totalBorn} avgData={kpis.avgTotalBorn.toFixed(1)} />
-                        <MainTableRow label="Nacidos Vivos" cycleData={lastCycle.liveBorn} avgData={kpis.avgLiveBorn.toFixed(1)} />
-                        <MainTableRow label="Nacidos Muertos" cycleData={lastCycle.stillborn} avgData={kpis.avgStillborn.toFixed(1)} />
-                        <MainTableRow label="Momificados" cycleData={lastCycle.mummified} avgData={kpis.avgMummified.toFixed(1)} />
-                        <MainTableRow label="Adoptados" cycleData={0} avgData={'0.0'}/>
-                        <MainTableRow label="Muertes Registradas" cycleData={0} avgData={'0.0'} />
-                        <MainTableRow label="Intervalo Partos" cycleData={lastCycle.farrowingInterval} avgData={kpis.avgFarrowingInterval > 0 ? kpis.avgFarrowingInterval.toFixed(0) : ''} />
-                        <MainTableRow label="Días Gestación" cycleData={lastCycle.gestationDays} avgData={kpis.avgGestationDays > 0 ? kpis.avgGestationDays.toFixed(0) : ''} />
-                        <MainTableRow label="Fecha Destete" cycleData={lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : ''}/>
-                        <MainTableRow label="Destetados" cycleData={lastCycle.pigletsWeaned} avgData={kpis.avgWeaned.toFixed(1)} />
-                        <MainTableRow label="Camadas Nodriza" cycleData={0}/>
-                        <MainTableRow label="Días Lactancia" cycleData={lastCycle.lactationDays} avgData={kpis.avgLactationDays.toFixed(1)}/>
-                        <MainTableRow label="Peso Medio" cycleData={lastCycle.avgWeaningWeight?.toFixed(1)} avgData={kpis.avgWeaningWeight.toFixed(1)} />
-                        <MainTableRow label="SPI (BVSP)" />
-                        <MainTableRow label="Número de Servicios" cycleData={lastCycle.servicesInCycle} avgData={kpis.avgServices.toFixed(1)}/>
-                        <MainTableRow label="Fecha Último Servicio" cycleData={lastCycle.serviceDate ? format(parseISO(lastCycle.serviceDate), 'dd/MM/yy') : ''} />
-                        <MainTableRow label="Macho" cycleData={lastCycle.boarId}/>
-                        <MainTableRow label="Abortos" cycleData={0} avgData={'0'}/>
-                        <MainTableRow label="Último Comentario" />
+                    <div className="w-[300px] border-r-2 border-black">
+                        <div className="flex border-b-2 border-black">
+                            <div className="w-[140px] font-bold text-center p-1">PARTOS</div>
+                            <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">{lastCycle.cycle || 1}</div>
+                            <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">PROMEDIO</div>
+                        </div>
+                        <div className='flex flex-col'>
+                            <MainTableRow label="Fecha Parto" cycleData={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
+                            <MainTableRow label="Total Nacidos" cycleData={lastCycle.totalBorn} avgData={kpis.avgTotalBorn.toFixed(1)} />
+                            <MainTableRow label="Nacidos Vivos" cycleData={lastCycle.liveBorn} avgData={kpis.avgLiveBorn.toFixed(1)} />
+                            <MainTableRow label="Nacidos Muertos" cycleData={lastCycle.stillborn} avgData={kpis.avgStillborn.toFixed(1)} />
+                            <MainTableRow label="Momificados" cycleData={lastCycle.mummified} avgData={kpis.avgMummified.toFixed(1)} />
+                            <MainTableRow label="Adoptados" cycleData={0} avgData={'0.0'}/>
+                            <MainTableRow label="Muertes Registradas" cycleData={0} avgData={'0.0'} />
+                            <MainTableRow label="Intervalo Partos" cycleData={lastCycle.farrowingInterval} avgData={kpis.avgFarrowingInterval > 0 ? kpis.avgFarrowingInterval.toFixed(0) : ''} />
+                            <MainTableRow label="Días Gestación" cycleData={lastCycle.gestationDays} avgData={kpis.avgGestationDays > 0 ? kpis.avgGestationDays.toFixed(0) : ''} />
+                            <MainTableRow label="Fecha Destete" cycleData={lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : ''}/>
+                            <MainTableRow label="Destetados" cycleData={lastCycle.pigletsWeaned} avgData={kpis.avgWeaned.toFixed(1)} />
+                            <MainTableRow label="Camadas Nodriza" cycleData={0}/>
+                            <MainTableRow label="Días Lactancia" cycleData={lastCycle.lactationDays} avgData={kpis.avgLactationDays.toFixed(1)}/>
+                            <MainTableRow label="Peso Medio" cycleData={lastCycle.avgWeaningWeight?.toFixed(1)} avgData={kpis.avgWeaningWeight.toFixed(1)} />
+                            <MainTableRow label="SPI (BVSP)" />
+                            <MainTableRow label="Número de Servicios" cycleData={lastCycle.servicesInCycle} avgData={kpis.avgServices.toFixed(1)}/>
+                            <MainTableRow label="Fecha Último Servicio" cycleData={lastCycle.serviceDate ? format(parseISO(lastCycle.serviceDate), 'dd/MM/yy') : ''} />
+                            <MainTableRow label="Macho" cycleData={lastCycle.boarId}/>
+                            <MainTableRow label="Abortos" cycleData={0} avgData={'0'}/>
+                            <MainTableRow label="Último Comentario" />
+                        </div>
                     </div>
-                     {/* Right Column of Data */}
                     <div className='flex-1'>
-                        <div className="grid grid-cols-10 h-full">
-                           <div className="col-span-4 border-r-2 border-black h-full"> {/* Service Dates */}
-                                <div className="grid grid-cols-1 divide-y-2 divide-black h-full">
-                                    <div className="p-1">
-                                        <div className="font-bold">Machos</div>
-                                        <div className="font-bold">Servicio:</div>
-                                    </div>
-                                    <div className="p-1">
-                                        <div className="font-bold">Servicio + 21 Días</div>
-                                    </div>
-                                    <div className="p-1">
-                                        <div className="font-bold">Servicio + 35 Días</div>
-                                    </div>
-                                    <div className="p-1">
-                                        <div className="font-bold">F. Estimada Parto</div>
-                                    </div>
+                        <div className="grid grid-rows-4 h-full">
+                           <div className="row-span-1 grid grid-cols-2 border-b-2 border-black"> 
+                                <div className="p-1 border-r-2 border-black">
+                                    <div className="font-bold">Machos: {lastCycle.boarId || ''}</div>
+                                    <div className="font-bold">Servicio: {lastCycle.serviceDate ? format(parseISO(lastCycle.serviceDate), 'dd/MM/yy') : ''}</div>
+                                </div>
+                                <div className="p-1">
+                                    <div>Control Celo: {lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
+                                    <div>Diag. Gest.: {lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 35), 'dd/MM/yy') : ''}</div>
                                 </div>
                            </div>
-                           <div className="col-span-6 h-full"> {/* Data & Barcode */}
-                                <div className="grid grid-cols-1 divide-y-2 divide-black h-full">
-                                    <div className="p-1 grid grid-cols-2">
-                                        <div className="text-center">{lastCycle.boarId || ''}</div>
-                                        <div className="text-center">
-                                            <div>Control Celo: {lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
-                                            <div>Diag. Gest.: {lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 35), 'dd/MM/yy') : ''}</div>
-                                        </div>
-                                    </div>
-                                     <div className="p-1 text-center">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
-                                     <div className="p-1 text-center">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 35), 'dd/MM/yy') : ''}</div>
-                                     <div className="p-1 flex justify-between items-center">
-                                        <span className="font-bold text-center flex-1">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 114), 'dd/MM/yy') : ''}</span>
-                                        <div className="flex-shrink-0">
-                                            <Image src={qrUrl} alt="QR Code" width={40} height={40} data-ai-hint="barcode" />
-                                        </div>
-                                     </div>
+                           <div className="row-span-1 p-1 border-b-2 border-black">
+                                <div className="font-bold">Servicio + 21 Días</div>
+                                <div className="text-center">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
+                           </div>
+                           <div className="row-span-1 p-1 border-b-2 border-black">
+                                <div className="font-bold">Servicio + 35 Días</div>
+                                <div className="text-center">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 35), 'dd/MM/yy') : ''}</div>
+                           </div>
+                           <div className="row-span-1 p-1 flex justify-between items-center">
+                                <div className="flex-1">
+                                    <div className="font-bold">F. Estimada Parto</div>
+                                    <div className="text-center">{lastCycle.serviceDate ? format(addDays(parseISO(lastCycle.serviceDate), 114), 'dd/MM/yy') : ''}</div>
+                                </div>
+                                <div className="flex-shrink-0">
+                                    <Image src={qrUrl} alt="QR Code" width={40} height={40} data-ai-hint="barcode" />
                                 </div>
                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            {/* Parto Details */}
-            <div className="grid grid-cols-[140px,1fr] mt-1 border-2 border-black text-center">
-                <div className="p-1 font-bold">F. Parto: {lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} ({lastCycle.gestationDays || ''})</div>
-                 <div className="p-1 font-bold border-l-2 border-black">Ubicación: </div>
-            </div>
-             <div className="grid grid-cols-[140px,1fr] border-x-2 border-b-2 border-black">
-                 <div className="p-1 grid grid-cols-6 border-r-2 border-black text-center divide-x-2 divide-black">
-                    <div className="col-span-1 font-bold">F. Nac</div>
-                    <div className="col-span-1 font-bold">Vivos</div>
-                    <div className="col-span-1 font-bold">Muertos</div>
-                    <div className="col-span-1 font-bold">Momificados</div>
-                    <div className="col-span-1 font-bold">Peso Nac.</div>
-                    <div className="col-span-1 font-bold">Código camada</div>
+                 <div className="grid grid-cols-[140px,1fr] border-t-2 border-black">
+                    <div className="p-1 font-bold">F. Parto: {lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} ({lastCycle.gestationDays || ''})</div>
+                     <div className="p-1 font-bold border-l-2 border-black">Ubicación: </div>
                 </div>
-                 <div className="p-1 grid grid-cols-6 text-center divide-x-2 divide-black h-5">
-                     <div className="col-span-1"></div>
-                     <div className="col-span-1"></div>
-                     <div className="col-span-1"></div>
-                     <div className="col-span-1"></div>
-                     <div className="col-span-1"></div>
-                     <div className="col-span-1"></div>
-                 </div>
+                 <div className="grid grid-cols-[140px,1fr] border-y-2 border-black">
+                     <div className="grid grid-cols-6 border-r-2 border-black text-center divide-x-2 divide-black">
+                        <div className="col-span-1 font-bold p-0.5">F. Nac</div>
+                        <div className="col-span-1 font-bold p-0.5">Vivos</div>
+                        <div className="col-span-1 font-bold p-0.5">Muertos</div>
+                        <div className="col-span-1 font-bold p-0.5">Momificados</div>
+                        <div className="col-span-1 font-bold p-0.5">Peso Nac.</div>
+                        <div className="col-span-1 font-bold p-0.5">Código camada</div>
+                    </div>
+                     <div className="grid grid-cols-6 text-center divide-x-2 divide-black h-5">
+                         <div className="col-span-1"></div>
+                         <div className="col-span-1"></div>
+                         <div className="col-span-1"></div>
+                         <div className="col-span-1"></div>
+                         <div className="col-span-1"></div>
+                         <div className="col-span-1"></div>
+                     </div>
+                </div>
             </div>
             
-
-            {/* Bottom Event Tables */}
             <div className="mt-1 flex-grow grid grid-cols-2 grid-rows-3 gap-1">
                 <TableShell title="MUERTE LECHONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
                 <TableShell title="CAUSAS MUERTE" cols={['COLAS']} rows={4}/>
@@ -318,11 +302,9 @@ const TableShell = ({title, cols, rows}: {title: string, cols: string[], rows: n
         <div className="flex-grow grid grid-rows-4">
             {Array.from({length: rows}).map((_, i) => (
                 <div key={i} className={`grid grid-cols-${cols.length > 0 ? cols.length : 1} border-b-2 last:border-b-0 border-black h-full`}>
-                    {cols.map((c, j) => <div key={j} className="border-r-2 border-black last:border-r-0"></div>)}
+                    {cols.length > 0 ? cols.map((c, j) => <div key={j} className="border-r-2 border-black last:border-r-0"></div>) : <div></div>}
                 </div>
             ))}
         </div>
     </div>
 );
-
-    
