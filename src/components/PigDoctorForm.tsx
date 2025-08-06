@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -15,11 +15,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPigDiagnosis, type PigDoctorOutput } from '@/ai/flows/pig-doctor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Camera, GitCommitHorizontal, Lightbulb, Loader2, Syringe, AlertTriangle, ShieldCheck, Microscope, FlaskConical } from 'lucide-react';
+import { Camera, GitCommitHorizontal, Lightbulb, Loader2, Syringe, AlertTriangle, ShieldCheck, Microscope, FlaskConical, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
@@ -32,9 +33,10 @@ const formSchema = z.object({
 export function PigDoctorForm() {
   const [diagnosis, setDiagnosis] = useState<PigDoctorOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,24 +47,47 @@ export function PigDoctorForm() {
     },
   });
 
-  const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
-        setHasCameraPermission(true);
+  const { setValue, watch } = form;
+  const photoDataUri = watch('photoDataUri');
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+  const startCamera = async () => {
+    try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                setIsCameraActive(true);
+                setValue('photoDataUri', undefined); // Clear any uploaded photo
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'La cámara no es soportada por este navegador.' });
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Acceso a la Cámara Denegado',
-          description: 'Por favor, habilita los permisos de la cámara en tu navegador para usar esta función.',
-        });
+        toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, habilita los permisos de la cámara.' });
+    }
+  };
+
+  const stopCamera = () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
       }
-    };
+      setIsCameraActive(false);
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setValue('photoDataUri', reader.result as string);
+        stopCamera();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -70,20 +95,20 @@ export function PigDoctorForm() {
 
     let submissionValues = { ...values };
 
-    // Capture image if camera is active
-    if (hasCameraPermission && videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      if(context) {
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const dataUri = canvas.toDataURL('image/jpeg');
-        submissionValues.photoDataUri = dataUri;
-      }
+    if (isCameraActive && videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if(context) {
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUri = canvas.toDataURL('image/jpeg');
+            submissionValues.photoDataUri = dataUri;
+        }
+        stopCamera();
     }
-
+    
     try {
       const result = await getPigDiagnosis(submissionValues);
       setDiagnosis(result);
@@ -99,12 +124,22 @@ export function PigDoctorForm() {
     }
   }
 
+  const clearImage = () => {
+      setValue('photoDataUri', undefined);
+      if (isCameraActive) {
+          stopCamera();
+      }
+      if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+      }
+  }
+
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Información Clínica</CardTitle>
-          <CardDescription>Describa los síntomas y tome una foto para que la IA genere un análisis.</CardDescription>
+          <CardDescription>Describa los síntomas y adjunte una foto para que la IA genere un análisis.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -116,40 +151,50 @@ export function PigDoctorForm() {
                   <FormItem>
                     <FormLabel>Síntomas, Historial y Observaciones</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Describa todo lo que observa: síntomas, edad del animal, etapa, condiciones del corral, historial de vacunas, si hay más casos, etc." {...field} rows={8}/>
+                      <Textarea placeholder="Describa todo lo que observa: síntomas, edad, etapa, condiciones del corral, etc." {...field} rows={8}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="space-y-2">
-                <Label>Cámara</Label>
-                {hasCameraPermission === null && (
-                     <Button type="button" variant="outline" onClick={getCameraPermission} className="w-full">
-                        <Camera className="mr-2 h-4 w-4" /> Activar Cámara
+              <div className="space-y-4">
+                <FormLabel>Foto (Opcional)</FormLabel>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={startCamera}>
+                        <Camera className="mr-2 h-4 w-4" /> Usar Cámara
                     </Button>
-                )}
-                {hasCameraPermission === false && (
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Cámara no disponible</AlertTitle>
-                        <AlertDescription>
-                           No se pudo acceder a la cámara. Por favor, revisa los permisos.
-                           <Button variant="link" onClick={getCameraPermission}>Reintentar</Button>
-                        </AlertDescription>
-                    </Alert>
-                )}
-                
-                <div className="relative">
-                    <video ref={videoRef} className={cn("w-full aspect-video rounded-md bg-muted", !hasCameraPermission && "hidden")} autoPlay muted />
-                    <canvas ref={canvasRef} className="hidden" />
-                     {hasCameraPermission && (
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full px-2">
-                            <p className="text-xs text-center text-white bg-black/50 p-1 rounded">La cámara está activa. La foto se tomará al enviar el formulario.</p>
-                        </div>
-                     )}
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" /> Subir Imagen
+                    </Button>
+                    <Input 
+                        type="file" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept="image/*"
+                    />
                 </div>
+
+                { (photoDataUri || isCameraActive) && (
+                    <div className="relative aspect-video w-full">
+                        {isCameraActive ? (
+                            <video ref={videoRef} autoPlay muted className="w-full h-full object-cover rounded-md bg-muted" />
+                        ) : photoDataUri ? (
+                            <img src={photoDataUri} alt="Vista previa" className="w-full h-full object-cover rounded-md" />
+                        ) : null}
+                         <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                            onClick={clearImage}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                        <canvas ref={canvasRef} className="hidden" />
+                    </div>
+                )}
               </div>
               
               <Button type="submit" disabled={isLoading} className="w-full">
