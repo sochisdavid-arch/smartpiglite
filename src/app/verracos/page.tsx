@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isValid, differenceInWeeks } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 interface BoarEvent {
     id: string;
@@ -29,6 +31,8 @@ interface Boar {
     birthDate: string;
     arrivalDate: string;
     status: 'Activo' | 'Inactivo' | 'Vendido';
+    weight: number;
+    purchaseValue?: number;
     events: BoarEvent[];
 }
 
@@ -73,6 +77,8 @@ export default function VerracosPage() {
             breed: formData.get('breed') as string,
             birthDate: formData.get('birthDate') as string,
             arrivalDate: formData.get('arrivalDate') as string,
+            weight: Number(formData.get('weight')),
+            purchaseValue: Number(formData.get('purchaseValue')) || undefined,
         };
 
         let updatedBoars: Boar[];
@@ -127,6 +133,7 @@ export default function VerracosPage() {
                                     <TableHead>Raza</TableHead>
                                     <TableHead>Fecha Ingreso</TableHead>
                                     <TableHead>Edad (Semanas)</TableHead>
+                                    <TableHead>Peso (kg)</TableHead>
                                     <TableHead>Estado</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -137,13 +144,14 @@ export default function VerracosPage() {
                                         <TableCell>{boar.breed}</TableCell>
                                         <TableCell>{format(parseISO(boar.arrivalDate), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell>{calculateAgeInWeeks(boar.birthDate)}</TableCell>
+                                        <TableCell>{boar.weight}</TableCell>
                                         <TableCell>
                                             <Badge variant={boar.status === 'Activo' ? 'default' : 'secondary'}>{boar.status}</Badge>
                                         </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">No hay verracos registrados.</TableCell>
+                                        <TableCell colSpan={6} className="h-24 text-center">No hay verracos registrados.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -164,7 +172,14 @@ export default function VerracosPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="breed">Raza</Label>
-                                <Input id="breed" name="breed" required defaultValue={editingBoar?.breed} />
+                                <Select name="breed" required defaultValue={editingBoar?.breed}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar raza/línea" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    {pigBreeds.map(breed => <SelectItem key={breed} value={breed}>{breed}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
@@ -173,6 +188,14 @@ export default function VerracosPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="arrivalDate">Fecha de Ingreso</Label>
                                 <Input id="arrivalDate" name="arrivalDate" type="date" required defaultValue={editingBoar?.arrivalDate} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="weight">Peso (kg)</Label>
+                                <Input id="weight" name="weight" type="number" step="0.1" required defaultValue={editingBoar?.weight} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="purchaseValue">Valor de Compra ($)</Label>
+                                <Input id="purchaseValue" name="purchaseValue" type="number" step="0.01" placeholder="Opcional" defaultValue={editingBoar?.purchaseValue} />
                             </div>
                         </form>
                         <DialogFooter>

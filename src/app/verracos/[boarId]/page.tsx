@@ -35,6 +35,8 @@ interface Boar {
     birthDate: string;
     arrivalDate: string;
     status: 'Activo' | 'Inactivo' | 'Vendido';
+    weight: number;
+    purchaseValue?: number;
     events: BoarEvent[];
 }
 
@@ -145,6 +147,10 @@ export default function BoarHistoryPage() {
                         <div className="space-y-1">
                             <Label>Edad</Label>
                             <p className="font-semibold">{differenceInWeeks(new Date(), parseISO(boar.birthDate))} semanas</p>
+                        </div>
+                         <div className="space-y-1">
+                            <Label>Peso Actual</Label>
+                            <p className="font-semibold">{boar.weight} kg</p>
                         </div>
                         <div className="space-y-1">
                             <Label>Estado</Label>
