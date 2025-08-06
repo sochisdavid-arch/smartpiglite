@@ -35,7 +35,7 @@ interface Pig {
 
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
-  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   "Otro"
 ];
 
@@ -281,9 +281,9 @@ export default function MaternityPerformancePage() {
                 </Card>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <KpiCard title="PHA" value={kpiData.pha.toFixed(2)} meta="Meta: 2,57" isBad={kpiData.pha < 2.57} />
-                    <KpiCard title="DHA" value={kpiData.dha.toFixed(2)} meta="Meta: 33,44" isBad={kpiData.dha < 33.44}/>
-                    <KpiCard title="KG/DHA" value={kpiData.kgdha.toFixed(2)} meta="Kg Destetados/Hembra/Año" />
+                    <KpiCard title="PHA" value={kpiData.pha.toFixed(2)} meta="Partos / Hembra / Año" isBad={kpiData.pha < 2.57} />
+                    <KpiCard title="DHA" value={kpiData.dha.toFixed(2)} meta="Destetados / Hembra / Año" isBad={kpiData.dha < 33.44}/>
+                    <KpiCard title="KG/DHA" value={kpiData.kgdha.toFixed(2)} meta="Kg Destetados / Hembra / Año" />
                 </div>
 
                 <Card>
@@ -330,7 +330,7 @@ export default function MaternityPerformancePage() {
                             </ResponsiveContainer>
                         </div>
                         <div>
-                             <h3 className="font-semibold text-md mb-2">Kg/Destetados/Hembra/Año (Kg/DHA)</h3>
+                             <h3 className="font-semibold text-md mb-2">Kg/DHA</h3>
                              <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
