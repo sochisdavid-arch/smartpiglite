@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, MoreHorizontal } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, getYear } from 'date-fns';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, getYear, eachWeekOfInterval, eachYearOfInterval, getWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from '@/components/ui/slider';
@@ -29,6 +29,7 @@ interface Pig {
     id: string;
     breed: string;
     birthDate: string;
+    gender: string;
     events: Event[];
 }
 
@@ -72,6 +73,7 @@ export default function MaternityPerformancePage() {
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [cycleRange, setCycleRange] = React.useState([1, 20]);
     const [distributionBy, setDistributionBy] = React.useState<'ciclo' | 'raza'>('ciclo');
+    const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'year'>('month');
 
     const [kpiData, setKpiData] = React.useState({ pha: 0, dha: 0, kgdha: 0 });
     const [chartData, setChartData] = React.useState<MonthlyData[]>([]);
@@ -98,8 +100,6 @@ export default function MaternityPerformancePage() {
         const productiveDays = differenceInDays(end, start);
         const productiveYears = productiveDays / 365.25;
 
-        // Note: Number of productive sows is an approximation. 
-        // A more precise calculation would track sow inventory daily.
         const productiveSows = filteredPigs.length; 
 
         if (productiveSows === 0) {
@@ -113,7 +113,7 @@ export default function MaternityPerformancePage() {
         let totalWeaned = 0;
         let totalWeanedKg = 0;
         
-        const monthlyMetrics: Record<string, {farrowings: number, weaned: number, weanedKg: number, sowCount: number}> = {};
+        const periodMetrics: Record<string, {farrowings: number, weaned: number, weanedKg: number, sowCount: number}> = {};
         const cycleMetrics: Record<string, { farrowings: number, weaned: number, sowCount: number }> = {};
 
 
@@ -126,9 +126,13 @@ export default function MaternityPerformancePage() {
                     if (eventDate >= start && eventDate <= end && cycle >= cycleRange[0] && cycle <= cycleRange[1]) {
                         totalFarrowings++;
 
-                        const monthKey = format(eventDate, 'yyyy-MM');
-                        if (!monthlyMetrics[monthKey]) monthlyMetrics[monthKey] = { farrowings: 0, weaned: 0, weanedKg: 0, sowCount: 1 };
-                        monthlyMetrics[monthKey].farrowings++;
+                        let periodKey: string;
+                        if (timeGroup === 'month') periodKey = format(eventDate, 'yyyy-MM');
+                        else if (timeGroup === 'week') periodKey = `${getYear(eventDate)}-W${getWeek(eventDate, { weekStartsOn: 1 })}`;
+                        else periodKey = getYear(eventDate).toString();
+                        
+                        if (!periodMetrics[periodKey]) periodMetrics[periodKey] = { farrowings: 0, weaned: 0, weanedKg: 0, sowCount: 1 };
+                        periodMetrics[periodKey].farrowings++;
 
                         const cycleKey = cycle <= 1 ? '1' : (cycle <= 2 ? '2' : (cycle <= 6 ? '3-6' : '>6'));
                         if (!cycleMetrics[cycleKey]) cycleMetrics[cycleKey] = { farrowings: 0, weaned: 0, sowCount: 1 };
@@ -143,10 +147,14 @@ export default function MaternityPerformancePage() {
                         totalWeaned += weanedCount;
                         totalWeanedKg += weanedKg;
 
-                        const monthKey = format(eventDate, 'yyyy-MM');
-                         if (monthlyMetrics[monthKey]) {
-                            monthlyMetrics[monthKey].weaned += weanedCount;
-                            monthlyMetrics[monthKey].weanedKg += weanedKg;
+                        let periodKey: string;
+                        if (timeGroup === 'month') periodKey = format(eventDate, 'yyyy-MM');
+                        else if (timeGroup === 'week') periodKey = `${getYear(eventDate)}-W${getWeek(eventDate, { weekStartsOn: 1 })}`;
+                        else periodKey = getYear(eventDate).toString();
+                        
+                         if (periodMetrics[periodKey]) {
+                            periodMetrics[periodKey].weaned += weanedCount;
+                            periodMetrics[periodKey].weanedKg += weanedKg;
                          }
 
                         const cycleKey = cycle <= 1 ? '1' : (cycle <= 2 ? '2' : (cycle <= 6 ? '3-6' : '>6'));
@@ -164,15 +172,36 @@ export default function MaternityPerformancePage() {
         
         setKpiData({ pha, dha, kgdha });
         
-        const months = eachMonthOfInterval({start, end});
-        const finalChartData = months.map(month => {
-            const monthKey = format(month, 'yyyy-MM');
-            const data = monthlyMetrics[monthKey];
-            if (!data) return { name: format(month, 'MMM yy', {locale: es}), pha: 0, dha: 0, kgdha: 0};
+        let periods: Date[] = [];
+        let getPeriodKey: (d: Date) => string;
+        let getPeriodLabel: (d: Date) => string;
+        let periodDurationDays: number;
+
+        if (timeGroup === 'month') {
+            periods = eachMonthOfInterval({ start, end });
+            getPeriodKey = (d) => format(d, 'yyyy-MM');
+            getPeriodLabel = (d) => format(d, 'MMM yy', { locale: es });
+            periodDurationDays = 30.44;
+        } else if (timeGroup === 'week') {
+            periods = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+            getPeriodKey = (d) => `${getYear(d)}-W${getWeek(d, { weekStartsOn: 1 })}`;
+            getPeriodLabel = (d) => `Sem ${getWeek(d, { weekStartsOn: 1 })}`;
+            periodDurationDays = 7;
+        } else { // year
+            periods = eachYearOfInterval({ start, end });
+            getPeriodKey = (d) => getYear(d).toString();
+            getPeriodLabel = (d) => getYear(d).toString();
+            periodDurationDays = 365.25;
+        }
+        
+        const finalChartData = periods.map(period => {
+            const periodKey = getPeriodKey(period);
+            const data = periodMetrics[periodKey];
+            if (!data) return { name: getPeriodLabel(period), pha: 0, dha: 0, kgdha: 0};
             
-            const monthProductiveYears = (30/365.25);
+            const monthProductiveYears = (periodDurationDays / 365.25);
             return {
-                name: format(month, 'MMM yy', {locale: es}),
+                name: getPeriodLabel(period),
                 pha: monthProductiveYears > 0 ? data.farrowings / productiveSows / monthProductiveYears : 0,
                 dha: monthProductiveYears > 0 ? data.weaned / productiveSows / monthProductiveYears : 0,
                 kgdha: monthProductiveYears > 0 ? data.weanedKg / productiveSows / monthProductiveYears : 0
@@ -190,11 +219,17 @@ export default function MaternityPerformancePage() {
         setDistData(distCycleData);
 
 
-    }, [allPigs, startDate, endDate, breedFilter, cycleRange]);
+    }, [allPigs, startDate, endDate, breedFilter, cycleRange, timeGroup]);
     
     React.useEffect(() => {
         calculateMetrics();
     }, [calculateMetrics]);
+    
+    const timeGroupOptions: { value: 'year' | 'month' | 'week'; label: string }[] = [
+        { value: 'year', label: 'Año' },
+        { value: 'month', label: 'Mes' },
+        { value: 'week', label: 'Semana' },
+    ];
 
     return (
         <AppLayout>
@@ -255,6 +290,18 @@ export default function MaternityPerformancePage() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
+                            <div className="flex items-center gap-1 border p-1 rounded-md">
+                                {timeGroupOptions.map(opt => (
+                                    <Button
+                                        key={opt.value}
+                                        variant={timeGroup === opt.value ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setTimeGroup(opt.value)}
+                                    >
+                                        {opt.label}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-8">
