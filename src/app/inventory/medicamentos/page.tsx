@@ -8,56 +8,137 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getInventory, updateInventory, InventoryItem } from '@/lib/inventory';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Pill } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, parseISO, isValid } from 'date-fns';
+
+interface MedicalPurchaseRecord {
+    id: string;
+    productId: string;
+    productName: string;
+    purchaseDate: string;
+    vials: number;
+    volumePerVial: number;
+    totalVolume: number;
+    valuePerVial: number;
+    totalValue: number;
+    valuePerUnit: number;
+    lotNumber?: string;
+}
+
+const MEDICAL_PURCHASE_HISTORY_KEY = 'medicalPurchaseHistory';
 
 export default function MedicamentosPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [medicamentos, setMedicamentos] = React.useState<InventoryItem[]>([]);
+    const [purchaseHistory, setPurchaseHistory] = React.useState<MedicalPurchaseRecord[]>([]);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
 
-    const loadInventory = React.useCallback(() => {
+    // Form states for automatic calculation
+    const [selectedProduct, setSelectedProduct] = React.useState<string>('');
+    const [newProductName, setNewProductName] = React.useState('');
+    const [newProductId, setNewProductId] = React.useState('');
+    const [vials, setVials] = React.useState<number | string>('');
+    const [volumePerVial, setVolumePerVial] = React.useState<number | string>('');
+    const [valuePerVial, setValuePerVial] = React.useState<number | string>('');
+
+    const totalVolume = React.useMemo(() => Number(vials) * Number(volumePerVial), [vials, volumePerVial]);
+    const totalValue = React.useMemo(() => Number(vials) * Number(valuePerVial), [vials, valuePerVial]);
+    const valuePerUnit = React.useMemo(() => totalVolume > 0 ? totalValue / totalVolume : 0, [totalValue, totalVolume]);
+
+    const loadData = React.useCallback(() => {
         const allInventory = getInventory();
         setMedicamentos(allInventory.filter(item => item.category === 'medicamento'));
+        const storedPurchases = localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY);
+        if (storedPurchases) {
+            setPurchaseHistory(JSON.parse(storedPurchases).filter((p: any) => allInventory.some(i => i.id === p.productId && i.category === 'medicamento')));
+        }
     }, []);
-    
+
     React.useEffect(() => {
-        loadInventory();
-        const handleStorageChange = () => loadInventory();
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [loadInventory]);
+        loadData();
+    }, [loadData]);
     
-    const handleAddSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const resetFormState = () => {
+        setSelectedProduct('');
+        setNewProductName('');
+        setNewProductId('');
+        setVials('');
+        setVolumePerVial('');
+        setValuePerVial('');
+    };
+
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const name = formData.get('name') as string;
-        const stock = Number(formData.get('stock'));
-        const id = (formData.get('id') as string).toUpperCase();
+        const purchaseDate = formData.get('purchaseDate') as string;
+        
+        let productId = selectedProduct;
+        let productName = medicamentos.find(m => m.id === selectedProduct)?.name || '';
 
-        if (!name || !stock || !id) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Todos los campos son requeridos.' });
+        const fullInventory = getInventory();
+
+        if (selectedProduct === 'new') {
+            if (!newProductName || !newProductId) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un ID y nombre para el nuevo producto.' });
+                return;
+            }
+            if (fullInventory.some(item => item.id.toLowerCase() === newProductId.toLowerCase())) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'El ID del producto ya existe.' });
+                 return;
+            }
+            productId = newProductId.toUpperCase();
+            productName = newProductName;
+        }
+
+        if (!productId || !productName || totalVolume <= 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, complete todos los campos de producto y cantidad.' });
             return;
         }
 
-        const fullInventory = getInventory();
-        if(fullInventory.some(item => item.id === id)) {
-             toast({ variant: 'destructive', title: 'Error', description: 'El ID del producto ya existe.' });
-             return;
-        }
+        let productInInventory = fullInventory.find(item => item.id === productId);
+        let updatedInventory: InventoryItem[];
 
-        const newItem: InventoryItem = { id, name, category: 'medicamento', stock };
-        const updatedInventory = [...fullInventory, newItem];
+        if (productInInventory) {
+            updatedInventory = fullInventory.map(item => 
+                item.id === productId ? { ...item, stock: item.stock + totalVolume } : item
+            );
+        } else {
+            const newProduct: InventoryItem = { id: productId, name: productName, category: 'medicamento', stock: totalVolume };
+            updatedInventory = [...fullInventory, newProduct];
+        }
         updateInventory(updatedInventory);
+
+        const newPurchase: MedicalPurchaseRecord = {
+            id: `med-purchase-${Date.now()}`,
+            productId,
+            productName,
+            purchaseDate,
+            vials: Number(vials),
+            volumePerVial: Number(volumePerVial),
+            totalVolume,
+            valuePerVial: Number(valuePerVial),
+            totalValue,
+            valuePerUnit,
+            lotNumber: formData.get('lotNumber') as string || undefined,
+        };
         
-        toast({ title: 'Producto Añadido', description: `${name} ha sido añadido al inventario.` });
+        const allPurchases = JSON.parse(localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY) || '[]');
+        allPurchases.unshift(newPurchase);
+        localStorage.setItem(MEDICAL_PURCHASE_HISTORY_KEY, JSON.stringify(allPurchases));
+
+        toast({ title: 'Ingreso Registrado', description: `${totalVolume}ml de ${productName} añadidos al inventario.` });
+        
         setIsFormOpen(false);
-        loadInventory();
-    }
+        resetFormState();
+        loadData();
+    };
 
     return (
         <AppLayout>
@@ -71,14 +152,14 @@ export default function MedicamentosPage() {
                     </div>
                      <Button onClick={() => setIsFormOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Añadir Nuevo Medicamento
+                        Registrar Compra
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Stock de Medicamentos</CardTitle>
-                        <CardDescription>Lista de productos farmacéuticos disponibles.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Pill className="text-red-500"/>Stock de Medicamentos</CardTitle>
+                        <CardDescription>Inventario disponible de cada producto farmacéutico.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -90,40 +171,135 @@ export default function MedicamentosPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {medicamentos.map(item => (
+                                {medicamentos.length > 0 ? medicamentos.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>{item.id}</TableCell>
-                                        <TableCell className="text-right">{item.stock.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{item.stock.toFixed(2)}</TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                     <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center">No hay medicamentos en el inventario.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
                 </Card>
-                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Historial de Compras</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Producto</TableHead>
+                                    <TableHead className="text-right">Frascos</TableHead>
+                                    <TableHead className="text-right">Volumen Total</TableHead>
+                                    <TableHead className="text-right">Costo Total</TableHead>
+                                    <TableHead className="text-right">Costo/ml</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {purchaseHistory.length > 0 ? purchaseHistory.map(p => (
+                                    <TableRow key={p.id}>
+                                        <TableCell>{isValid(parseISO(p.purchaseDate)) ? format(parseISO(p.purchaseDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell className="font-medium">{p.productName}</TableCell>
+                                        <TableCell className="text-right">{p.vials}</TableCell>
+                                        <TableCell className="text-right">{p.totalVolume.toFixed(2)} ml</TableCell>
+                                        <TableCell className="text-right">{p.totalValue.toLocaleString('es-CO', {style: 'currency', currency: 'COP'})}</TableCell>
+                                        <TableCell className="text-right">{p.valuePerUnit.toLocaleString('es-CO', {style: 'currency', currency: 'COP'})}</TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">No hay compras registradas.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+                 <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if(!isOpen) resetFormState(); setIsFormOpen(isOpen); }}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
-                            <DialogTitle>Añadir Nuevo Medicamento</DialogTitle>
-                            <DialogDescription>Complete los datos del nuevo producto.</DialogDescription>
+                            <DialogTitle>Registrar Compra de Medicamento</DialogTitle>
                         </DialogHeader>
-                        <form onSubmit={handleAddSubmit} id="add-item-form" className="space-y-4 py-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="id">ID del Producto</Label>
-                                <Input id="id" name="id" type="text" placeholder="Ej: MED-04" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nombre del Producto</Label>
-                                <Input id="name" name="name" type="text" placeholder="Ej: Enrofloxacina 10%" required />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="stock">Stock Inicial (ml/ud)</Label>
-                                <Input id="stock" name="stock" type="number" step="0.1" required />
-                            </div>
-                        </form>
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                            <Button type="submit" form="add-item-form">Guardar Producto</Button>
+                        <ScrollArea className="flex-1 overflow-y-auto -mx-6 px-6">
+                            <form onSubmit={handleFormSubmit} id="add-item-form" className="space-y-4 py-4 pr-6">
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Producto y Fecha</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="product">Producto</Label>
+                                            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                                                <SelectTrigger><SelectValue placeholder="Seleccionar producto..."/></SelectTrigger>
+                                                <SelectContent>
+                                                    {medicamentos.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                                                    <SelectItem value="new">-- Crear nuevo producto --</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="purchaseDate">Fecha de Compra</Label>
+                                            <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                
+                                {selectedProduct === 'new' && (
+                                     <Card>
+                                        <CardHeader><CardTitle className="text-base">Datos del Nuevo Producto</CardTitle></CardHeader>
+                                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                             <div className="space-y-2">
+                                                <Label htmlFor="newProductId">ID del Producto</Label>
+                                                <Input id="newProductId" value={newProductId} onChange={e => setNewProductId(e.target.value)} placeholder="Ej: MED-05"/>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="newProductName">Nombre del Producto</Label>
+                                                <Input id="newProductName" value={newProductName} onChange={e => setNewProductName(e.target.value)} placeholder="Ej: Ivermectina 3.15%"/>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                <Card>
+                                     <CardHeader><CardTitle className="text-base">Cantidad y Costo</CardTitle></CardHeader>
+                                     <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="vials">Nº de Frascos</Label>
+                                            <Input id="vials" name="vials" type="number" required value={vials} onChange={e => setVials(e.target.value)}/>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="volumePerVial">Volumen/Frasco (ml)</Label>
+                                            <Input id="volumePerVial" name="volumePerVial" type="number" step="0.1" required value={volumePerVial} onChange={e => setVolumePerVial(e.target.value)}/>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="valuePerVial">Valor/Frasco ($)</Label>
+                                            <Input id="valuePerVial" name="valuePerVial" type="number" step="0.01" required value={valuePerVial} onChange={e => setValuePerVial(e.target.value)}/>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Volumen Total (ml)</Label>
+                                            <Input value={totalVolume.toFixed(2)} readOnly className="bg-muted"/>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Valor Total ($)</Label>
+                                            <Input value={totalValue.toLocaleString('es-CO')} readOnly className="bg-muted"/>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Valor/ml ($)</Label>
+                                            <Input value={valuePerUnit.toLocaleString('es-CO', {minimumFractionDigits: 2})} readOnly className="bg-muted"/>
+                                        </div>
+                                     </CardContent>
+                                </Card>
+                            </form>
+                        </ScrollArea>
+                        <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background -mx-6 px-6">
+                            <Button type="button" variant="ghost" onClick={() => { setIsFormOpen(false); resetFormState(); }}>Cancelar</Button>
+                            <Button type="submit" form="add-item-form">Guardar Compra</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
