@@ -310,7 +310,9 @@ export default function BirthAnalysisPage() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
                             <div className="flex items-center gap-1 border p-1 rounded-md">
+                                <Button variant="outline" size="sm">Año</Button>
                                 <Button variant="secondary" size="sm">Mes</Button>
+                                <Button variant="outline" size="sm">Semana</Button>
                             </div>
                         </div>
                     </CardHeader>
