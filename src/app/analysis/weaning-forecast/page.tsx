@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, FileCsv, Sheet, Printer, Filter, CalendarIcon, AlertCircle, MoreHorizontal } from 'lucide-react';
+import { FileText, FileSpreadsheet, Sheet, Printer, Filter, CalendarIcon, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -276,7 +276,7 @@ export default function WeaningForecastPage() {
                             <CardTitle>Listado de madres con previsión de destete</CardTitle>
                              <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="icon" onClick={() => handleExport('pdf')}><FileText className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleExport('csv')}><FileCsv className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleExport('csv')}><FileSpreadsheet className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleExport('xlsx')}><Sheet className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => window.print()}><Printer className="h-4 w-4" /></Button>
                             </div>
