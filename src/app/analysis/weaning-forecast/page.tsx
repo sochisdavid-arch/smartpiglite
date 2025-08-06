@@ -10,9 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Download, AlertCircle } from 'lucide-react';
+import { FileText, FileCsv, Sheet, Printer, Filter, CalendarIcon, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -43,7 +42,12 @@ interface WeaningForecast {
     farrowingDate: string;
     lactationDays: number;
     weaningDate: string;
-    currentPiglets: number;
+    liveBorn: number;
+    received: number;
+    donated: number;
+    deaths: number;
+    partialWeaning: number;
+    balance: number;
 }
 
 const pigBreeds = [
@@ -62,36 +66,34 @@ const findWeaningForecasts = (pigs: Pig[]): WeaningForecast[] => {
         let cycle = 0;
         let lastFarrowingDate: string | null = null;
         let liveBorn = 0;
+        let adoptions = 0;
+        let donations = 0;
+        let deaths = 0;
 
         const sortedEvents = [...pig.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
-        let pigletCount = 0;
-
         for (const event of sortedEvents) {
             if (event.type === 'Parto') {
-                // If there's a pending farrowing, it's finalized here.
-                if (lastFarrowingDate) {
-                    // This means there was a farrowing without a weaning, which is unlikely but we handle it.
-                    cycle++;
-                }
+                if (lastFarrowingDate) cycle++;
                 lastFarrowingDate = event.date;
                 liveBorn = event.liveBorn || 0;
-                pigletCount = liveBorn;
+                adoptions = 0;
+                donations = 0;
+                deaths = 0;
             } else if (event.type === 'Destete') {
                 cycle++;
                 lastFarrowingDate = null;
-                pigletCount = 0;
             } else if (lastFarrowingDate) {
-                 if (event.type === 'Muerte de Lechón') pigletCount -= (event.pigletCount || 0);
-                 if (event.type === 'Adopción de Lechón') pigletCount += (event.pigletCount || 0);
-                 if (event.type === 'Donación de Lechón') pigletCount -= (event.pigletCount || 0);
+                 if (event.type === 'Muerte de Lechón') deaths += (event.pigletCount || 0);
+                 if (event.type === 'Adopción de Lechón') adoptions += (event.pigletCount || 0);
+                 if (event.type === 'Donación de Lechón') donations += (event.pigletCount || 0);
             }
         }
         
-        // If there's a pending farrowing after all events, it's a potential lactation
         if (lastFarrowingDate) {
             const lactationDays = differenceInDays(new Date(), parseISO(lastFarrowingDate));
             const weaningDate = addDays(parseISO(lastFarrowingDate), DEFAULT_LACTATION_DURATION);
+            const balance = liveBorn + adoptions - donations - deaths;
             forecasts.push({
                 sowId: pig.id,
                 sowId2: pig.id2,
@@ -99,13 +101,26 @@ const findWeaningForecasts = (pigs: Pig[]): WeaningForecast[] => {
                 farrowingDate: lastFarrowingDate,
                 lactationDays,
                 weaningDate: weaningDate.toISOString(),
-                currentPiglets: pigletCount,
+                liveBorn,
+                received: adoptions,
+                donated: donations,
+                deaths: deaths,
+                partialWeaning: 0,
+                balance: balance,
             });
         }
     });
 
     return forecasts;
 };
+
+const KpiCard = ({ title, value }: { title: string, value: string | number }) => (
+    <div className="flex flex-col items-center justify-center p-2">
+        <span className="text-sm text-muted-foreground">{title}</span>
+        <span className="text-2xl font-bold">{value}</span>
+    </div>
+);
+
 
 export default function WeaningForecastPage() {
     const [pigs, setPigs] = React.useState<Pig[]>([]);
@@ -115,8 +130,6 @@ export default function WeaningForecastPage() {
     const [startDate, setStartDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = React.useState<string>(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
     const [breedFilter, setBreedFilter] = React.useState('all');
-    const [cycleStart, setCycleStart] = React.useState<number | string>('');
-    const [cycleEnd, setCycleEnd] = React.useState<number | string>('');
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -132,7 +145,6 @@ export default function WeaningForecastPage() {
 
         let allForecasts = findWeaningForecasts(filteredPigs);
         
-        // Filter by date range
         const start = startOfDay(parseISO(startDate));
         const end = endOfDay(parseISO(endDate));
         allForecasts = allForecasts.filter(f => {
@@ -140,27 +152,28 @@ export default function WeaningForecastPage() {
             return farrowDate >= start && farrowDate <= end;
         });
 
-        // Filter by cycle
-        if(cycleStart) allForecasts = allForecasts.filter(f => f.cycle >= Number(cycleStart));
-        if(cycleEnd) allForecasts = allForecasts.filter(f => f.cycle <= Number(cycleEnd));
-        
         setForecasts(allForecasts.sort((a,b) => new Date(a.weaningDate).getTime() - new Date(b.weaningDate).getTime()));
-    }, [pigs, startDate, endDate, breedFilter, cycleStart, cycleEnd]);
+    }, [pigs, startDate, endDate, breedFilter]);
 
     React.useEffect(() => {
         handleFilter();
     }, [handleFilter]);
     
     const handleExport = (formatType: 'pdf' | 'csv' | 'xlsx') => {
-        const head = [['ID 1', 'ID 2', 'Ciclo', 'Fecha de Parto', 'Lechones Actuales', 'Días Lact.', 'Prev. Destete']];
+        const head = [['ID 1', 'ID 2', 'Ciclo', 'Fecha del Parto', 'Días lact, madre', 'NV', 'RC', 'DO', 'MO', 'Dest. parcial', 'Saldo', 'Días lact. lecho.']];
         const body = forecasts.map(f => [
             f.sowId,
             f.sowId2 || '-',
             f.cycle,
             format(parseISO(f.farrowingDate), 'dd/MM/yyyy'),
-            f.currentPiglets,
             f.lactationDays,
-            format(parseISO(f.weaningDate), 'dd/MM/yyyy')
+            f.liveBorn,
+            f.received,
+            f.donated,
+            f.deaths,
+            f.partialWeaning,
+            f.balance,
+            f.lactationDays
         ]);
 
         const title = "Previsión de Destete";
@@ -189,15 +202,28 @@ export default function WeaningForecastPage() {
             XLSX.writeFile(wb, `prevision_destete_${new Date().toISOString().split('T')[0]}.${formatType}`);
         }
     };
+    
+    const kpiValues = React.useMemo(() => {
+        return forecasts.reduce((acc, f) => {
+            acc.liveBorn += f.liveBorn;
+            acc.received += f.received;
+            acc.donated += f.donated;
+            acc.deaths += f.deaths;
+            acc.balance += f.balance;
+            return acc;
+        }, { liveBorn: 0, received: 0, donated: 0, deaths: 0, balance: 0 });
+    }, [forecasts]);
+
 
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <h1 className="text-3xl font-bold tracking-tight">Previsión de Destete</h1>
-                
                 <Card>
-                    <CardContent className="p-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <CardHeader>
+                        <CardTitle>Previsión de destete</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                             <div className="space-y-2">
                                 <Label htmlFor="start-date">Fecha inicial</Label>
                                 <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -216,18 +242,11 @@ export default function WeaningForecastPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Ciclo entre</Label>
-                                <div className="flex items-center gap-2">
-                                    <Input type="number" placeholder="0" value={cycleStart} onChange={e => setCycleStart(e.target.value)} />
-                                    <span>a</span>
-                                    <Input type="number" placeholder="20" value={cycleEnd} onChange={e => setCycleEnd(e.target.value)} />
-                                </div>
+                            <div className="flex gap-2">
+                               <Button variant="outline" size="icon"><Filter className="h-4 w-4"/></Button>
+                               <Button onClick={handleFilter} className="w-full">Filtrar</Button>
+                               <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                             </div>
-                            <Button onClick={handleFilter}>
-                                <Filter className="mr-2 h-4 w-4" />
-                                Filtrar
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -236,27 +255,31 @@ export default function WeaningForecastPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Información</AlertTitle>
                     <AlertDescription>
-                       Si informado el período, solamente serán listadas las madres que tendrán {DEFAULT_LACTATION_DURATION} días de lactancia en el período.
+                       Si informado el período, sólo serán listadas las madres con lechones que tendrán {DEFAULT_LACTATION_DURATION} días de edad en el período.
                     </AlertDescription>
                 </Alert>
 
                 <Card>
+                    <CardContent className="p-4 grid grid-cols-2 md:grid-cols-6 divide-x">
+                        <KpiCard title="NACIDOS VIVOS (NV)" value={kpiValues.liveBorn} />
+                        <KpiCard title="RECIBIDOS (RC)" value={kpiValues.received} />
+                        <KpiCard title="DONADOS (DO)" value={kpiValues.donated} />
+                        <KpiCard title="MUERTES (MO)" value={kpiValues.deaths} />
+                        <KpiCard title="DESTETE PARCIAL" value="-" />
+                        <KpiCard title="SALDO" value={kpiValues.balance} />
+                    </CardContent>
+                </Card>
+
+                <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle>Listado de madres con la previsión de destete</CardTitle>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Exportar
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <CardTitle>Listado de madres con previsión de destete</CardTitle>
+                             <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => handleExport('pdf')}><FileText className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleExport('csv')}><FileCsv className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleExport('xlsx')}><Sheet className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => window.print()}><Printer className="h-4 w-4" /></Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -267,10 +290,15 @@ export default function WeaningForecastPage() {
                                         <TableHead>ID 1</TableHead>
                                         <TableHead>ID 2</TableHead>
                                         <TableHead>Ciclo</TableHead>
-                                        <TableHead>Fecha de Parto</TableHead>
-                                        <TableHead>Lechones Act.</TableHead>
-                                        <TableHead>Días Lact.</TableHead>
-                                        <TableHead>Prev. Destete</TableHead>
+                                        <TableHead>Fecha del Parto</TableHead>
+                                        <TableHead>Días lact, madre</TableHead>
+                                        <TableHead>NV</TableHead>
+                                        <TableHead>RC</TableHead>
+                                        <TableHead>DO</TableHead>
+                                        <TableHead>MO</TableHead>
+                                        <TableHead>Dest. parcial</TableHead>
+                                        <TableHead>Saldo</TableHead>
+                                        <TableHead>Días lact. lecho.</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -284,13 +312,18 @@ export default function WeaningForecastPage() {
                                             <TableCell>{record.sowId2 || '-'}</TableCell>
                                             <TableCell>{record.cycle}</TableCell>
                                             <TableCell>{format(parseISO(record.farrowingDate), 'dd/MM/yyyy')}</TableCell>
-                                            <TableCell>{record.currentPiglets}</TableCell>
                                             <TableCell>{record.lactationDays}</TableCell>
-                                            <TableCell className="font-semibold">{format(parseISO(record.weaningDate), 'dd/MM/yyyy')}</TableCell>
+                                            <TableCell>{record.liveBorn}</TableCell>
+                                            <TableCell>{record.received}</TableCell>
+                                            <TableCell>{record.donated}</TableCell>
+                                            <TableCell>{record.deaths}</TableCell>
+                                            <TableCell>{record.partialWeaning}</TableCell>
+                                            <TableCell>{record.balance}</TableCell>
+                                            <TableCell>{record.lactationDays}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="h-24 text-center">No hay destetes previstos para el período y filtros seleccionados.</TableCell>
+                                            <TableCell colSpan={12} className="h-24 text-center">No hay destetes previstos para el período y filtros seleccionados.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
