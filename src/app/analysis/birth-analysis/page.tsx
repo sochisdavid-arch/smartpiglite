@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2, Checkbox as CheckboxIcon, Circle } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, getDay, getHours } from 'date-fns';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, getDay, getHours, getWeek, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -83,6 +83,7 @@ export default function BirthAnalysisPage() {
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [cycleStart, setCycleStart] = React.useState<string | number>(1);
     const [cycleEnd, setCycleEnd] = React.useState<string | number>(20);
+    const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'year'>('month');
 
     // Data for rendering
     const [kpiData, setKpiData] = React.useState<any>({});
@@ -166,30 +167,48 @@ export default function BirthAnalysisPage() {
                 avgBirthWeight: farrowingsWithWeight.length > 0 ? totalWeight / farrowingsWithWeight.length : 0,
             });
             
-            // --- Monthly Data ---
-            const months = eachMonthOfInterval({ start, end });
-            const monthlyMetrics = months.map(month => {
-                const monthKey = format(month, 'yyyy-MM');
-                const monthFarrowings = farrowings.filter(f => format(parseISO(f.farrowingDate), 'yyyy-MM') === monthKey);
-                const mfCount = monthFarrowings.length;
-                if(mfCount === 0) return { name: format(month, 'MM/yyyy'), partos: 0, nacidosTotales: 0, nacidosVivos: 0, momificados: 0, nacidosMuertos: 0, pesoMedio: 0 };
+            // --- Monthly/Weekly/Yearly Data ---
+            let periods: Date[] = [];
+            let getPeriodKey: (d: Date) => string;
+            let getPeriodLabel: (d: Date) => string;
+
+            if (timeGroup === 'month') {
+                periods = eachMonthOfInterval({ start, end });
+                getPeriodKey = (d) => format(d, 'yyyy-MM');
+                getPeriodLabel = (d) => format(d, 'MMM yy', { locale: es });
+            } else if (timeGroup === 'week') {
+                periods = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+                getPeriodKey = (d) => `${getYear(d)}-W${getWeek(d, { weekStartsOn: 1 })}`;
+                getPeriodLabel = (d) => `Sem ${getWeek(d, { weekStartsOn: 1 })}`;
+            } else { // year
+                periods = eachYearOfInterval({ start, end });
+                getPeriodKey = (d) => getYear(d).toString();
+                getPeriodLabel = (d) => getYear(d).toString();
+            }
+
+            const groupedMetrics = periods.map(period => {
+                const periodKey = getPeriodKey(period);
+                const periodFarrowings = farrowings.filter(f => getPeriodKey(parseISO(f.farrowingDate)) === periodKey);
+                const pfCount = periodFarrowings.length;
+
+                if (pfCount === 0) return { name: getPeriodLabel(period), partos: 0, nacidosTotales: 0, nacidosVivos: 0, momificados: 0, nacidosMuertos: 0, pesoMedio: 0 };
                 
-                const mLiveBorn = monthFarrowings.reduce((s,f) => s + f.liveBorn, 0);
-                const mTotalBorn = monthFarrowings.reduce((s,f) => s + f.totalBorn, 0);
-                const mStillborn = monthFarrowings.reduce((s,f) => s + f.stillborn, 0);
-                const mMummified = monthFarrowings.reduce((s,f) => s + f.mummified, 0);
+                const pLiveBorn = periodFarrowings.reduce((s,f) => s + f.liveBorn, 0);
+                const pTotalBorn = periodFarrowings.reduce((s,f) => s + f.totalBorn, 0);
+                const pStillborn = periodFarrowings.reduce((s,f) => s + f.stillborn, 0);
+                const pMummified = periodFarrowings.reduce((s,f) => s + f.mummified, 0);
                 
                 return {
-                    name: format(month, 'MM/yyyy'),
-                    partos: mfCount,
-                    nacidosTotales: mTotalBorn / mfCount,
-                    nacidosVivos: mLiveBorn / mfCount,
-                    momificados: mTotalBorn > 0 ? (mMummified / mTotalBorn) * 100 : 0,
-                    nacidosMuertos: mTotalBorn > 0 ? (mStillborn / mTotalBorn) * 100 : 0,
-                    pesoMedio: monthFarrowings.filter(f => f.birthWeight).reduce((s,f)=> s + f.birthWeight!, 0) / monthFarrowings.filter(f => f.birthWeight).length || 0,
+                    name: getPeriodLabel(period),
+                    partos: pfCount,
+                    nacidosTotales: pTotalBorn / pfCount,
+                    nacidosVivos: pLiveBorn / pfCount,
+                    momificados: pTotalBorn > 0 ? (pMummified / pTotalBorn) * 100 : 0,
+                    nacidosMuertos: pTotalBorn > 0 ? (pStillborn / pTotalBorn) * 100 : 0,
+                    pesoMedio: periodFarrowings.filter(f => f.birthWeight).reduce((s,f)=> s + f.birthWeight!, 0) / periodFarrowings.filter(f => f.birthWeight).length || 0,
                 };
             });
-            setMonthlyData(monthlyMetrics);
+            setMonthlyData(groupedMetrics);
             
             // --- Distribution Data ---
             const gestationDays = [
@@ -242,12 +261,17 @@ export default function BirthAnalysisPage() {
             setHeatmapData([]);
         }
 
-    }, [allPigs, startDate, endDate, breedFilter, cycleStart, cycleEnd]);
+    }, [allPigs, startDate, endDate, breedFilter, cycleStart, cycleEnd, timeGroup]);
     
     React.useEffect(() => {
         if(allPigs.length > 0) handleFilter();
     }, [allPigs, handleFilter]);
 
+    const timeGroupOptions: { value: 'year' | 'month' | 'week'; label: string }[] = [
+        { value: 'year', label: 'Año' },
+        { value: 'month', label: 'Mes' },
+        { value: 'week', label: 'Semana' },
+    ];
 
     return (
         <AppLayout>
@@ -310,9 +334,16 @@ export default function BirthAnalysisPage() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
                             <div className="flex items-center gap-1 border p-1 rounded-md">
-                                <Button variant="outline" size="sm">Año</Button>
-                                <Button variant="secondary" size="sm">Mes</Button>
-                                <Button variant="outline" size="sm">Semana</Button>
+                                {timeGroupOptions.map(opt => (
+                                    <Button
+                                        key={opt.value}
+                                        variant={timeGroup === opt.value ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setTimeGroup(opt.value)}
+                                    >
+                                        {opt.label}
+                                    </Button>
+                                ))}
                             </div>
                         </div>
                     </CardHeader>
@@ -516,5 +547,3 @@ export default function BirthAnalysisPage() {
             </div>
         </AppLayout>
     );
-
-    

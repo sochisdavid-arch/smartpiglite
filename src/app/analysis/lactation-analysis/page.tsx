@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2 } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval } from 'date-fns';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, eachWeekOfInterval, eachYearOfInterval, getWeek, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
@@ -82,6 +82,7 @@ export default function WeaningAnalysisPage() {
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [cycleStart, setCycleStart] = React.useState<string | number>(1);
     const [cycleEnd, setCycleEnd] = React.useState<string | number>(20);
+    const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'year'>('month');
 
     // Data for rendering
     const [kpiData, setKpiData] = React.useState<any>({});
@@ -177,27 +178,45 @@ export default function WeaningAnalysisPage() {
                 avgGpd: weaningsWithGpd > 0 ? totalGpd / weaningsWithGpd : 0,
             });
 
-            const months = eachMonthOfInterval({ start, end });
-            const monthlyMetrics = months.map(month => {
-                const monthKey = format(month, 'yyyy-MM');
-                const monthWeanings = weanings.filter(w => format(parseISO(w.date), 'yyyy-MM') === monthKey);
-                const count = monthWeanings.length;
-                if(count === 0) return { name: format(month, 'MM/yyyy'), total: 0, media: 0, mortalidad: 0, edad: 0, peso: 0, gpd: 0 };
+            // --- Grouped Data Calculation ---
+            let periods: Date[] = [];
+            let getPeriodKey: (d: Date) => string;
+            let getPeriodLabel: (d: Date) => string;
+
+            if (timeGroup === 'month') {
+                periods = eachMonthOfInterval({ start, end });
+                getPeriodKey = (d) => format(d, 'yyyy-MM');
+                getPeriodLabel = (d) => format(d, 'MMM yy', { locale: es });
+            } else if (timeGroup === 'week') {
+                periods = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+                getPeriodKey = (d) => `${getYear(d)}-W${getWeek(d, { weekStartsOn: 1 })}`;
+                getPeriodLabel = (d) => `Sem ${getWeek(d, { weekStartsOn: 1 })}`;
+            } else { // year
+                periods = eachYearOfInterval({ start, end });
+                getPeriodKey = (d) => getYear(d).toString();
+                getPeriodLabel = (d) => getYear(d).toString();
+            }
+
+            const groupedMetrics = periods.map(period => {
+                const periodKey = getPeriodKey(period);
+                const periodWeanings = weanings.filter(w => getPeriodKey(parseISO(w.date)) === periodKey);
+                const count = periodWeanings.length;
+                if(count === 0) return { name: getPeriodLabel(period), total: 0, media: 0, mortalidad: 0, edad: 0, peso: 0, gpd: 0 };
                 
-                const totalWeaned = monthWeanings.reduce((s,w) => s + w.weanedCount, 0);
-                const totalDeaths = monthWeanings.reduce((s,w) => s + w.deathsDuringLactation, 0);
+                const totalWeaned = periodWeanings.reduce((s,w) => s + w.weanedCount, 0);
+                const totalDeaths = periodWeanings.reduce((s,w) => s + w.deathsDuringLactation, 0);
                 
                 return {
-                    name: format(month, 'MM/yyyy'),
+                    name: getPeriodLabel(period),
                     total: count,
                     media: totalWeaned / count,
                     mortalidad: (totalWeaned + totalDeaths) > 0 ? (totalDeaths / (totalWeaned + totalDeaths)) * 100 : 0,
-                    edad: monthWeanings.reduce((s,w) => s+w.age,0)/count,
-                    peso: monthWeanings.filter(w=>w.weight).reduce((s,w) => s+w.weight!,0)/monthWeanings.filter(w=>w.weight).length || 0,
-                    gpd: monthWeanings.filter(w=>w.gpd).reduce((s,w) => s+w.gpd!,0)/monthWeanings.filter(w=>w.gpd).length || 0,
+                    edad: periodWeanings.reduce((s,w) => s+w.age,0)/count,
+                    peso: periodWeanings.filter(w=>w.weight).reduce((s,w) => s+w.weight!,0)/periodWeanings.filter(w=>w.weight).length || 0,
+                    gpd: periodWeanings.filter(w=>w.gpd).reduce((s,w) => s+w.gpd!,0)/periodWeanings.filter(w=>w.gpd).length || 0,
                 };
             });
-            setMonthlyData(monthlyMetrics);
+            setMonthlyData(groupedMetrics);
 
             // --- Distribution Data ---
             const lactationDaysDist = [
@@ -219,7 +238,7 @@ export default function WeaningAnalysisPage() {
             setDistributionData({});
         }
 
-    }, [allPigs, startDate, endDate, breedFilter, cycleStart, cycleEnd]);
+    }, [allPigs, startDate, endDate, breedFilter, cycleStart, cycleEnd, timeGroup]);
 
     React.useEffect(() => {
         if(allPigs.length > 0) handleFilter();
@@ -227,6 +246,12 @@ export default function WeaningAnalysisPage() {
     
     const paginatedData = weaningData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
     const totalPages = Math.ceil(weaningData.length / rowsPerPage);
+
+    const timeGroupOptions: { value: 'year' | 'month' | 'week'; label: string }[] = [
+        { value: 'year', label: 'Año' },
+        { value: 'month', label: 'Mes' },
+        { value: 'week', label: 'Semana' },
+    ];
 
     return (
         <AppLayout>
@@ -289,11 +314,16 @@ export default function WeaningAnalysisPage() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
                              <div className="flex items-center gap-1 border p-1 rounded-md">
-                                <Button variant="outline" size="sm">Semana</Button>
-                                <Button variant="secondary" size="sm">Mes</Button>
-                                <Button variant="outline" size="sm">Trimestre</Button>
-                                <Button variant="outline" size="sm">Año</Button>
-                                <Button variant="outline" size="sm">Grupo</Button>
+                                {timeGroupOptions.map(opt => (
+                                    <Button
+                                        key={opt.value}
+                                        variant={timeGroup === opt.value ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setTimeGroup(opt.value)}
+                                    >
+                                        {opt.label}
+                                    </Button>
+                                ))}
                             </div>
                         </div>
                     </CardHeader>
@@ -488,5 +518,3 @@ export default function WeaningAnalysisPage() {
         </AppLayout>
     );
 }
-
-    
