@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, PlusCircle, Droplet, MoreHorizontal, Syringe, XCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Droplet, MoreHorizontal, Syringe, XCircle, HeartPulse } from 'lucide-react';
 import { format, parseISO, isValid, differenceInWeeks } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-type BoarEventType = 'Ingreso' | 'Eyaculado' | 'Tratamiento' | 'Vacunación' | 'Venta' | 'Muerte';
+type BoarEventType = 'Ingreso' | 'Eyaculado' | 'Monta Natural' | 'Tratamiento' | 'Vacunación' | 'Venta' | 'Muerte';
 
 interface BoarEvent {
     id: string;
@@ -27,6 +27,11 @@ interface BoarEvent {
     dilutedVolume?: number;
     concentration?: number;
     motility?: number;
+    // Monta Natural specific
+    sowId?: string;
+    // Tratamiento/Vacunación specific
+    product?: string;
+    dose?: number;
 }
 
 interface Boar {
@@ -45,13 +50,14 @@ const BOAR_STORAGE_KEY = 'boarCollection';
 const eventIcons: { [key in BoarEventType]: React.ReactElement } = {
     "Ingreso": <PlusCircle className="h-5 w-5 text-green-500" />,
     "Eyaculado": <Droplet className="h-5 w-5 text-blue-500" />,
+    "Monta Natural": <HeartPulse className="h-5 w-5 text-pink-500" />,
     "Tratamiento": <Syringe className="h-5 w-5 text-red-500" />,
     "Vacunación": <Syringe className="h-5 w-5 text-green-500" />,
     "Venta": <XCircle className="h-5 w-5" />,
     "Muerte": <XCircle className="h-5 w-5 text-destructive" />,
 };
 
-const allEventTypes: BoarEventType[] = ["Eyaculado", "Tratamiento", "Vacunación", "Venta", "Muerte"];
+const allEventTypes: BoarEventType[] = ["Eyaculado", "Monta Natural", "Tratamiento", "Vacunación", "Venta", "Muerte"];
 
 export default function BoarHistoryPage() {
     const router = useRouter();
@@ -86,6 +92,7 @@ export default function BoarHistoryPage() {
         if (!boar || !selectedEventType) return;
 
         const formData = new FormData(e.target as HTMLFormElement);
+        
         const newEvent: BoarEvent = {
             id: `evt-${Date.now()}`,
             type: selectedEventType,
@@ -94,9 +101,25 @@ export default function BoarHistoryPage() {
             dilutedVolume: Number(formData.get('dilutedVolume')) || undefined,
             concentration: Number(formData.get('concentration')) || undefined,
             motility: Number(formData.get('motility')) || undefined,
+            sowId: formData.get('sowId') as string || undefined,
+            product: formData.get('product') as string || undefined,
+            dose: Number(formData.get('dose')) || undefined,
         };
+        
+        // Custom details based on type
+        if(selectedEventType === 'Monta Natural' && newEvent.sowId) {
+            newEvent.details = `Monta a cerda: ${newEvent.sowId}`;
+        }
+        if(['Tratamiento', 'Vacunación'].includes(selectedEventType) && newEvent.product) {
+             newEvent.details = `${newEvent.product} - Dosis: ${newEvent.dose}ml. Motivo: ${formData.get('details')}`;
+        }
 
         const updatedBoar = { ...boar, events: [newEvent, ...boar.events] };
+        
+        if (['Venta', 'Muerte'].includes(selectedEventType)) {
+            updatedBoar.status = selectedEventType === 'Venta' ? 'Vendido' : 'Inactivo';
+        }
+        
         setBoar(updatedBoar);
 
         const allBoars: Boar[] = JSON.parse(localStorage.getItem(BOAR_STORAGE_KEY) || '[]');
@@ -128,7 +151,10 @@ export default function BoarHistoryPage() {
                         <DropdownMenuContent>
                             {allEventTypes.map(type => (
                                 <DropdownMenuItem key={type} onSelect={() => openEventDialog(type)}>
-                                    {type}
+                                    <div className="flex items-center gap-2">
+                                        {eventIcons[type]}
+                                        <span>{type}</span>
+                                    </div>
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -184,7 +210,7 @@ export default function BoarHistoryPage() {
                                         </TableCell>
                                         <TableCell>
                                             {event.type === 'Eyaculado'
-                                             ? `Vol: ${event.dilutedVolume}ml, Conc: ${event.concentration}M, Mot: ${event.motility}%`
+                                             ? `Vol: ${event.dilutedVolume || 'N/A'}ml, Conc: ${event.concentration || 'N/A'}M, Mot: ${event.motility || 'N/A'}%`
                                              : event.details || 'N/A'
                                             }
                                         </TableCell>
@@ -224,8 +250,28 @@ export default function BoarHistoryPage() {
                                 </div>
                             </>
                         )}
+                         {selectedEventType === 'Monta Natural' && (
+                             <div className="space-y-2">
+                                <Label htmlFor="sowId">ID de la Cerda</Label>
+                                <Input id="sowId" name="sowId" placeholder="Identificador de la hembra servida" required/>
+                            </div>
+                        )}
+                        {['Tratamiento', 'Vacunación'].includes(selectedEventType || '') && (
+                            <>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="product">Producto</Label>
+                                    <Input id="product" name="product" placeholder="Nombre del producto" required/>
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="dose">Dosis (ml)</Label>
+                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej: 2.5" required/>
+                                </div>
+                            </>
+                        )}
                         <div className="space-y-2">
-                            <Label htmlFor="details">Notas Adicionales</Label>
+                            <Label htmlFor="details">
+                                {['Venta', 'Muerte'].includes(selectedEventType || '') ? 'Causa / Motivo' : 'Notas Adicionales'}
+                            </Label>
                             <Textarea id="details" name="details" />
                         </div>
                     </form>
