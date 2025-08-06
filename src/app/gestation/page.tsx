@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat, Users, Pregnant, Wind } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat, Users, HeartPulse, Wind } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -393,7 +393,7 @@ export default function GestationPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <KpiCard title="Hembras Gestantes" value={gestationCount} icon={<Pregnant className="h-4 w-4 text-muted-foreground"/>} />
+            <KpiCard title="Hembras Gestantes" value={gestationCount} icon={<HeartPulse className="h-4 w-4 text-muted-foreground"/>} />
             <KpiCard title="Hembras Vacías" value={emptyCount} icon={<Wind className="h-4 w-4 text-muted-foreground"/>} />
             <KpiCard title="Hembras de Remplazo" value={replacementCount} icon={<Users className="h-4 w-4 text-muted-foreground"/>} />
         </div>
