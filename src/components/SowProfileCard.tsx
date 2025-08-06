@@ -183,10 +183,10 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         <TableHead className="p-1 font-bold w-[25%]">PARTOS</TableHead>
                         <TableHead className="p-1 font-bold text-center w-[10%]">ÚLTIMO</TableHead>
                         <TableHead className="p-1 font-bold text-center w-[10%]">PROMEDIO</TableHead>
-                        <TableHead className="p-1 font-bold text-center w-[13%]">0</TableHead>
-                        <TableHead className="p-1 font-bold text-center w-[13%]">1</TableHead>
-                        <TableHead className="p-1 font-bold text-center w-[13%]">2</TableHead>
-                        <TableHead className="p-1 font-bold text-center w-[13%]">3</TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[13%]"></TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[13%]"></TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[13%]"></TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[13%]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -200,8 +200,8 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                      <TableRow className="h-5"><TableCell className="font-semibold border p-1">Peso Promedio</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
                      <TableRow className="h-5"><TableCell className="font-semibold border p-1">Intervalo Partos (días)</TableCell><TableCell className="border p-1 text-center">{lastCycle.farrowingInterval || '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgFarrowingInterval.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
                      <TableRow className="h-5"><TableCell className="font-semibold border p-1">Días Gestación</TableCell><TableCell className="border p-1 text-center">{lastCycle.gestationDays || '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgGestation.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
-                     <TableRow className="h-5"><TableCell className="font-semibold border p-1">Días Lactancia</TableCell><TableCell className="border p-1 text-center">{lastCycle.lactationDays || '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgLactation.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
-                     <TableRow className="h-5"><TableCell className="font-semibold border p-1">Destete a Servicio (días)</TableCell><TableCell className="border p-1 text-center">{lastCycle.weaningToServiceDays ?? '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgWeanToService.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
+                     <TableRow className="h-5"><TableCell className="font-semibold border p-1">Días Lactancia</TableCell><TableCell className="border p-1 text-center">{lastCycle.lactationDays || '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgLactation.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
+                     <TableRow className="h-5"><TableCell className="font-semibold border p-1">Destete a Servicio (días)</TableCell><TableCell className="border p-1 text-center">{lastCycle.weaningToServiceDays ?? '--'}</TableCell><TableCell className="border p-1 text-center">{kpis.avgWeanToService.toFixed(0)}</TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell><TableCell className="border p-1"></TableCell></TableRow>
                 </TableBody>
             </Table>
             
@@ -210,7 +210,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1 w-[12.5%]">Machos</TableCell>
                         <TableCell className="border p-1 text-center" colSpan={3}>{lastBoarId || '--'}</TableCell>
-                        <TableCell className="font-semibold border p-1 w-[12.5%]">Servicio</TableCell>
+                        <TableCell className="font-semibold border p-1">Servicio</TableCell>
                         <TableCell className="border p-1 text-center w-[12.5%]">{lastServiceDate ? format(parseISO(lastServiceDate), 'dd/MM/yy') : '--'}</TableCell>
                         <TableCell className="font-semibold border p-1 text-center w-[12.5%]">Servicio + 21 Días</TableCell>
                         <TableCell className="border p-1 text-center w-[12.5%]">{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 21), 'dd/MM/yy') : '--'}</TableCell>
