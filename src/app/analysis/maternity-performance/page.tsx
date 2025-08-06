@@ -8,27 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2, Checkbox as CheckboxIcon, Circle } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, getDay, getHours, getWeek, getYear } from 'date-fns';
+import { CalendarIcon, MoreHorizontal } from 'lucide-react';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Checkbox } from '@/components/ui/checkbox';
-import Link from 'next/link';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Event {
     id: string;
     type: string;
     date: string;
-    details?: string;
     liveBorn?: number;
-    stillborn?: number;
-    mummified?: number;
-    birthWeight?: number;
-    duration?: number;
+    pigletCount?: number; // for weaning
+    weaningWeight?: number;
     [key: string]: any;
 }
 
@@ -45,7 +38,7 @@ const pigBreeds = [
   "Otro"
 ];
 
-const KpiCard = ({ title, value, meta, isBad }: { title: string, value: string | number, meta:string, isBad?: boolean }) => (
+const KpiCard = ({ title, value, meta, isBad }: { title: string, value: string | number, meta: string, isBad?: boolean }) => (
     <Card>
         <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -60,46 +53,148 @@ const KpiCard = ({ title, value, meta, isBad }: { title: string, value: string |
     </Card>
 );
 
-const chartData = [
-  { name: '03/2024', pha: 2.24, dha: 26.08, kgdha: 155.75 },
-  { name: '04/2024', pha: 2.24, dha: 24.19, kgdha: 150.64 },
-  { name: '05/2024', pha: 2.05, dha: 20.54, kgdha: 136.49 },
-  { name: '06/2024', pha: 2.41, dha: 28.72, kgdha: 146.84 },
-  { name: '07/2024', pha: 2.52, dha: 25.73, kgdha: 150.28 },
-  { name: '08/2024', pha: 2.35, dha: 27.07, kgdha: 161.44 },
-  { name: '09/2024', pha: 2.35, dha: 24.72, kgdha: 148.28 },
-  { name: '10/2024', pha: 2.32, dha: 26.82, kgdha: 157.34 },
-  { name: '11/2024', pha: 2.47, dha: 25.89, kgdha: 138.49 },
-  { name: '12/2024', pha: 2.28, dha: 27.02, kgdha: 149.08 },
-  { name: '01/2025', pha: 2.19, dha: 17.78, kgdha: 89.09 },
-  { name: '02/2025', pha: 2.42, dha: 16.05, kgdha: 74.43 },
-  { name: '03/2025', pha: 2.42, dha: 19.58, kgdha: 112.06 },
-  { name: '04/2025', pha: 2.08, dha: 18.59, kgdha: 114.57 },
-  { name: '05/2025', pha: 2.46, dha: 33.62, kgdha: 132.88 },
-];
+interface MonthlyData {
+    name: string;
+    pha: number;
+    dha: number;
+    kgdha: number;
+}
 
-const distributionData = {
-    ciclo: [
-        { name: '<= 1', value: 2.42 },
-        { name: '2 ~ 2', value: 2.36 },
-        { name: '3 ~ 6', value: 2.28 },
-        { name: '>= 7', value: 2.33 },
-    ],
-    raza: [
-        { name: 'Duroc', value: 2.45 },
-        { name: 'Landrace', value: 2.38 },
-        { name: 'Yorkshire', value: 2.30 },
-        { name: 'PIC', value: 2.55 },
-    ]
+interface DistributionData {
+    name: string;
+    value: number;
 }
 
 export default function MaternityPerformancePage() {
+    const [allPigs, setAllPigs] = React.useState<Pig[]>([]);
     const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [breedFilter, setBreedFilter] = React.useState('all');
     const [cycleRange, setCycleRange] = React.useState([1, 20]);
-    const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'trimester' | 'year'>('month');
     const [distributionBy, setDistributionBy] = React.useState<'ciclo' | 'raza'>('ciclo');
+
+    const [kpiData, setKpiData] = React.useState({ pha: 0, dha: 0, kgdha: 0 });
+    const [chartData, setChartData] = React.useState<MonthlyData[]>([]);
+    const [distData, setDistData] = React.useState<DistributionData[]>([]);
+
+    React.useEffect(() => {
+        const pigsFromStorage = localStorage.getItem('pigs');
+        if (pigsFromStorage) {
+            setAllPigs(JSON.parse(pigsFromStorage));
+        }
+    }, []);
+
+    const calculateMetrics = React.useCallback(() => {
+        if (allPigs.length === 0) return;
+
+        const start = startOfDay(parseISO(startDate));
+        const end = endOfDay(parseISO(endDate));
+        
+        let filteredPigs = allPigs.filter(p => p.gender === 'Hembra');
+        if (breedFilter !== 'all') {
+            filteredPigs = filteredPigs.filter(p => p.breed === breedFilter);
+        }
+
+        const productiveDays = differenceInDays(end, start);
+        const productiveYears = productiveDays / 365.25;
+
+        // Note: Number of productive sows is an approximation. 
+        // A more precise calculation would track sow inventory daily.
+        const productiveSows = filteredPigs.length; 
+
+        if (productiveSows === 0) {
+            setKpiData({ pha: 0, dha: 0, kgdha: 0 });
+            setChartData([]);
+            setDistData([]);
+            return;
+        }
+        
+        let totalFarrowings = 0;
+        let totalWeaned = 0;
+        let totalWeanedKg = 0;
+        
+        const monthlyMetrics: Record<string, {farrowings: number, weaned: number, weanedKg: number, sowCount: number}> = {};
+        const cycleMetrics: Record<string, { farrowings: number, weaned: number, sowCount: number }> = {};
+
+
+        filteredPigs.forEach(pig => {
+            let cycle = 0;
+            pig.events.forEach(event => {
+                const eventDate = parseISO(event.date);
+                if (event.type === 'Parto') {
+                    cycle++;
+                    if (eventDate >= start && eventDate <= end && cycle >= cycleRange[0] && cycle <= cycleRange[1]) {
+                        totalFarrowings++;
+
+                        const monthKey = format(eventDate, 'yyyy-MM');
+                        if (!monthlyMetrics[monthKey]) monthlyMetrics[monthKey] = { farrowings: 0, weaned: 0, weanedKg: 0, sowCount: 1 };
+                        monthlyMetrics[monthKey].farrowings++;
+
+                        const cycleKey = cycle <= 1 ? '1' : (cycle <= 2 ? '2' : (cycle <= 6 ? '3-6' : '>6'));
+                        if (!cycleMetrics[cycleKey]) cycleMetrics[cycleKey] = { farrowings: 0, weaned: 0, sowCount: 1 };
+                        cycleMetrics[cycleKey].farrowings++;
+
+                    }
+                }
+                 if (event.type === 'Destete') {
+                     if (eventDate >= start && eventDate <= end && cycle >= cycleRange[0] && cycle <= cycleRange[1]) {
+                        const weanedCount = event.pigletCount || 0;
+                        const weanedKg = event.weaningWeight || 0;
+                        totalWeaned += weanedCount;
+                        totalWeanedKg += weanedKg;
+
+                        const monthKey = format(eventDate, 'yyyy-MM');
+                         if (monthlyMetrics[monthKey]) {
+                            monthlyMetrics[monthKey].weaned += weanedCount;
+                            monthlyMetrics[monthKey].weanedKg += weanedKg;
+                         }
+
+                        const cycleKey = cycle <= 1 ? '1' : (cycle <= 2 ? '2' : (cycle <= 6 ? '3-6' : '>6'));
+                         if(cycleMetrics[cycleKey]) {
+                            cycleMetrics[cycleKey].weaned += weanedCount;
+                         }
+                    }
+                }
+            });
+        });
+
+        const pha = productiveYears > 0 ? totalFarrowings / productiveSows / productiveYears : 0;
+        const dha = productiveYears > 0 ? totalWeaned / productiveSows / productiveYears : 0;
+        const kgdha = productiveYears > 0 ? totalWeanedKg / productiveSows / productiveYears : 0;
+        
+        setKpiData({ pha, dha, kgdha });
+        
+        const months = eachMonthOfInterval({start, end});
+        const finalChartData = months.map(month => {
+            const monthKey = format(month, 'yyyy-MM');
+            const data = monthlyMetrics[monthKey];
+            if (!data) return { name: format(month, 'MMM yy', {locale: es}), pha: 0, dha: 0, kgdha: 0};
+            
+            const monthProductiveYears = (30/365.25);
+            return {
+                name: format(month, 'MMM yy', {locale: es}),
+                pha: monthProductiveYears > 0 ? data.farrowings / productiveSows / monthProductiveYears : 0,
+                dha: monthProductiveYears > 0 ? data.weaned / productiveSows / monthProductiveYears : 0,
+                kgdha: monthProductiveYears > 0 ? data.weanedKg / productiveSows / monthProductiveYears : 0
+            }
+        });
+        setChartData(finalChartData);
+
+        const distCycleData: DistributionData[] = Object.entries(cycleMetrics).map(([key, data]) => {
+            const cycleProductiveYears = data.sowCount > 0 ? (productiveDays / data.sowCount) / 365.25 : 0;
+            return {
+                name: key === '>6' ? '>= 7' : (key === '1' || key ==='2' ? `<= ${key}` : key),
+                value: cycleProductiveYears > 0 ? data.farrowings / cycleProductiveYears : 0
+            };
+        });
+        setDistData(distCycleData);
+
+
+    }, [allPigs, startDate, endDate, breedFilter, cycleRange]);
+    
+    React.useEffect(() => {
+        calculateMetrics();
+    }, [calculateMetrics]);
 
     return (
         <AppLayout>
@@ -135,15 +230,15 @@ export default function MaternityPerformancePage() {
                             <div className="space-y-2">
                                 <Label>Ciclo: {cycleRange[0]} - {cycleRange[1]}</Label>
                                 <Slider
-                                    defaultValue={cycleRange}
-                                    onValueCommit={setCycleRange}
+                                    value={cycleRange}
+                                    onValueChange={setCycleRange}
                                     max={20}
                                     min={1}
                                     step={1}
                                 />
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button className="w-full">Filtrar</Button>
+                                <Button className="w-full" onClick={calculateMetrics}>Filtrar</Button>
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                             </div>
                         </div>
@@ -151,21 +246,15 @@ export default function MaternityPerformancePage() {
                 </Card>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <KpiCard title="PARTO/HEMBRA/AÑO (PHA)" value="2,32" meta="Meta: 2,57" isBad={2.32 < 2.57} />
-                    <KpiCard title="DESTETADOS/HEMBRA/AÑO (DHA)" value="24,00" meta="Meta: 33,44" isBad={24 < 33.44}/>
-                    <KpiCard title="KG/DESTETADOS/HEMBRA/AÑO (KG/DHA)" value="139,67" meta="" />
+                    <KpiCard title="PHA" value={kpiData.pha.toFixed(2)} meta="Meta: 2,57" isBad={kpiData.pha < 2.57} />
+                    <KpiCard title="DHA" value={kpiData.dha.toFixed(2)} meta="Meta: 33,44" isBad={kpiData.dha < 33.44}/>
+                    <KpiCard title="KG/DHA" value={kpiData.kgdha.toFixed(2)} meta="Kg Destetados/Hembra/Año" />
                 </div>
 
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
-                             <div className="flex items-center gap-1 border p-1 rounded-md">
-                                <Button variant={timeGroup === 'week' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('week')}>Semana</Button>
-                                <Button variant={timeGroup === 'month' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('month')}>Mes</Button>
-                                <Button variant={timeGroup === 'trimester' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('trimester')}>Trimestre</Button>
-                                <Button variant={timeGroup === 'year' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('year')}>Año</Button>
-                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-8">
@@ -175,9 +264,9 @@ export default function MaternityPerformancePage() {
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 3]}/>
-                                    <Tooltip />
-                                    <Bar dataKey="pha" name="Parto/Hembra/Año (PHA)" fill="hsl(var(--chart-4))" radius={[4,4,0,0]} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 'dataMax + 0.5']}/>
+                                    <Tooltip formatter={(value) => (value as number).toFixed(2)} />
+                                    <Bar dataKey="pha" name="PHA" fill="hsl(var(--chart-4))" radius={[4,4,0,0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -187,9 +276,9 @@ export default function MaternityPerformancePage() {
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 40]}/>
-                                    <Tooltip />
-                                    <Bar dataKey="dha" name="Destetados/Hembra/Año (DHA)" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 'dataMax + 5']}/>
+                                    <Tooltip formatter={(value) => (value as number).toFixed(2)} />
+                                    <Bar dataKey="dha" name="DHA" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -199,9 +288,9 @@ export default function MaternityPerformancePage() {
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 200]}/>
-                                    <Tooltip />
-                                    <Bar dataKey="kgdha" name="Kg/Destetados/Hembra/Año (Kg/DHA)" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 'dataMax + 20']}/>
+                                    <Tooltip formatter={(value) => `${(value as number).toFixed(2)} kg`} />
+                                    <Bar dataKey="kgdha" name="Kg/DHA" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -213,55 +302,36 @@ export default function MaternityPerformancePage() {
                         <CardTitle>Distribución de Indicadores Productivos</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Tabs defaultValue="pha">
-                            <TabsList>
-                                <TabsTrigger value="pha">Parto/Hembra/Año (PHA)</TabsTrigger>
-                                <TabsTrigger value="dha">Destetados/Hembra/Año (DHA)</TabsTrigger>
-                                <TabsTrigger value="kgdha">Kg/Destetados/Hembra/Año (Kg/DHA)</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="pha" className="mt-4">
-                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                   <Card className="col-span-1">
-                                       <CardHeader><CardTitle className="text-sm">Por los datos de la madre</CardTitle></CardHeader>
-                                       <CardContent>
-                                           <RadioGroup defaultValue="ciclo" onValueChange={(v) => setDistributionBy(v as 'ciclo' | 'raza')}>
-                                               <div className="flex items-center space-x-2">
-                                                   <RadioGroupItem value="ciclo" id="ciclo" />
-                                                   <Label htmlFor="ciclo">Ciclo</Label>
-                                               </div>
-                                               <div className="flex items-center space-x-2">
-                                                   <RadioGroupItem value="raza" id="raza" />
-                                                   <Label htmlFor="raza">Raza</Label>
-                                               </div>
-                                           </RadioGroup>
-                                       </CardContent>
-                                   </Card>
-                                   <Card className="md:col-span-2">
-                                       <CardHeader><CardTitle className="text-sm">Desempeño de Parto/Hembra/Año (PHA)</CardTitle></CardHeader>
-                                       <CardContent>
-                                            <ResponsiveContainer width="100%" height={250}>
-                                                <BarChart data={distributionData[distributionBy]} layout="vertical">
-                                                    <XAxis type="number" domain={[0, 3]}/>
-                                                    <YAxis type="category" dataKey="name" width={60} fontSize={12}/>
-                                                    <Tooltip />
-                                                    <Bar dataKey="value" fill="hsl(var(--chart-4))" radius={[0,4,4,0]}>
-                                                        {distributionData[distributionBy].map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                           </ResponsiveContainer>
-                                       </CardContent>
-                                   </Card>
-                               </div>
-                            </TabsContent>
-                             <TabsContent value="dha" className="mt-4">
-                                <p className="text-center text-muted-foreground p-8">Gráficos de distribución para DHA.</p>
-                            </TabsContent>
-                             <TabsContent value="kgdha" className="mt-4">
-                                <p className="text-center text-muted-foreground p-8">Gráficos de distribución para Kg/DHA.</p>
-                            </TabsContent>
-                        </Tabs>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <Card className="col-span-1">
+                               <CardHeader><CardTitle className="text-sm">Por los datos de la madre</CardTitle></CardHeader>
+                               <CardContent>
+                                   <RadioGroup defaultValue="ciclo" onValueChange={(v) => setDistributionBy(v as 'ciclo' | 'raza')}>
+                                       <div className="flex items-center space-x-2">
+                                           <RadioGroupItem value="ciclo" id="ciclo" />
+                                           <Label htmlFor="ciclo">Ciclo</Label>
+                                       </div>
+                                       <div className="flex items-center space-x-2">
+                                           <RadioGroupItem value="raza" id="raza" disabled/>
+                                           <Label htmlFor="raza">Raza</Label>
+                                       </div>
+                                   </RadioGroup>
+                               </CardContent>
+                           </Card>
+                           <Card className="md:col-span-2">
+                               <CardHeader><CardTitle className="text-sm">Desempeño de Parto/Hembra/Año (PHA)</CardTitle></CardHeader>
+                               <CardContent>
+                                    <ResponsiveContainer width="100%" height={250}>
+                                        <BarChart data={distData} layout="vertical">
+                                            <XAxis type="number" domain={[0, 'dataMax + 0.5']}/>
+                                            <YAxis type="category" dataKey="name" width={60} fontSize={12}/>
+                                            <Tooltip formatter={(value) => (value as number).toFixed(2)} />
+                                            <Bar dataKey="value" name="PHA" fill="hsl(var(--chart-4))" radius={[0,4,4,0]}/>
+                                        </BarChart>
+                                   </ResponsiveContainer>
+                               </CardContent>
+                           </Card>
+                       </div>
                     </CardContent>
                  </Card>
 
