@@ -95,6 +95,9 @@ export default function CebaPage() {
         setIsFormOpen(false);
         loadData();
     }
+    
+    const activeBatches = batches.filter(b => b.status === 'Activo');
+    const totalActivePigs = activeBatches.reduce((sum, batch) => sum + batch.pigletCount, 0);
 
     return (
         <AppLayout>
@@ -111,7 +114,7 @@ export default function CebaPage() {
                     <CardHeader>
                         <CardTitle>Lotes Activos en Ceba</CardTitle>
                         <CardDescription>
-                            Lotes de cerdos actualmente en la fase de engorde. Haga clic en un lote para ver sus detalles.
+                            {activeBatches.length} lotes activos con un total de {totalActivePigs} cerdos.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

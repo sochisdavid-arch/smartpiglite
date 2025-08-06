@@ -108,6 +108,8 @@ export default function VerracosPage() {
     const handleRowClick = (boarId: string) => {
         router.push(`/verracos/${boarId}`);
     };
+    
+    const activeBoarsCount = boars.filter(b => b.status === 'Activo').length;
 
     return (
         <AppLayout>
@@ -123,7 +125,9 @@ export default function VerracosPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Listado de Machos Reproductores</CardTitle>
-                        <CardDescription>Aquí se listan todos los verracos de la granja.</CardDescription>
+                        <CardDescription>
+                            Total de {activeBoarsCount} verracos activos en la granja.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>

@@ -250,13 +250,17 @@ export default function LactationPage() {
         setIsDeleteDialogOpen(false);
         setPigToDelete(null);
     };
+
+    const totalPiglets = lactatingSows.reduce((sum, sow) => sum + getParityData(sow).currentPiglets, 0);
     
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Cerdas en Lactancia</h1>
-                    <p className="text-muted-foreground">Animales que han parido y están actualmente en lactancia.</p>
+                    <p className="text-muted-foreground">
+                        {lactatingSows.length} madres lactando con un total de {totalPiglets} lechones.
+                    </p>
                 </div>
                 
                 <Card>
@@ -470,7 +474,3 @@ export default function LactationPage() {
         </AppLayout>
     );
 }
-
-    
-
-    

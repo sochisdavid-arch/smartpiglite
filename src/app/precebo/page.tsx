@@ -134,6 +134,8 @@ export default function PreceboPage() {
         loadData();
     }
 
+    const activeBatches = batches.filter(b => b.status === 'Activo');
+    const totalActivePiglets = activeBatches.reduce((sum, batch) => sum + batch.pigletCount, 0);
 
     return (
         <AppLayout>
@@ -150,7 +152,7 @@ export default function PreceboPage() {
                     <CardHeader>
                         <CardTitle>Lotes Activos en Precebo</CardTitle>
                         <CardDescription>
-                            Lotes de lechones actualmente en la fase de precebo. Haga clic en un lote para ver sus detalles y registrar datos.
+                            {activeBatches.length} lotes activos con un total de {totalActivePiglets} lechones.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

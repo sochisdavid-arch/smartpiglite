@@ -357,6 +357,11 @@ export default function GestationPage() {
       default: return 'secondary';
     }
   };
+  
+  const gestationCount = pigs.filter(p => p.status === 'Gestante').length;
+  const emptyCount = pigs.filter(p => p.status === 'Vacia').length;
+  const replacementCount = pigs.filter(p => p.status === 'Remplazo').length;
+
 
   return (
     <AppLayout>
@@ -371,7 +376,12 @@ export default function GestationPage() {
 
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
-                <h2 className="text-2xl font-bold tracking-tight">Resumen de Animales</h2>
+                 <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Resumen de Hembras</h2>
+                    <p className="text-muted-foreground">
+                        {gestationCount} gestantes, {emptyCount} vacías, {replacementCount} de remplazo.
+                    </p>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
                         <Wheat className="mr-2 h-4 w-4" />
@@ -653,5 +663,3 @@ export default function GestationPage() {
     </AppLayout>
   );
 }
-
-    
