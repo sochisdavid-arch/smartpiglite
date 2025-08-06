@@ -139,13 +139,13 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard title="Destetos / Hembra / Año" value={kpiData?.dha.toFixed(2) || '0.00'} icon={TrendingUp} description="Eficiencia reproductiva anual."/>
-          <KpiCard title="Nacidos Vivos / Parto" value={kpiData?.avgLiveBorn.toFixed(2) || '0.00'} icon={Baby} description="Promedio de lechones por parto."/>
-          <KpiCard title="Destetados / Parto" value={kpiData?.avgWeaned.toFixed(2) || '0.00'} icon={Activity} description="Promedio de lechones por destete."/>
-          <KpiCard title="Partos / Hembra / Año" value={kpiData?.pha.toFixed(2) || '0.00'} icon={GitCommitHorizontal} description="Frecuencia de partos por cerda."/>
-          <KpiCard title="Int. Destete - Servicio" value={kpiData?.ids.toFixed(1) || '0.0'} unit="días" icon={ShieldAlert} description="Tiempo para la siguiente cubrición."/>
-          <KpiCard title="Días No Productivos" value={kpiData?.npd.toFixed(1) || '0.0'} unit="días" icon={CalendarOff} description="Días sin gestación o lactancia."/>
-          <KpiCard title="Kg Destetados / Hembra / Año" value={kpiData?.kgDha.toFixed(2) || '0.00'} unit="kg" icon={Weight} description="Producción total de peso al destete."/>
+          <KpiCard title="DHA" value={kpiData?.dha.toFixed(2) || '0.00'} icon={TrendingUp} description="Destetos / Hembra / Año."/>
+          <KpiCard title="NV/P" value={kpiData?.avgLiveBorn.toFixed(2) || '0.00'} icon={Baby} description="Nacidos Vivos / Parto."/>
+          <KpiCard title="Dest./P" value={kpiData?.avgWeaned.toFixed(2) || '0.00'} icon={Activity} description="Destetados / Parto."/>
+          <KpiCard title="PHA" value={kpiData?.pha.toFixed(2) || '0.00'} icon={GitCommitHorizontal} description="Partos / Hembra / Año."/>
+          <KpiCard title="IDS" value={kpiData?.ids.toFixed(1) || '0.0'} unit="días" icon={ShieldAlert} description="Int. Destete - Servicio."/>
+          <KpiCard title="DNP" value={kpiData?.npd.toFixed(1) || '0.0'} unit="días" icon={CalendarOff} description="Días No Productivos."/>
+          <KpiCard title="Kg/DHA" value={kpiData?.kgDha.toFixed(2) || '0.00'} unit="kg" icon={Weight} description="Kg Destetados / Hembra / Año."/>
           <KpiCard title="Cerdos Totales" value={kpiData?.totalPigs.toString() || '0'} icon={PiggyBank} description="Total de animales en la granja."/>
         </div>
         <Card>
