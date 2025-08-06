@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -43,13 +44,28 @@ export default function SowCardPage() {
     }, [sowIdFromQuery]);
 
     const handlePrint = () => {
-        const printContent = document.getElementById('printable-sow-card')?.innerHTML;
-        if(printContent) {
-             const originalContent = document.body.innerHTML;
-             document.body.innerHTML = printContent;
-             window.print();
-             document.body.innerHTML = originalContent;
-             window.location.reload(); // Reload to restore styles and event listeners
+        const printContent = document.getElementById('printable-sow-card');
+        if (printContent) {
+            const printHtml = printContent.innerHTML;
+            const originalContent = document.body.innerHTML;
+
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            if(printWindow) {
+                printWindow.document.write('<html><head><title>Imprimir Ficha</title>');
+                printWindow.document.write('<style>body { font-family: Arial, sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 4px; text-align: left; font-size: 10px; } </style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(printHtml);
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            } else {
+                 document.body.innerHTML = printHtml;
+                 window.print();
+                 document.body.innerHTML = originalContent;
+                 window.location.reload();
+            }
         }
     };
 

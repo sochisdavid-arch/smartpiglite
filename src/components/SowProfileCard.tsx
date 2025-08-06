@@ -131,6 +131,8 @@ const processSowHistory = (sow: Pig): SowData => {
     // KPIs Calculation
     const totalFarrowings = cycles.filter(c => c.farrowingDate).length;
     const totalLiveBorn = cycles.reduce((sum, c) => sum + (c.liveBorn || 0), 0);
+    const totalStillborn = cycles.reduce((sum, c) => sum + (c.stillborn || 0), 0);
+    const totalMummified = cycles.reduce((sum, c) => sum + (c.mummified || 0), 0);
     const totalWeaned = cycles.reduce((sum, c) => sum + (c.pigletsWeaned || 0), 0);
     const totalNPD = cycles.reduce((sum, c) => sum + (c.nonProductiveDays || 0), 0);
     const totalLactationDays = cycles.reduce((sum, c) => sum + (c.lactationDays || 0), 0);
@@ -140,6 +142,9 @@ const processSowHistory = (sow: Pig): SowData => {
     const kpis = {
         totalFarrowings,
         avgLiveBorn: totalFarrowings > 0 ? (totalLiveBorn / totalFarrowings) : 0,
+        avgStillborn: totalFarrowings > 0 ? (totalStillborn / totalFarrowings) : 0,
+        avgMummified: totalFarrowings > 0 ? (totalMummified / totalFarrowings) : 0,
+        avgTotalBorn: totalFarrowings > 0 ? ((totalLiveBorn + totalStillborn + totalMummified) / totalFarrowings) : 0,
         avgWeaned: weanedCycles.length > 0 ? (totalWeaned / weanedCycles.length) : 0,
         avgFarrowingInterval: totalFarrowings > 1 ? (totalFarrowingInterval / (totalFarrowings -1 )) : 0,
         avgNPD: totalFarrowings > 0 ? (totalNPD / totalFarrowings) : 0,
@@ -207,7 +212,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                      <InfoField label="Estado" value={sow.status} />
                 </div>
                 <div className="flex-shrink-0">
-                    <Image src={qrUrl} alt="QR Code" width={80} height={80} />
+                    <Image src={qrUrl} alt="QR Code" width={80} height={80} data-ai-hint="qr code"/>
                 </div>
             </div>
             
@@ -227,7 +232,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         </div>
                         {sowData.cycles.slice(0, 5).map(c => <PartoRow key={c.cycle} cycle={c} />)}
                          <div className="border-t mt-1 pt-1">
-                            <PartoRow average={{totalBorn: 'Avg', liveBorn: sowData.kpis.avgLiveBorn.toFixed(1)}} />
+                            <PartoRow average={{totalBorn: 'Avg', liveBorn: sowData.kpis.avgLiveBorn.toFixed(1), stillborn: sowData.kpis.avgStillborn.toFixed(1), mummified: sowData.kpis.avgMummified.toFixed(1)}} />
                          </div>
                     </div>
                      {/* Destetes Resumen */}
@@ -328,4 +333,3 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
         </Card>
     );
 }
-
