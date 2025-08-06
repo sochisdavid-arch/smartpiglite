@@ -2,9 +2,12 @@
 "use client";
 
 import * as React from 'react';
-import { Card } from "@/components/ui/card";
-import { format, parseISO, isValid, differenceInDays, addDays, differenceInYears, differenceInMonths, differenceInCalendarDays } from 'date-fns';
-import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { format, parseISO, isValid, differenceInDays, addDays } from 'date-fns';
+import { Separator } from './ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Badge } from './ui/badge';
+import { Award, Baby, HeartPulse, Hourglass, Repeat, Syringe, Weight } from 'lucide-react';
 
 interface Event {
     id: string;
@@ -36,274 +39,221 @@ interface CycleData {
     serviceDate?: string;
     farrowingDate?: string;
     weaningDate?: string;
-    liveBorn?: number;
-    stillborn?: number;
-    mummified?: number;
-    pigletsWeaned?: number;
-    nonProductiveDays?: number;
+    liveBorn: number;
+    stillborn: number;
+    mummified: number;
+    pigletsWeaned: number;
+    nonProductiveDays: number;
     gestationDays?: number;
     lactationDays?: number;
-    weaningWeight?: number;
-    avgWeaningWeight?: number;
+    weaningToServiceDays?: number;
     farrowingInterval?: number;
     boarId?: string;
-    totalBorn?: number;
-    servicesInCycle?: number;
+    totalBorn: number;
+    servicesInCycle: number;
 }
 
 export interface SowData {
     cycles: CycleData[];
+    generalEvents: Event[];
     kpis: any;
 }
 
+const KpiCard = ({ title, value, icon }: { title: string, value: string, icon: React.ReactElement }) => (
+    <Card className="bg-muted/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
+
+
 const processSowHistory = (sow: Pig): SowData => {
     const cycles: CycleData[] = [];
+    const generalEvents: Event[] = [];
+    let cycleCounter = 1;
     let lastWeaningDate: string | null = null;
     let lastFarrowingDate: string | null = null;
-    let cycle = 1;
-
-    const sortedEvents = [...sow.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    let currentCycle: Partial<CycleData> & { services: Event[] } = { cycle: 1, services: [] };
+    let currentCycle: Partial<CycleData> = { cycle: cycleCounter, servicesInCycle: 0, liveBorn: 0, stillborn: 0, mummified: 0, totalBorn: 0, pigletsWeaned: 0, nonProductiveDays: 0 };
+    
+    const sortedEvents = [...sow.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const event of sortedEvents) {
-        if (event.type === 'Inseminación' || event.type === 'Monta Natural') {
-            currentCycle.services?.push(event);
-            if (!currentCycle.serviceDate) { // First service of the cycle
-                 currentCycle.serviceDate = event.date;
-                 currentCycle.boarId = event.boarId;
-                 if (lastWeaningDate) {
-                    currentCycle.nonProductiveDays = differenceInDays(parseISO(event.date), parseISO(lastWeaningDate));
+        switch (event.type) {
+            case 'Inseminación':
+            case 'Monta Natural':
+                if (!currentCycle.serviceDate) {
+                    currentCycle.serviceDate = event.date;
+                    currentCycle.boarId = event.boarId;
+                    if(lastWeaningDate) {
+                        currentCycle.weaningToServiceDays = differenceInDays(parseISO(event.date), parseISO(lastWeaningDate));
+                    }
                 }
-            }
-        } else if (event.type === 'Parto') {
-            currentCycle.farrowingDate = event.date;
-            currentCycle.liveBorn = event.liveBorn || 0;
-            currentCycle.stillborn = event.stillborn || 0;
-            currentCycle.mummified = event.mummified || 0;
-            currentCycle.totalBorn = (event.liveBorn || 0) + (event.stillborn || 0) + (event.mummified || 0);
-            if (currentCycle.serviceDate) {
-                currentCycle.gestationDays = differenceInDays(parseISO(event.date), parseISO(currentCycle.serviceDate));
-            }
-            if(lastFarrowingDate) {
-                currentCycle.farrowingInterval = differenceInDays(parseISO(event.date), parseISO(lastFarrowingDate));
-            }
-            currentCycle.servicesInCycle = currentCycle.services?.length;
-            cycles.push({ ...currentCycle } as CycleData);
-            lastFarrowingDate = event.date;
-            cycle++;
-            currentCycle = { cycle, services: [] };
-        } else if (event.type === 'Destete') {
-           const cycleToUpdate = cycles.find(c => c.farrowingDate && !c.weaningDate);
-           if (cycleToUpdate) {
-                cycleToUpdate.weaningDate = event.date;
-                cycleToUpdate.pigletsWeaned = event.pigletCount || 0;
-                cycleToUpdate.weaningWeight = event.weaningWeight || 0;
-                if (cycleToUpdate.farrowingDate) {
-                    cycleToUpdate.lactationDays = differenceInDays(parseISO(event.date), parseISO(cycleToUpdate.farrowingDate));
+                currentCycle.servicesInCycle = (currentCycle.servicesInCycle || 0) + 1;
+                break;
+            case 'Parto':
+                currentCycle.farrowingDate = event.date;
+                currentCycle.liveBorn = event.liveBorn || 0;
+                currentCycle.stillborn = event.stillborn || 0;
+                currentCycle.mummified = event.mummified || 0;
+                currentCycle.totalBorn = (event.liveBorn || 0) + (event.stillborn || 0) + (event.mummified || 0);
+
+                if (currentCycle.serviceDate) {
+                    currentCycle.gestationDays = differenceInDays(parseISO(event.date), parseISO(currentCycle.serviceDate));
                 }
-                if (cycleToUpdate.pigletsWeaned > 0 && cycleToUpdate.weaningWeight > 0) {
-                    cycleToUpdate.avgWeaningWeight = cycleToUpdate.weaningWeight / cycleToUpdate.pigletsWeaned;
+                if (lastFarrowingDate) {
+                    currentCycle.farrowingInterval = differenceInDays(parseISO(event.date), parseISO(lastFarrowingDate));
                 }
-           }
-            lastWeaningDate = event.date;
+
+                cycles.push(currentCycle as CycleData);
+                
+                lastFarrowingDate = event.date;
+                cycleCounter++;
+                currentCycle = { cycle: cycleCounter, servicesInCycle: 0, liveBorn: 0, stillborn: 0, mummified: 0, totalBorn: 0, pigletsWeaned: 0 };
+                break;
+            case 'Destete':
+                const cycleToUpdate = cycles.find(c => c.farrowingDate === lastFarrowingDate);
+                if (cycleToUpdate) {
+                    cycleToUpdate.weaningDate = event.date;
+                    cycleToUpdate.pigletsWeaned = event.pigletCount || 0;
+                    cycleToUpdate.lactationDays = differenceInDays(parseISO(event.date), parseISO(cycleToUpdate.farrowingDate!));
+                }
+                lastWeaningDate = event.date;
+                break;
+            default:
+                generalEvents.push(event);
         }
     }
-
-    if(currentCycle.serviceDate && !currentCycle.farrowingDate) {
-         currentCycle.servicesInCycle = currentCycle.services?.length;
-         cycles.push({ ...currentCycle } as CycleData);
+    
+    // Add current open cycle if it has a service date
+    if (currentCycle.serviceDate && !currentCycle.farrowingDate) {
+        cycles.push(currentCycle as CycleData);
     }
     
     const farrowingCycles = cycles.filter(c => c.farrowingDate);
     const weanedCycles = cycles.filter(c => c.weaningDate);
-
+    
     const kpis = {
         totalFarrowings: farrowingCycles.length,
         avgTotalBorn: farrowingCycles.length > 0 ? farrowingCycles.reduce((s, c) => s + (c.totalBorn || 0), 0) / farrowingCycles.length : 0,
         avgLiveBorn: farrowingCycles.length > 0 ? farrowingCycles.reduce((s, c) => s + (c.liveBorn || 0), 0) / farrowingCycles.length : 0,
-        avgStillborn: farrowingCycles.length > 0 ? farrowingCycles.reduce((s, c) => s + (c.stillborn || 0), 0) / farrowingCycles.length : 0,
-        avgMummified: farrowingCycles.length > 0 ? farrowingCycles.reduce((s, c) => s + (c.mummified || 0), 0) / farrowingCycles.length : 0,
         avgWeaned: weanedCycles.length > 0 ? weanedCycles.reduce((s, c) => s + (c.pigletsWeaned || 0), 0) / weanedCycles.length : 0,
-        avgGestationDays: farrowingCycles.length > 0 ? farrowingCycles.reduce((s, c) => s + (c.gestationDays || 0), 0) / farrowingCycles.length : 0,
-        avgLactationDays: weanedCycles.length > 0 ? weanedCycles.reduce((s, c) => s + (c.lactationDays || 0), 0) / weanedCycles.length : 0,
-        avgFarrowingInterval: cycles.filter(c=>c.farrowingInterval).length > 0 ? cycles.reduce((s, c) => s + (c.farrowingInterval || 0), 0) / cycles.filter(c=>c.farrowingInterval).length : 0,
-        avgWeaningWeight: weanedCycles.length > 0 ? weanedCycles.reduce((s, c) => s + (c.avgWeaningWeight || 0), 0) / weanedCycles.length : 0,
-        avgServices: cycles.length > 0 ? cycles.reduce((s, c) => s + (c.servicesInCycle || 0), 0) / cycles.length : 0
+        avgFarrowingInterval: farrowingCycles.filter(c=>c.farrowingInterval).length > 0 ? farrowingCycles.reduce((s, c) => s + (c.farrowingInterval || 0), 0) / farrowingCycles.filter(c=>c.farrowingInterval).length : 0,
+        avgGestation: farrowingCycles.filter(c=>c.gestationDays).length > 0 ? farrowingCycles.reduce((s, c) => s + (c.gestationDays || 0), 0) / farrowingCycles.filter(c=>c.gestationDays).length : 0,
+        avgLactation: weanedCycles.filter(c=>c.lactationDays).length > 0 ? weanedCycles.reduce((s, c) => s + (c.lactationDays || 0), 0) / weanedCycles.filter(c=>c.lactationDays).length : 0,
+        avgWeanToService: cycles.filter(c=>c.weaningToServiceDays).length > 0 ? cycles.reduce((s, c) => s + (c.weaningToServiceDays || 0), 0) / cycles.filter(c=>c.weaningToServiceDays).length : 0,
     };
 
-    return { cycles: cycles.reverse(), kpis };
+    return { cycles: cycles.reverse(), generalEvents: generalEvents.reverse(), kpis };
 };
 
 
-const formatAge = (birthDate: string) => {
-    if (!isValid(parseISO(birthDate))) return '';
-    const today = new Date();
-    const date = parseISO(birthDate);
-    const years = differenceInYears(today, date);
-    const months = differenceInMonths(today, date) % 12;
-    const days = differenceInCalendarDays(today, addDays(date, years * 365 + months * 30)) % 30; // Approximation
-    return `(${years}A ${months}M ${days}D)`;
-}
-
-const InfoField = ({ label, value, className = '' }: { label: string, value: string | number | undefined, className?: string }) => (
-    <div className={`flex text-[9px] leading-tight ${className}`}>
-        <span className="w-12 font-semibold">{label}:</span>
-        <span className="font-mono">{value || '---'}</span>
-    </div>
-);
-
-const MainTableRow = ({ label, cycleData, avgData, isHeader = false }: { label: string, cycleData?: any, avgData?: any, isHeader?: boolean }) => (
-    <div className={`flex items-center text-[10px] border-b border-black h-4 ${isHeader ? 'bg-gray-200 font-bold' : ''}`}>
-        <div className="w-[120px] font-semibold pl-1 truncate">{label}</div>
-        <div className="w-[70px] text-center font-mono border-l-2 border-black">{cycleData !== undefined && cycleData !== null ? cycleData : ''}</div>
-        <div className="w-[70px] text-center font-mono border-l-2 border-black">{avgData !== undefined && avgData !== null ? avgData : ''}</div>
-    </div>
-)
-
 export function SowProfileCard({ sow }: { sow: Pig }) {
-    const { cycles, kpis } = React.useMemo(() => processSowHistory(sow), [sow]);
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/analysis/sow-card?sowId=${sow.id}`: '')}`;
-    const lastCycle = cycles.find(c => c.farrowingDate) || {};
-    const currentServiceCycle = cycles.find(c => c.serviceDate && !c.farrowingDate) || lastCycle || {};
+    const { cycles, generalEvents, kpis } = React.useMemo(() => processSowHistory(sow), [sow]);
 
     return (
-        <Card className="p-1 font-sans text-black bg-white w-full flex flex-col text-[10px] leading-tight print:shadow-none print:border-none">
-            {/* Header */}
-            <div className="flex justify-between items-start border-b-2 border-black pb-1">
-                <div className="flex items-start">
-                    <div className="mr-2">
-                        <div className="font-bold text-xs">Código</div>
-                        <div className="text-2xl font-bold">{sow.id.replace(/\D/g, '') || 'N/A'}</div>
-                    </div>
-                    <div>
-                        <InfoField label="ID" value={sow.id} />
-                        <InfoField label="F. Nac" value={`${isValid(parseISO(sow.birthDate)) ? format(parseISO(sow.birthDate), 'dd/MM/yy') : ''} ${formatAge(sow.birthDate)}`} />
-                        <InfoField label="Genética" value={sow.breed} />
-                    </div>
-                </div>
-                <div className="flex flex-col">
-                    <div className="flex justify-between">
-                         <span className="text-[8px] text-gray-500">gordiva Licencia de - 9.6.13-P1 agritecsoft.com</span>
-                         <Image src="https://placehold.co/80x20.png" alt="Logo" width={80} height={20} className="ml-auto" data-ai-hint="logo"/>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-2">
-                       <InfoField label="Partos" value={kpis.totalFarrowings} />
-                       <InfoField label="Estado" value={sow.status} />
-                       <InfoField label="Padre" value="---" />
-                       <InfoField label="Grupo" value="---" />
-                       <InfoField label="Madre" value="---" />
-                       <InfoField label="Ubicación" value="---" />
-                    </div>
-               </div>
-            </div>
-
-            {/* Main Table */}
-            <div className='flex flex-col border-2 border-black border-t-0'>
-                {/* Headers */}
-                <div className="flex border-b-2 border-black bg-gray-200 font-bold">
-                    <div className="w-[120px] text-center p-1">PARTOS</div>
-                    <div className="w-[70px] text-center p-1 border-l-2 border-black">{lastCycle.cycle || kpis.totalFarrowings || 0}</div>
-                    <div className="w-[70px] text-center p-1 border-l-2 border-black">PROMEDIO</div>
-                    <div className="flex-1 border-l-2 border-black"></div>
-                </div>
-                
-                {/* Body */}
-                <div className="flex">
-                    <div className="w-[260px] flex-shrink-0">
-                        <MainTableRow label="Fecha Parto" cycleData={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
-                        <MainTableRow label="Total Nacidos" cycleData={lastCycle.totalBorn} avgData={kpis.avgTotalBorn.toFixed(1)} />
-                        <MainTableRow label="Nacidos Vivos" cycleData={lastCycle.liveBorn} avgData={kpis.avgLiveBorn.toFixed(1)} />
-                        <MainTableRow label="Nacidos Muertos" cycleData={lastCycle.stillborn} avgData={kpis.avgStillborn.toFixed(1)} />
-                        <MainTableRow label="Momificados" cycleData={lastCycle.mummified} avgData={kpis.avgMummified.toFixed(1)} />
-                        <MainTableRow label="Adoptados" cycleData={0} avgData={'0.0'}/>
-                        <MainTableRow label="Muertes Registradas" cycleData={0} avgData={'0.0'} />
-                        <MainTableRow label="Intervalo Partos" cycleData={lastCycle.farrowingInterval} avgData={kpis.avgFarrowingInterval > 0 ? kpis.avgFarrowingInterval.toFixed(0) : ''} />
-                        <MainTableRow label="Días Gestación" cycleData={lastCycle.gestationDays} avgData={kpis.avgGestationDays > 0 ? kpis.avgGestationDays.toFixed(0) : ''} />
-                        <MainTableRow label="Fecha Destete" cycleData={lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : ''}/>
-                        <MainTableRow label="Destetados" cycleData={lastCycle.pigletsWeaned} avgData={kpis.avgWeaned.toFixed(1)} />
-                        <MainTableRow label="Camadas Nodriza" cycleData={0}/>
-                        <MainTableRow label="Días Lactancia" cycleData={lastCycle.lactationDays} avgData={kpis.avgLactationDays.toFixed(1)}/>
-                        <MainTableRow label="Peso Medio" cycleData={lastCycle.avgWeaningWeight?.toFixed(1)} avgData={kpis.avgWeaningWeight.toFixed(1)} />
-                        <MainTableRow label="SPI (BVSP)" />
-                        <MainTableRow label="Número de Servicios" cycleData={currentServiceCycle.servicesInCycle} avgData={kpis.avgServices.toFixed(1)}/>
-                        <MainTableRow label="Fecha Último Servicio" cycleData={currentServiceCycle.serviceDate ? format(parseISO(currentServiceCycle.serviceDate), 'dd/MM/yy') : ''} />
-                        <MainTableRow label="Macho" cycleData={currentServiceCycle.boarId}/>
-                        <MainTableRow label="Abortos" cycleData={0} avgData={'0'}/>
-                        <MainTableRow label="Último Comentario" />
-                    </div>
-                    <div className="flex-1 border-l-2 border-black">
-                        <div className="h-full">&nbsp;</div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-[120px_1fr] border-t-2 border-black text-[10px]">
-                    <div className="p-0.5 pl-1 font-bold flex items-center">Machos: {currentServiceCycle.boarId || ''}</div>
-                    <div className="p-0.5 pl-1 font-bold grid grid-cols-4 items-center">
-                        <div>Servicio: {currentServiceCycle.serviceDate ? format(parseISO(currentServiceCycle.serviceDate), 'dd/MM/yy') : ''}</div>
-                        <div>Control Celo:</div>
-                        <div>Diag. Gest.:</div>
-                        <div>F. Parto:</div>
-                    </div>
-                </div>
-                <div className="grid grid-cols-[120px_1fr] border-y-2 border-black text-[10px]">
-                    <div className="p-0.5 pl-1 font-bold">Servicio + 21 Días</div>
-                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
-                        <div>{currentServiceCycle.serviceDate ? format(addDays(parseISO(currentServiceCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
-                        <div className="col-span-2">
-                            <span className="font-bold">Servicio + 35 Días: </span> 
-                             {currentServiceCycle.serviceDate ? format(addDays(parseISO(currentServiceCycle.serviceDate), 35), 'dd/MM/yy') : ''}
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="text-3xl">{sow.id}</CardTitle>
+                            <CardDescription>{sow.breed} - {isValid(parseISO(sow.birthDate)) ? `${differenceInDays(new Date(), parseISO(sow.birthDate))} días de vida` : 'Fecha de nacimiento inválida'}</CardDescription>
                         </div>
-                        <div className="flex justify-between items-center">
-                             <div>
-                                <span className="font-bold">F. Estimada Parto: </span>
-                                {currentServiceCycle.serviceDate ? format(addDays(parseISO(currentServiceCycle.serviceDate), 114), 'dd/MM/yy') : ''}
-                            </div>
-                            <Image src={qrUrl} alt="QR Code" width={40} height={40} data-ai-hint="barcode" className="mr-2"/>
-                        </div>
+                        <Badge variant={sow.status === 'Gestante' || sow.status === 'Lactante' ? 'default' : 'secondary'} className="text-lg">{sow.status}</Badge>
                     </div>
-                </div>
-                <div className="grid grid-cols-[120px_1fr] border-b-2 border-black text-[10px] h-5">
-                    <div className="p-0.5 pl-1 font-bold">F. Nac</div>
-                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-6">
-                        <div className="border-r-2 border-black text-center">Vivos</div>
-                        <div className="border-r-2 border-black text-center">Muertos</div>
-                        <div className="border-r-2 border-black text-center">Momificados</div>
-                        <div className="border-r-2 border-black text-center">Peso Nac.</div>
-                        <div className="border-r-2 border-black text-center">Código camada</div>
-                        <div className="text-center">Ubicación</div>
-                    </div>
-                </div>
-            </div>
+                </CardHeader>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Indicadores de Rendimiento Clave (Promedios)</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <KpiCard title="Total de Partos" value={kpis.totalFarrowings.toString()} icon={<Award className="h-4 w-4 text-muted-foreground" />} />
+                    <KpiCard title="Nacidos Vivos" value={kpis.avgLiveBorn.toFixed(1)} icon={<Baby className="h-4 w-4 text-muted-foreground" />} />
+                    <KpiCard title="Destetados" value={kpis.avgWeaned.toFixed(1)} icon={<Repeat className="h-4 w-4 text-muted-foreground" />} />
+                    <KpiCard title="Int. Partos (días)" value={kpis.avgFarrowingInterval.toFixed(0)} icon={<Hourglass className="h-4 w-4 text-muted-foreground" />} />
+                </CardContent>
+            </Card>
             
-            <div className="mt-1 flex-grow grid grid-cols-3 grid-rows-2 gap-1">
-                <TableShell title="MUERTE LECHONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
-                <TableShell title="CAUSAS MUERTE" cols={['COLAS']} rows={4}/>
-                <TableShell title="CUBRICIONES" cols={['Fecha', 'Macho', 'Tipo /Téc']} rows={4}/>
-                <TableShell title="ADOPCIONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
-                <TableShell title="NOTAS" cols={[]} rows={4}/>
-                <TableShell title="DESTETES (PARCIALES)" cols={['Fecha', 'Número', 'Peso Camada']} rows={4}/>
-            </div>
-        </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Historial Reproductivo</CardTitle>
+                    <CardDescription>Detalle de cada ciclo productivo de la cerda.</CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="text-center">Ciclo</TableHead>
+                                <TableHead>Fecha Servicio</TableHead>
+                                <TableHead>Fecha Parto</TableHead>
+                                <TableHead>Fecha Destete</TableHead>
+                                <TableHead className="text-center">Nac. Vivos</TableHead>
+                                <TableHead className="text-center">Destetados</TableHead>
+                                <TableHead className="text-center">IPP</TableHead>
+                                <TableHead className="text-center">Gest (d)</TableHead>
+                                <TableHead className="text-center">Lact (d)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {cycles.length > 0 ? cycles.map(cycle => (
+                                <TableRow key={cycle.cycle}>
+                                    <TableCell className="text-center font-bold">{cycle.cycle}</TableCell>
+                                    <TableCell>{cycle.serviceDate ? format(parseISO(cycle.serviceDate), 'dd/MM/yy') : '--'}</TableCell>
+                                    <TableCell>{cycle.farrowingDate ? format(parseISO(cycle.farrowingDate), 'dd/MM/yy') : '--'}</TableCell>
+                                    <TableCell>{cycle.weaningDate ? format(parseISO(cycle.weaningDate), 'dd/MM/yy') : '--'}</TableCell>
+                                    <TableCell className="text-center">{cycle.farrowingDate ? cycle.liveBorn : '--'}</TableCell>
+                                    <TableCell className="text-center">{cycle.weaningDate ? cycle.pigletsWeaned : '--'}</TableCell>
+                                    <TableCell className="text-center">{cycle.farrowingInterval || '--'}</TableCell>
+                                    <TableCell className="text-center">{cycle.gestationDays || '--'}</TableCell>
+                                    <TableCell className="text-center">{cycle.lactationDays || '--'}</TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="h-24 text-center">No hay ciclos reproductivos registrados.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Otros Eventos Registrados</CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Tipo de Evento</TableHead>
+                                <TableHead>Detalles</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                             {generalEvents.length > 0 ? generalEvents.map(event => (
+                                <TableRow key={event.id}>
+                                    <TableCell>{format(parseISO(event.date), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{event.type}</TableCell>
+                                    <TableCell>{event.details}</TableCell>
+                                </TableRow>
+                             )) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center">No hay eventos adicionales registrados.</TableCell>
+                                </TableRow>
+                             )}
+                        </TableBody>
+                    </Table>
+                 </CardContent>
+            </Card>
+        </div>
     );
 }
-
-const TableShell = ({title, cols, rows}: {title: string, cols: string[], rows: number}) => (
-    <div className="border-2 border-black flex flex-col text-[9px]">
-        <h4 className="font-bold text-center border-b-2 border-black py-0.5">{title}</h4>
-        {cols.length > 0 && (
-             <div className={`grid grid-cols-${cols.length} font-bold border-b-2 border-black text-center divide-x-2 divide-black`}>
-                {cols.map(c => <div key={c} className="p-0.5 truncate">{c}</div>)}
-            </div>
-        )}
-        <div className="flex-grow grid grid-rows-4">
-            {Array.from({length: rows}).map((_, i) => (
-                <div key={i} className={`grid grid-cols-${cols.length > 0 ? cols.length : 1} border-t border-black h-4`}>
-                    {cols.length > 0 ? cols.map((c, j) => <div key={j} className="border-r-2 border-black last:border-r-0"></div>) : <div></div>}
-                </div>
-            ))}
-        </div>
-    </div>
-);
-
-    
