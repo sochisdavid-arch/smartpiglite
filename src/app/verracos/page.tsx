@@ -1,0 +1,187 @@
+
+"use client";
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { AppLayout } from '@/components/AppLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle, MoreHorizontal } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { format, parseISO, isValid, differenceInWeeks } from 'date-fns';
+
+interface BoarEvent {
+    id: string;
+    type: 'Ingreso' | 'Eyaculado' | 'Tratamiento' | 'Vacunación' | 'Venta' | 'Muerte';
+    date: string;
+    details?: string;
+    // Add other event-specific fields if necessary
+}
+
+interface Boar {
+    id: string;
+    breed: string;
+    birthDate: string;
+    arrivalDate: string;
+    status: 'Activo' | 'Inactivo' | 'Vendido';
+    events: BoarEvent[];
+}
+
+const BOAR_STORAGE_KEY = 'boarCollection';
+
+const pigBreeds = [
+  "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "Otro"
+];
+
+const calculateAgeInWeeks = (birthDate: string) => {
+    if (!birthDate || !isValid(parseISO(birthDate))) return 0;
+    return differenceInWeeks(new Date(), parseISO(birthDate));
+};
+
+export default function VerracosPage() {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [boars, setBoars] = React.useState<Boar[]>([]);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingBoar, setEditingBoar] = React.useState<Boar | null>(null);
+
+    const loadBoars = React.useCallback(() => {
+        const storedBoars = localStorage.getItem(BOAR_STORAGE_KEY);
+        if (storedBoars) {
+            setBoars(JSON.parse(storedBoars));
+        }
+    }, []);
+
+    React.useEffect(() => {
+        loadBoars();
+    }, [loadBoars]);
+
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const id = formData.get('id') as string;
+
+        const boarData: Omit<Boar, 'events' | 'status'> = {
+            id,
+            breed: formData.get('breed') as string,
+            birthDate: formData.get('birthDate') as string,
+            arrivalDate: formData.get('arrivalDate') as string,
+        };
+
+        let updatedBoars: Boar[];
+        if (editingBoar) {
+            updatedBoars = boars.map(b => b.id === editingBoar.id ? { ...editingBoar, ...boarData } : b);
+            toast({ title: 'Verraco Actualizado', description: `Los datos de ${boarData.id} han sido actualizados.` });
+        } else {
+            if (boars.some(b => b.id === id)) {
+                toast({ variant: 'destructive', title: 'Error', description: `El verraco con ID ${id} ya existe.` });
+                return;
+            }
+            const newBoar: Boar = {
+                ...boarData,
+                status: 'Activo',
+                events: [{ id: `evt-${Date.now()}`, type: 'Ingreso', date: boarData.arrivalDate, details: 'Ingreso inicial a la granja' }]
+            };
+            updatedBoars = [...boars, newBoar];
+            toast({ title: 'Verraco Agregado', description: `${newBoar.id} ha sido registrado.` });
+        }
+
+        localStorage.setItem(BOAR_STORAGE_KEY, JSON.stringify(updatedBoars));
+        setBoars(updatedBoars);
+        setIsFormOpen(false);
+        setEditingBoar(null);
+    };
+
+    const handleRowClick = (boarId: string) => {
+        router.push(`/verracos/${boarId}`);
+    };
+
+    return (
+        <AppLayout>
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight">Gestión de Verracos</h1>
+                    <Button onClick={() => { setEditingBoar(null); setIsFormOpen(true); }}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Verraco
+                    </Button>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Listado de Machos Reproductores</CardTitle>
+                        <CardDescription>Aquí se listan todos los verracos de la granja.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID Verraco</TableHead>
+                                    <TableHead>Raza</TableHead>
+                                    <TableHead>Fecha Ingreso</TableHead>
+                                    <TableHead>Edad (Semanas)</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {boars.length > 0 ? boars.map(boar => (
+                                    <TableRow key={boar.id} onClick={() => handleRowClick(boar.id)} className="cursor-pointer">
+                                        <TableCell className="font-medium">{boar.id}</TableCell>
+                                        <TableCell>{boar.breed}</TableCell>
+                                        <TableCell>{format(parseISO(boar.arrivalDate), 'dd/MM/yyyy')}</TableCell>
+                                        <TableCell>{calculateAgeInWeeks(boar.birthDate)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={boar.status === 'Activo' ? 'default' : 'secondary'}>{boar.status}</Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">No hay verracos registrados.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{editingBoar ? 'Editar' : 'Agregar'} Verraco</DialogTitle>
+                            <DialogDescription>Complete los datos para registrar un nuevo macho reproductor.</DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleFormSubmit} id="boar-form" className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="id">ID del Verraco</Label>
+                                <Input id="id" name="id" required defaultValue={editingBoar?.id} disabled={!!editingBoar} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="breed">Raza</Label>
+                                <Input id="breed" name="breed" required defaultValue={editingBoar?.breed} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
+                                <Input id="birthDate" name="birthDate" type="date" required defaultValue={editingBoar?.birthDate} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="arrivalDate">Fecha de Ingreso</Label>
+                                <Input id="arrivalDate" name="arrivalDate" type="date" required defaultValue={editingBoar?.arrivalDate} />
+                            </div>
+                        </form>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                            <Button type="submit" form="boar-form">{editingBoar ? 'Guardar Cambios' : 'Agregar Verraco'}</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </AppLayout>
+    );
+}

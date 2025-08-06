@@ -67,6 +67,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/lactation', label: 'Lactancia', icon: Baby },
+    { href: '/verracos', label: 'Verracos', icon: GitCommitHorizontal },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
     { href: '/ceba', label: 'Ceba', icon: Beef },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
@@ -91,7 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
        { href: '/analysis/weaning-forecast', label: 'Previsión de Destete' },
        { href: '/analysis/birth-analysis', label: 'Análisis de Nacimientos' },
        { href: '/analysis/lactation-analysis', label: 'Análisis de Destetados' },
-       { href: '/analysis/mortality-analysis', label: 'Análisis de Mortalidad' },
+       { href: '/analysis/mortality-analysis', label: 'Análisis de mortalidad' },
   ];
   
   const productionAnalysisMenuItems = [
