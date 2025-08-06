@@ -82,6 +82,7 @@ export default function VacunasPage() {
         
         let productId = selectedProduct;
         let productName = vacunas.find(v => v.id === selectedProduct)?.name || '';
+        let isNewProductCreation = false;
 
         const fullInventory = getInventory();
 
@@ -90,8 +91,15 @@ export default function VacunasPage() {
                 toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un nombre para el nuevo producto.' });
                 return;
             }
-            productId = `VAC-${Date.now()}`;
             productName = newProductName;
+            const existingProductByName = fullInventory.find(item => item.name.toLowerCase() === newProductName.toLowerCase() && item.category === 'vacuna');
+
+            if (existingProductByName) {
+                productId = existingProductByName.id;
+            } else {
+                productId = `VAC-${Date.now()}`;
+                isNewProductCreation = true;
+            }
         }
 
         if (!productId || !productName || totalVolume <= 0) {
@@ -166,7 +174,6 @@ export default function VacunasPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Producto</TableHead>
-                                    <TableHead>ID</TableHead>
                                     <TableHead className="text-right">Stock (dosis/ml)</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -174,12 +181,11 @@ export default function VacunasPage() {
                                 {vacunas.length > 0 ? vacunas.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell>{item.id}</TableCell>
                                         <TableCell className="text-right font-semibold">{item.stock.toFixed(2)}</TableCell>
                                     </TableRow>
                                 )) : (
                                      <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">No hay vacunas en el inventario.</TableCell>
+                                        <TableCell colSpan={2} className="h-24 text-center">No hay vacunas en el inventario.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

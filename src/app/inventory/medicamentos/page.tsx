@@ -23,11 +23,11 @@ interface MedicalPurchaseRecord {
     productName: string;
     purchaseDate: string;
     vials: number;
-    volumePerVial: number;
+    volumePerVial: number; // Can be ml or doses
     totalVolume: number;
     valuePerVial: number;
     totalValue: number;
-    valuePerUnit: number;
+    valuePerUnit: number; // Value per ml or dose
     lotNumber?: string;
     icaRegistration?: string;
     manufacturingDate?: string;
@@ -82,6 +82,7 @@ export default function MedicamentosPage() {
         
         let productId = selectedProduct;
         let productName = medicamentos.find(m => m.id === selectedProduct)?.name || '';
+        let isNewProductCreation = false;
 
         const fullInventory = getInventory();
 
@@ -90,8 +91,15 @@ export default function MedicamentosPage() {
                 toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un nombre para el nuevo producto.' });
                 return;
             }
-            productId = `MED-${Date.now()}`;
             productName = newProductName;
+            const existingProductByName = fullInventory.find(item => item.name.toLowerCase() === newProductName.toLowerCase() && item.category === 'medicamento');
+
+            if (existingProductByName) {
+                productId = existingProductByName.id;
+            } else {
+                productId = `MED-${Date.now()}`;
+                isNewProductCreation = true;
+            }
         }
 
         if (!productId || !productName || totalVolume <= 0) {
@@ -166,7 +174,6 @@ export default function MedicamentosPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Producto</TableHead>
-                                    <TableHead>ID</TableHead>
                                     <TableHead className="text-right">Stock (ml/ud)</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -174,12 +181,11 @@ export default function MedicamentosPage() {
                                 {medicamentos.length > 0 ? medicamentos.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell>{item.id}</TableCell>
                                         <TableCell className="text-right font-semibold">{item.stock.toFixed(2)}</TableCell>
                                     </TableRow>
                                 )) : (
                                      <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">No hay medicamentos en el inventario.</TableCell>
+                                        <TableCell colSpan={2} className="h-24 text-center">No hay medicamentos en el inventario.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
