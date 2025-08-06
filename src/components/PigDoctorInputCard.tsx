@@ -36,7 +36,7 @@ type PigDoctorInputCardProps = {
 }
 
 export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoading }: PigDoctorInputCardProps) {
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,17 +57,16 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
            toast({ variant: 'destructive', title: 'Error', description: 'La cámara no es soportada por este navegador.' });
-           setHasCameraPermission(false);
            return;
         }
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-        setHasCameraPermission(true);
+        setIsCameraActive(true);
       } catch (error) {
         console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
+        setIsCameraActive(false);
         toast({
           variant: 'destructive',
           title: 'Acceso a la Cámara Denegado',
@@ -82,7 +81,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-    setHasCameraPermission(null);
+    setIsCameraActive(false);
   };
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,7 +90,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
       const reader = new FileReader();
       reader.onloadend = () => {
         setValue('photoDataUri', reader.result as string);
-        if (hasCameraPermission) {
+        if (isCameraActive) {
           stopCamera();
         }
       };
@@ -105,7 +104,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
 
     let submissionValues = { ...values };
 
-    if (hasCameraPermission && videoRef.current && canvasRef.current) {
+    if (isCameraActive && videoRef.current && canvasRef.current) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         canvas.width = video.videoWidth;
@@ -132,7 +131,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
 
   const clearImage = () => {
     setValue('photoDataUri', undefined);
-    if (hasCameraPermission) {
+    if (isCameraActive) {
       stopCamera();
     }
     if (fileInputRef.current) {
@@ -165,7 +164,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
 
               <div className="space-y-4">
                 <FormLabel>Foto (Opcional)</FormLabel>
-                {!(photoDataUri || hasCameraPermission) && (
+                {!(photoDataUri || isCameraActive) && (
                   <div className="grid grid-cols-2 gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={getCameraPermission}>
                         <Camera className="mr-2 h-4 w-4" /> Cámara
@@ -183,22 +182,22 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
                   </div>
                 )}
                 
-                {(photoDataUri || hasCameraPermission !== null) && (
+                {(photoDataUri || isCameraActive) && (
                     <div className="relative aspect-video w-full">
-                        {hasCameraPermission ? (
+                        {isCameraActive ? (
                             <video ref={videoRef} autoPlay muted className="w-full h-full object-cover rounded-md bg-muted" />
                         ) : photoDataUri ? (
                             <img src={photoDataUri} alt="Vista previa" className="w-full h-full object-cover rounded-md" />
-                        ) : hasCameraPermission === false ? (
+                        ) : (
                              <Alert variant="destructive">
                                 <AlertTitle>Acceso a la Cámara Denegado</AlertTitle>
                                 <AlertDescription>
                                     Habilite los permisos en su navegador para usar la cámara.
                                 </AlertDescription>
                             </Alert>
-                        ) : null}
+                        )}
 
-                        {(photoDataUri || hasCameraPermission) && (
+                        {(photoDataUri || isCameraActive) && (
                              <Button
                                 type="button"
                                 variant="destructive"
