@@ -72,6 +72,7 @@ export default function MortalityAnalysisPage() {
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'year'>('month');
     const [chartType, setChartType] = React.useState<'quantity' | 'percentage'>('quantity');
+    const [valueAnalyzed, setValueAnalyzed] = React.useState<'period' | 'weaning'>('period');
 
     // Data for rendering
     const [kpiData, setKpiData] = React.useState<any>({});
@@ -110,7 +111,7 @@ export default function MortalityAnalysisPage() {
                     totalLiveBorn += liveBornThisCycle;
                 }
                 
-                if (event.type === 'Muerte de Lechón' && lastFarrowingDate) {
+                if (valueAnalyzed === 'period' && event.type === 'Muerte de Lechón' && lastFarrowingDate) {
                     const deathDate = parseISO(event.date);
                     if (deathDate >= start && deathDate <= end) {
                         const ageAtDeath = differenceInDays(deathDate, parseISO(lastFarrowingDate));
@@ -126,6 +127,27 @@ export default function MortalityAnalysisPage() {
                         });
                     }
                 }
+                 
+                 if (valueAnalyzed === 'weaning' && event.type === 'Destete' && lastFarrowingDate) {
+                     const weaningDate = parseISO(event.date);
+                     if (weaningDate >= start && weaningDate <= end) {
+                         const weanedCount = event.pigletCount || 0;
+                         const mortalityThisCycle = (liveBornThisCycle - weanedCount) > 0 ? (liveBornThisCycle - weanedCount) : 0;
+                         if (mortalityThisCycle > 0) {
+                            deaths.push({
+                                sowId: pig.id,
+                                farrowingDate: lastFarrowingDate,
+                                deathDate: event.date,
+                                deathCount: mortalityThisCycle,
+                                cycle: cycle,
+                                breed: pig.breed,
+                                cause: 'Relacionada al destete',
+                                ageAtDeath: differenceInDays(weaningDate, parseISO(lastFarrowingDate))
+                            })
+                         }
+                     }
+                 }
+
                  if(event.type === 'Destete') {
                     lastFarrowingDate = null; // Reset after weaning
                  }
@@ -166,7 +188,7 @@ export default function MortalityAnalysisPage() {
             const periodDeathCount = periodDeaths.reduce((s,d) => s + d.deathCount, 0);
 
             // This is an approximation. A more accurate live born count per period would be needed.
-            const periodLiveBorn = totalLiveBorn / periods.length; 
+            const periodLiveBorn = totalLiveBorn > 0 ? totalLiveBorn / periods.length : 1; 
             
             return {
                 name: getPeriodLabel(period),
@@ -207,7 +229,7 @@ export default function MortalityAnalysisPage() {
         
         setCauseDistributionData(causeData);
 
-    }, [allPigs, startDate, endDate, timeGroup]);
+    }, [allPigs, startDate, endDate, timeGroup, valueAnalyzed]);
 
     React.useEffect(() => {
         if(allPigs.length > 0) handleFilter();
@@ -246,10 +268,11 @@ export default function MortalityAnalysisPage() {
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="value-analyzed">Valor analizado</Label>
-                                <Select defaultValue="Mortalidad del periodo">
+                                <Select value={valueAnalyzed} onValueChange={(v) => setValueAnalyzed(v as any)}>
                                     <SelectTrigger id="value-analyzed"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Mortalidad del periodo">Mortalidad del periodo</SelectItem>
+                                        <SelectItem value="period">Mortalidad del periodo</SelectItem>
+                                        <SelectItem value="weaning">Mortalidad relacionada al destete</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
