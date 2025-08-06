@@ -14,6 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPigDiagnosis, type PigDoctorOutput } from '@/ai/flows/pig-doctor';
@@ -21,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Camera, GitCommitHorizontal, Lightbulb, Loader2, Syringe, AlertTriangle, ShieldCheck, Microscope, FlaskConical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   symptoms: z.string().min(10, { message: "Describa los síntomas con al menos 10 caracteres." }),
