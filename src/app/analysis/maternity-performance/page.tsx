@@ -104,7 +104,7 @@ export default function MaternityPerformancePage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <h1 className="text-3xl font-bold tracking-tight">Análisis de Máximo Potencial Productivo</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Análisis Potencial Productivo</h1>
                 <Card>
                     <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
