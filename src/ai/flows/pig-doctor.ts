@@ -13,16 +13,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PigDoctorInputSchema = z.object({
-  symptoms: z.string().describe('Lista de síntomas clínicos observados en el animal. Ej: tos, diarrea, fiebre.'),
-  severity: z.enum(['Leve', 'Moderado', 'Grave']).describe('Gravedad del cuadro clínico.'),
-  age: z.string().describe('Edad del animal. Ej: "35 días", "10 semanas", "2 años".'),
-  stage: z.string().describe('Etapa productiva del animal. Ej: Lechón lactante, Ceba, Gestante.'),
-  environmentalConditions: z
-    .string()
-    .describe('Condiciones ambientales recientes. Ej: "Alta humedad, temperatura 20°C".'),
-  healthHistory: z.string().describe('Historial sanitario relevante del animal o lote. Ej: "Vacunado contra Mycoplasma".'),
-  location: z.string().describe('Ubicación específica en la granja. Ej: "Sala de precebo 2, corral 5".'),
-  similarCases: z.number().describe('Número de casos similares observados en los últimos días.'),
+  symptoms: z.string().describe('Descripción detallada de los síntomas clínicos y cualquier otra observación relevante sobre el animal y su entorno.'),
+  photoDataUri: z.string().optional().describe(
+      "Una foto del cerdo o de los signos clínicos, como un data URI que debe incluir un tipo MIME y usar codificación Base64. Formato esperado: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
 export type PigDoctorInput = z.infer<typeof PigDoctorInputSchema>;
 
@@ -57,16 +51,12 @@ const pigDoctorPrompt = ai.definePrompt({
   prompt: `Eres "PigDoctor", un asistente veterinario experto en porcicultura, entrenado con el Manual Merck, guías de la FAO y la OIE. Tu propósito es emitir diagnósticos presuntivos y sugerir tratamientos. NUNCA debes reemplazar el criterio de un médico veterinario profesional.
 
 Analiza los siguientes datos clínicos de un caso:
-- Síntomas: {{symptoms}}
-- Gravedad: {{severity}}
-- Edad: {{age}}
-- Etapa Productiva: {{stage}}
-- Condiciones Ambientales: {{environmentalConditions}}
-- Historial Sanitario: {{healthHistory}}
-- Ubicación: {{location}}
-- Casos Similares Recientes: {{similarCases}}
+- Síntomas y Observaciones: {{symptoms}}
+{{#if photoDataUri}}
+- Fotografía: {{media url=photoDataUri}}
+{{/if}}
 
-Basado en esta información, proporciona un análisis estructurado. La justificación debe ser técnica y concisa. Las recomendaciones deben ser prácticas para un entorno de granja. Si detectas {{similarCases}} > 1, eleva el nivel de riesgo a "Alerta" o "Brote Potencial" según la gravedad y los síntomas.
+Basado en esta información, proporciona un análisis estructurado. La justificación debe ser técnica y concisa. Las recomendaciones deben ser prácticas para un entorno de granja. Si en los síntomas se menciona que hay más de un caso similar, eleva el nivel de riesgo a "Alerta" o "Brote Potencial" según la gravedad y los síntomas.
 
 Siempre finaliza tus recomendaciones indicando que "Este es un diagnóstico presuntivo y debe ser validado por un médico veterinario".
 `,

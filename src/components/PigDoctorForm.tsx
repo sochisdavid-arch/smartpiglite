@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -9,57 +9,81 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPigDiagnosis, type PigDoctorOutput } from '@/ai/flows/pig-doctor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Activity, GitCommitHorizontal, Lightbulb, Loader2, Syringe, AlertTriangle, ShieldCheck, Microscope, FlaskConical } from 'lucide-react';
+import { Camera, GitCommitHorizontal, Lightbulb, Loader2, Syringe, AlertTriangle, ShieldCheck, Microscope, FlaskConical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
 
 const formSchema = z.object({
-  symptoms: z.string().min(5, { message: "Describa al menos un síntoma." }),
-  severity: z.enum(['Leve', 'Moderado', 'Grave']),
-  age: z.string().min(1, { message: "La edad es requerida." }),
-  stage: z.string().min(3, { message: "La etapa es requerida." }),
-  environmentalConditions: z.string().min(5, { message: "Describa brevemente el ambiente." }),
-  healthHistory: z.string().min(3, { message: "Indique el historial o 'Ninguno'." }),
-  location: z.string().min(3, { message: "La ubicación es requerida." }),
-  similarCases: z.coerce.number().min(0, { message: "Debe ser un número no negativo." }),
+  symptoms: z.string().min(10, { message: "Describa los síntomas con al menos 10 caracteres." }),
+  photoDataUri: z.string().optional(),
 });
 
 export function PigDoctorForm() {
   const [diagnosis, setDiagnosis] = useState<PigDoctorOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      symptoms: 'Diarrea acuosa, deshidratación, letargo.',
-      severity: 'Moderado',
-      age: '35 días',
-      stage: 'Precebo',
-      environmentalConditions: 'Sala con calefacción, densidad normal.',
-      healthHistory: 'Vacunado contra Mycoplasma.',
-      location: 'Sala de Precebo 2, Corral 5',
-      similarCases: 4,
+      symptoms: 'Lechón de 35 días presenta diarrea acuosa amarillenta, deshidratación severa y letargo. No quiere comer. Se observan 4 casos similares en el mismo corral.',
+      photoDataUri: undefined,
     },
   });
+
+  const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Acceso a la Cámara Denegado',
+          description: 'Por favor, habilita los permisos de la cámara en tu navegador para usar esta función.',
+        });
+      }
+    };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setDiagnosis(null);
+
+    let submissionValues = { ...values };
+
+    // Capture image if camera is active
+    if (hasCameraPermission && videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if(context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUri = canvas.toDataURL('image/jpeg');
+        submissionValues.photoDataUri = dataUri;
+      }
+    }
+
     try {
-      const result = await getPigDiagnosis(values);
+      const result = await getPigDiagnosis(submissionValues);
       setDiagnosis(result);
     } catch (error) {
       console.error("Error al obtener el diagnóstico:", error);
@@ -78,7 +102,7 @@ export function PigDoctorForm() {
       <Card>
         <CardHeader>
           <CardTitle>Información Clínica</CardTitle>
-          <CardDescription>Complete los datos del caso para que la IA genere un análisis.</CardDescription>
+          <CardDescription>Describa los síntomas y tome una foto para que la IA genere un análisis.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -88,104 +112,44 @@ export function PigDoctorForm() {
                 name="symptoms"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Síntomas Clínicos</FormLabel>
+                    <FormLabel>Síntomas, Historial y Observaciones</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Ej: Tos, diarrea, fiebre, secreción nasal..." {...field} />
+                      <Textarea placeholder="Describa todo lo que observa: síntomas, edad del animal, etapa, condiciones del corral, historial de vacunas, si hay más casos, etc." {...field} rows={8}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="severity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gravedad</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccione gravedad" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Leve">Leve</SelectItem>
-                          <SelectItem value="Moderado">Moderado</SelectItem>
-                          <SelectItem value="Grave">Grave</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Edad</FormLabel>
-                      <FormControl><Input placeholder="Ej: 35 días" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
+              <div className="space-y-2">
+                <Label>Cámara</Label>
+                {hasCameraPermission === null && (
+                     <Button type="button" variant="outline" onClick={getCameraPermission} className="w-full">
+                        <Camera className="mr-2 h-4 w-4" /> Activar Cámara
+                    </Button>
+                )}
+                {hasCameraPermission === false && (
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Cámara no disponible</AlertTitle>
+                        <AlertDescription>
+                           No se pudo acceder a la cámara. Por favor, revisa los permisos.
+                           <Button variant="link" onClick={getCameraPermission}>Reintentar</Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                
+                <div className="relative">
+                    <video ref={videoRef} className={cn("w-full aspect-video rounded-md bg-muted", !hasCameraPermission && "hidden")} autoPlay muted />
+                    <canvas ref={canvasRef} className="hidden" />
+                     {hasCameraPermission && (
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full px-2">
+                            <p className="text-xs text-center text-white bg-black/50 p-1 rounded">La cámara está activa. La foto se tomará al enviar el formulario.</p>
+                        </div>
+                     )}
+                </div>
               </div>
-               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                    control={form.control}
-                    name="stage"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Etapa Productiva</FormLabel>
-                        <FormControl><Input placeholder="Ej: Ceba, Gestación..." {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                <FormField
-                    control={form.control}
-                    name="similarCases"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Nº Casos Similares</FormLabel>
-                        <FormControl><Input type="number" placeholder="Ej: 4" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-              </div>
-               <FormField
-                control={form.control}
-                name="environmentalConditions"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Condiciones Ambientales</FormLabel>
-                    <FormControl><Input placeholder="Ej: Temperatura 25°C, alta humedad" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="healthHistory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Historial Sanitario</FormLabel>
-                    <FormControl><Input placeholder="Ej: Vacunado contra Circovirus" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ubicación en Granja</FormLabel>
-                    <FormControl><Input placeholder="Ej: Sala Maternidad 1, Corral 3" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando...</> : 'Obtener Diagnóstico IA'}
               </Button>

@@ -12,8 +12,8 @@ export default function PigDoctorPage() {
           <h1 className="text-3xl font-bold tracking-tight">PigDoctor AI</h1>
         </div>
         <p className="text-muted-foreground max-w-3xl">
-          Utilice esta herramienta de diagnóstico con IA para obtener análisis presuntivos basados en síntomas y datos clínicos.
-          Proporcione la información más detallada posible para recibir la evaluación más precisa.
+          Utilice esta herramienta de diagnóstico con IA para obtener análisis presuntivos.
+          Proporcione una descripción detallada de los síntomas y, si es posible, una imagen clara del animal o los signos clínicos para obtener la evaluación más precisa.
           <span className="font-semibold text-destructive block mt-2">Recuerde: esta herramienta es un asistente y no reemplaza el criterio de un médico veterinario profesional.</span>
         </p>
         <PigDoctorForm />
