@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, FileSpreadsheet, Sheet, Printer, Filter, CalendarIcon, AlertCircle, MoreHorizontal } from 'lucide-react';
+import { Filter, AlertCircle, MoreHorizontal, Download } from 'lucide-react';
 import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 
 interface Event {
     id: string;
@@ -274,12 +276,20 @@ export default function WeaningForecastPage() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Listado de madres con previsión de destete</CardTitle>
-                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => handleExport('pdf')}><FileText className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleExport('csv')}><FileSpreadsheet className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleExport('xlsx')}><Sheet className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => window.print()}><Printer className="h-4 w-4" /></Button>
-                            </div>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Exportar
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('csv')}>Exportar a CSV</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => window.print()}>Imprimir</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
