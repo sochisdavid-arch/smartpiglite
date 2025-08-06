@@ -8,17 +8,20 @@ import { FileText, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 
 const forms = [
-    { title: "Registro de Parto", description: "Registrar un nuevo parto y los detalles de la camada.", href: "/gestation", disabled: true },
-    { title: "Registro de Servicio", description: "Anotar una inseminación o monta natural.", href: "/gestation", disabled: true },
-    { title: "Registro de Destete", description: "Registrar un destete, peso y número de lechones.", href: "/lactation", disabled: true },
-    { title: "Mortalidad de Lechones", description: "Registrar la muerte de lechones y su causa.", href: "/lactation", disabled: true },
-    { title: "Entrada de Alimento", description: "Registrar una nueva compra de alimento.", href: "/inventory/alimentos", disabled: true },
-    { title: "Nuevo Animal", description: "Añadir una nueva hembra o macho al sistema.", href: "/gestation", disabled: true },
+    { title: "Formulario de Servicio", description: "Registrar una inseminación o monta natural con fecha y reproductor.", href: "/gestation", disabled: false },
+    { title: "Formulario de Parto", description: "Recolectar todos los datos de un nuevo parto.", href: "/gestation", disabled: false },
+    { title: "Formulario de Destete", description: "Registrar los detalles de un destete de camada.", href: "/lactation", disabled: false },
+    { title: "Pérdida Reproductiva", description: "Anotar abortos, repeticiones de celo u otras pérdidas.", href: "/gestation", disabled: false },
+    { title: "Muerte/Movimiento de Lechones", description: "Registrar bajas y transferencias de lechones en maternidad.", href: "/lactation", disabled: false },
+    { title: "Formulario de Nodrizas", description: "Registrar y gestionar madres nodrizas.", href: "/lactation", disabled: false },
+    { title: "Consumo de Alimento (Lote)", description: "Registrar el consumo de alimento para lotes de precebo o ceba.", href: "/precebo", disabled: false },
+    { title: "Gestión de Lotes", description: "Registrar muertes, transferencias o ventas de lechones de un lote.", href: "/precebo", disabled: false },
+    { title: "Vacuna/Medicamento (Lote)", description: "Aplicar vacunas o medicamentos a un lote completo.", href: "/precebo", disabled: false },
 ];
 
 const FormCard = ({ title, description, href, disabled }: { title: string, description: string, href: string, disabled?: boolean }) => (
-    <Card className="hover:shadow-md transition-shadow">
-        <CardHeader>
+    <Card className="hover:shadow-md transition-shadow flex flex-col">
+        <CardHeader className="flex-grow">
             <div className="flex items-start justify-between">
                 <CardTitle className="text-lg">{title}</CardTitle>
                 <FileText className="h-6 w-6 text-muted-foreground"/>
