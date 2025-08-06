@@ -29,6 +29,9 @@ interface MedicalPurchaseRecord {
     totalValue: number;
     valuePerUnit: number;
     lotNumber?: string;
+    icaRegistration?: string;
+    manufacturingDate?: string;
+    expirationDate?: string;
 }
 
 const MEDICAL_PURCHASE_HISTORY_KEY = 'medicalPurchaseHistory';
@@ -43,7 +46,6 @@ export default function MedicamentosPage() {
     // Form states for automatic calculation
     const [selectedProduct, setSelectedProduct] = React.useState<string>('');
     const [newProductName, setNewProductName] = React.useState('');
-    const [newProductId, setNewProductId] = React.useState('');
     const [vials, setVials] = React.useState<number | string>('');
     const [volumePerVial, setVolumePerVial] = React.useState<number | string>('');
     const [valuePerVial, setValuePerVial] = React.useState<number | string>('');
@@ -68,7 +70,6 @@ export default function MedicamentosPage() {
     const resetFormState = () => {
         setSelectedProduct('');
         setNewProductName('');
-        setNewProductId('');
         setVials('');
         setVolumePerVial('');
         setValuePerVial('');
@@ -85,15 +86,11 @@ export default function MedicamentosPage() {
         const fullInventory = getInventory();
 
         if (selectedProduct === 'new') {
-            if (!newProductName || !newProductId) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un ID y nombre para el nuevo producto.' });
+            if (!newProductName) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un nombre para el nuevo producto.' });
                 return;
             }
-            if (fullInventory.some(item => item.id.toLowerCase() === newProductId.toLowerCase())) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'El ID del producto ya existe.' });
-                 return;
-            }
-            productId = newProductId.toUpperCase();
+            productId = `MED-${Date.now()}`;
             productName = newProductName;
         }
 
@@ -127,6 +124,9 @@ export default function MedicamentosPage() {
             totalValue,
             valuePerUnit,
             lotNumber: formData.get('lotNumber') as string || undefined,
+            icaRegistration: formData.get('icaRegistration') as string || undefined,
+            manufacturingDate: formData.get('manufacturingDate') as string || undefined,
+            expirationDate: formData.get('expirationDate') as string || undefined,
         };
         
         const allPurchases = JSON.parse(localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY) || '[]');
@@ -253,11 +253,7 @@ export default function MedicamentosPage() {
                                 {selectedProduct === 'new' && (
                                      <Card>
                                         <CardHeader><CardTitle className="text-base">Datos del Nuevo Producto</CardTitle></CardHeader>
-                                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                             <div className="space-y-2">
-                                                <Label htmlFor="newProductId">ID del Producto</Label>
-                                                <Input id="newProductId" value={newProductId} onChange={e => setNewProductId(e.target.value)} placeholder="Ej: MED-05"/>
-                                            </div>
+                                        <CardContent>
                                             <div className="space-y-2">
                                                 <Label htmlFor="newProductName">Nombre del Producto</Label>
                                                 <Input id="newProductName" value={newProductName} onChange={e => setNewProductName(e.target.value)} placeholder="Ej: Ivermectina 3.15%"/>
@@ -294,6 +290,28 @@ export default function MedicamentosPage() {
                                             <Input value={valuePerUnit.toLocaleString('es-CO', {minimumFractionDigits: 2})} readOnly className="bg-muted"/>
                                         </div>
                                      </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Trazabilidad</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lotNumber">Nº de Lote</Label>
+                                            <Input id="lotNumber" name="lotNumber" type="text" placeholder="Lote del fabricante"/>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="icaRegistration">Registro ICA</Label>
+                                            <Input id="icaRegistration" name="icaRegistration" type="text" placeholder="Registro Sanitario"/>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="manufacturingDate">Fecha de Fabricación</Label>
+                                            <Input id="manufacturingDate" name="manufacturingDate" type="date" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="expirationDate">Fecha de Vencimiento</Label>
+                                            <Input id="expirationDate" name="expirationDate" type="date" />
+                                        </div>
+                                    </CardContent>
                                 </Card>
                             </form>
                         </ScrollArea>
