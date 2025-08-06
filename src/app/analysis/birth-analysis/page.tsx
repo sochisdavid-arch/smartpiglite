@@ -516,7 +516,5 @@ export default function BirthAnalysisPage() {
             </div>
         </AppLayout>
     );
-}
-
 
     
