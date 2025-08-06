@@ -39,6 +39,12 @@ interface Event {
     mummified?: number;
     product?: string;
     dose?: number;
+    boarId?: string;
+}
+
+interface Boar {
+    id: string;
+    events: any[];
 }
 
 interface Pig {
@@ -229,6 +235,17 @@ export default function PigHistoryPage() {
         if (!selectedEventType) return null;
     
         const [inseminationDate, setInseminationDate] = React.useState<string>(editingEvent?.date || '');
+        const [boarList, setBoarList] = React.useState<Boar[]>([]);
+
+        React.useEffect(() => {
+            if (selectedEventType === 'Inseminación') {
+                const storedBoars = localStorage.getItem('boarCollection');
+                if (storedBoars) {
+                    setBoarList(JSON.parse(storedBoars));
+                }
+            }
+        }, []);
+        
         const probableFarrowingDate = React.useMemo(() => {
             if (inseminationDate) {
                 const date = parseISO(inseminationDate);
@@ -263,6 +280,27 @@ export default function PigHistoryPage() {
             };
 
             let updatedPig = { ...pig! };
+
+            if (selectedEventType === 'Inseminación') {
+                 const boarId = formData.get('boarId') as string;
+                 eventData.boarId = boarId;
+                 eventData.details = `Inseminada por Macho: ${boarId}. ${formData.get('eventNotes') || ''}`;
+
+                 // Add event to boar's history
+                 const allBoars = JSON.parse(localStorage.getItem('boarCollection') || '[]');
+                 const boarIndex = allBoars.findIndex((b: Boar) => b.id === boarId);
+                 if (boarIndex !== -1) {
+                     allBoars[boarIndex].events.unshift({
+                         id: `evt-monta-${Date.now()}`,
+                         type: 'Monta Natural',
+                         date: eventDate,
+                         sowId: pig!.id,
+                         details: `Servicio a cerda ${pig!.id}`,
+                         mounts: 1
+                     });
+                     localStorage.setItem('boarCollection', JSON.stringify(allBoars));
+                 }
+            }
 
             if (selectedEventType === 'Parto') {
                 const liveBornCount = Number(formData.get('liveBorn'));
@@ -369,8 +407,15 @@ export default function PigHistoryPage() {
                         {selectedEventType === 'Inseminación' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="maleId">Macho / Lote de Semen</Label>
-                                    <Input id="maleId" name="maleId" placeholder="ID del macho o código del semen" required />
+                                    <Label htmlFor="boarId">Macho / Verraco</Label>
+                                    <Select name="boarId" required defaultValue={editingEvent?.boarId}>
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar verraco"/></SelectTrigger>
+                                        <SelectContent>
+                                            {boarList.map(boar => (
+                                                <SelectItem key={boar.id} value={boar.id}>{boar.id}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="sowWeight">Peso de la Cerda (kg) - Opcional</Label>

@@ -24,11 +24,13 @@ interface BoarEvent {
     date: string;
     details?: string;
     // Eyaculación specific
+    doses?: number;
     dilutedVolume?: number;
     concentration?: number;
     motility?: number;
     // Monta Natural specific
     sowId?: string;
+    mounts?: number;
     // Tratamiento/Vacunación specific
     product?: string;
     dose?: number;
@@ -98,10 +100,12 @@ export default function BoarHistoryPage() {
             type: selectedEventType,
             date: formData.get('eventDate') as string,
             details: formData.get('details') as string || undefined,
+            doses: Number(formData.get('doses')) || undefined,
             dilutedVolume: Number(formData.get('dilutedVolume')) || undefined,
             concentration: Number(formData.get('concentration')) || undefined,
             motility: Number(formData.get('motility')) || undefined,
             sowId: formData.get('sowId') as string || undefined,
+            mounts: Number(formData.get('mounts')) || undefined,
             product: formData.get('product') as string || undefined,
             dose: Number(formData.get('dose')) || undefined,
         };
@@ -210,7 +214,9 @@ export default function BoarHistoryPage() {
                                         </TableCell>
                                         <TableCell>
                                             {event.type === 'Eyaculado'
-                                             ? `Vol: ${event.dilutedVolume || 'N/A'}ml, Conc: ${event.concentration || 'N/A'}M, Mot: ${event.motility || 'N/A'}%`
+                                             ? `Dosis: ${event.doses || 'N/A'}, Vol: ${event.dilutedVolume || 'N/A'}ml, Conc: ${event.concentration || 'N/A'}M, Mot: ${event.motility || 'N/A'}%`
+                                             : event.type === 'Monta Natural'
+                                             ? `Cerda: ${event.sowId}, Montas: ${event.mounts || 1}`
                                              : event.details || 'N/A'
                                             }
                                         </TableCell>
@@ -234,6 +240,10 @@ export default function BoarHistoryPage() {
                         </div>
                         {selectedEventType === 'Eyaculado' && (
                             <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="doses">Número de Dosis</Label>
+                                    <Input id="doses" name="doses" type="number" />
+                                </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="dilutedVolume">Vol. Diluido (ml)</Label>
@@ -251,10 +261,16 @@ export default function BoarHistoryPage() {
                             </>
                         )}
                          {selectedEventType === 'Monta Natural' && (
+                            <>
                              <div className="space-y-2">
                                 <Label htmlFor="sowId">ID de la Cerda</Label>
                                 <Input id="sowId" name="sowId" placeholder="Identificador de la hembra servida" required/>
                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="mounts">Número de Montas</Label>
+                                <Input id="mounts" name="mounts" type="number" defaultValue={1} required/>
+                            </div>
+                            </>
                         )}
                         {['Tratamiento', 'Vacunación'].includes(selectedEventType || '') && (
                             <>
