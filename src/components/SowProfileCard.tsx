@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { format, parseISO, isValid, differenceInDays } from 'date-fns';
+import { format, parseISO, isValid, differenceInDays, addDays } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 interface Event {
@@ -62,58 +62,72 @@ const processSowHistory = (sow: Pig): SowData => {
     let cycleCounter = 0;
     let lastWeaningDate: string | null = null;
     let lastFarrowingDate: string | null = null;
-    let lastServiceDate: string | null = null;
+    let lastServiceDate: string | undefined = undefined;
     
-    let currentCycle: Partial<CycleData> = { cycle: 1, servicesInCycle: 0, liveBorn: 0, stillborn: 0, mummified: 0, totalBorn: 0, pigletsWeaned: 0 };
+    let currentCycle: Partial<CycleData> & {services: {date: string, boarId?: string}[]} = {
+        cycle: 1,
+        servicesInCycle: 0, liveBorn: 0, stillborn: 0, mummified: 0, totalBorn: 0, pigletsWeaned: 0,
+        services: []
+    };
     
     const sortedEvents = [...sow.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const event of sortedEvents) {
         if (event.type === 'Inseminación' || event.type === 'Monta Natural') {
-            if (!currentCycle.serviceDate) {
-                currentCycle.serviceDate = event.date;
-                currentCycle.boarId = event.boarId;
-                if(lastWeaningDate) {
-                    currentCycle.weaningToServiceDays = differenceInDays(parseISO(event.date), parseISO(lastWeaningDate));
-                }
-            }
-            lastServiceDate = event.date;
-            currentCycle.servicesInCycle = (currentCycle.servicesInCycle || 0) + 1;
+            currentCycle.services.push({ date: event.date, boarId: event.boarId });
         } else if (event.type === 'Parto') {
             cycleCounter++;
-            currentCycle.cycle = cycleCounter;
-            currentCycle.farrowingDate = event.date;
-            currentCycle.liveBorn = event.liveBorn || 0;
-            currentCycle.stillborn = event.stillborn || 0;
-            currentCycle.mummified = event.mummified || 0;
-            currentCycle.totalBorn = (event.liveBorn || 0) + (event.stillborn || 0) + (event.mummified || 0);
-
-            if (currentCycle.serviceDate) {
-                currentCycle.gestationDays = differenceInDays(parseISO(event.date), parseISO(currentCycle.serviceDate));
-            }
-            if (lastFarrowingDate) {
-                currentCycle.farrowingInterval = differenceInDays(parseISO(event.date), parseISO(lastFarrowingDate));
-            }
-
-            cycles.push(currentCycle as CycleData);
             
-            lastFarrowingDate = event.date;
-            currentCycle = { cycle: cycleCounter + 1, servicesInCycle: 0, liveBorn: 0, stillborn: 0, mummified: 0, totalBorn: 0, pigletsWeaned: 0 };
-        } else if (event.type === 'Destete') {
-            const cycleToUpdate = cycles.find(c => c.farrowingDate === lastFarrowingDate);
-            if (cycleToUpdate) {
-                cycleToUpdate.weaningDate = event.date;
-                cycleToUpdate.pigletsWeaned = event.pigletCount || 0;
-                cycleToUpdate.lactationDays = differenceInDays(parseISO(event.date), parseISO(cycleToUpdate.farrowingDate!));
+            const serviceForCycle = currentCycle.services.length > 0 ? currentCycle.services[0] : {date: undefined, boarId: undefined};
+            if(currentCycle.services.length > 0) currentCycle.services.shift();
+
+            let farrowingInterval;
+            if (lastFarrowingDate) {
+                farrowingInterval = differenceInDays(parseISO(event.date), parseISO(lastFarrowingDate));
             }
-            lastWeaningDate = event.date;
+            
+
+            let gestationDays;
+            if (serviceForCycle.date) {
+                gestationDays = differenceInDays(parseISO(event.date), parseISO(serviceForCycle.date));
+            }
+            
+            cycles.push({
+                cycle: cycleCounter,
+                serviceDate: serviceForCycle.date,
+                boarId: serviceForCycle.boarId,
+                farrowingDate: event.date,
+                liveBorn: event.liveBorn || 0,
+                stillborn: event.stillborn || 0,
+                mummified: event.mummified || 0,
+                totalBorn: (event.liveBorn || 0) + (event.stillborn || 0) + (event.mummified || 0),
+                pigletsWeaned: 0, // will be updated by 'Destete'
+                gestationDays: gestationDays,
+                farrowingInterval: farrowingInterval,
+                servicesInCycle: 1, // simplified for now
+                weaningToServiceDays: lastWeaningDate ? differenceInDays(parseISO(serviceForCycle.date || event.date), parseISO(lastWeaningDate)) : undefined,
+                lactationDays: undefined,
+                weaningDate: undefined,
+            });
+            
+             lastFarrowingDate = event.date;
+             lastWeaningDate = null; // Reset after farrowing
+
+        } else if (event.type === 'Destete') {
+             const farrowingCycle = cycles.find(c => c.farrowingDate === lastFarrowingDate);
+             if (farrowingCycle) {
+                 farrowingCycle.weaningDate = event.date;
+                 farrowingCycle.pigletsWeaned = event.pigletCount || 0;
+                 farrowingCycle.lactationDays = differenceInDays(parseISO(event.date), parseISO(farrowingCycle.farrowingDate!));
+             }
+             lastWeaningDate = event.date;
         } else {
             generalEvents.push(event);
         }
     }
 
-    if (currentCycle.serviceDate && !currentCycle.farrowingDate) {
-        lastServiceDate = currentCycle.serviceDate;
+    if (currentCycle.services.length > 0) {
+        lastServiceDate = currentCycle.services[currentCycle.services.length-1].date;
     }
     
     const farrowingCycles = cycles.filter(c => c.farrowingDate);
@@ -132,7 +146,7 @@ const processSowHistory = (sow: Pig): SowData => {
         avgWeanToService: cycles.filter(c=>c.weaningToServiceDays).length > 0 ? cycles.reduce((s, c) => s + (c.weaningToServiceDays || 0), 0) / cycles.filter(c=>c.weaningToServiceDays).length : 0,
     };
 
-    return { cycles, generalEvents, kpis, lastServiceDate };
+    return { cycles: cycles.reverse(), generalEvents, kpis, lastServiceDate };
 };
 
 const FormRow = ({ label, lastValue, avgValue, emptyCols = 4 }: { label: string, lastValue?: string | number, avgValue?: string | number, emptyCols?: number }) => (
@@ -149,19 +163,21 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
     const lastCycle = cycles[0] || {};
     
     return (
-        <div className="bg-white p-4 space-y-2">
+        <div className="bg-white p-4 space-y-2 text-[10px]">
             {/* Header */}
-            <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+            <div className="grid grid-cols-3 gap-2 mb-2">
                 <div className="space-y-1">
                     <p><strong>CÓDIGO:</strong> {sow.id}</p>
+                    <p><strong>ID:</strong> {sow.id}</p>
                     <p><strong>FECHA NACIMIENTO:</strong> {isValid(parseISO(sow.birthDate)) ? format(parseISO(sow.birthDate), 'dd/MM/yyyy') : '--'}</p>
                     <p><strong>GENÉTICA:</strong> {sow.breed}</p>
                 </div>
                 <div className="flex items-center justify-center">
                     {/* Logo can go here */}
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.href)}`} alt="QR Code" />
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(window.location.href)}`} alt="QR Code" />
                 </div>
-                <div className="space-y-1 text-right">
+                <div className="space-y-1 text-left">
+                    <p><strong>GRANJA:</strong> Granja Demo</p>
                     <p><strong>ESTADO:</strong> {sow.status}</p>
                     <p><strong>Nº PARTOS:</strong> {kpis.totalFarrowings}</p>
                     <p><strong>UBICACIÓN:</strong> {sow.location || '--'}</p>
@@ -169,7 +185,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
             </div>
 
             {/* Main Table */}
-            <Table className="border text-xs">
+            <Table className="border text-[10px]">
                 <TableHeader>
                     <TableRow className="h-6 bg-gray-200">
                         <TableHead className="border p-1 font-bold w-[20%]">PARTOS</TableHead>
@@ -195,19 +211,19 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     <FormRow label="Días Lactancia" lastValue={lastCycle.lactationDays} avgValue={kpis.avgLactation.toFixed(0)} />
                     <FormRow label="Destete a Servicio (días)" lastValue={lastCycle.weaningToServiceDays} avgValue={kpis.avgWeanToService.toFixed(0)} />
                     <TableRow className="h-6 bg-gray-200">
-                       <TableCell className="font-semibold border p-1 text-xs" colSpan={7}>CICLO DE SERVICIO ACTUAL</TableCell>
+                       <TableCell className="font-semibold border p-1" colSpan={7}>CICLO DE SERVICIO ACTUAL</TableCell>
                     </TableRow>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Machos</TableCell>
-                        <TableCell className="border p-1 text-center" colSpan={1}>{lastServiceDate ? (cycles.find(c=>c.serviceDate === lastServiceDate)?.boarId || '--') : '--'}</TableCell>
+                        <TableCell className="border p-1 text-center">{lastServiceDate ? (cycles.find(c=>c.serviceDate === lastServiceDate)?.boarId || sow.events.find(e => e.date === lastServiceDate)?.boarId ||'--') : '--'}</TableCell>
                         <TableCell className="font-semibold border p-1 text-center" colSpan={2}>Servicio + 21 Días</TableCell>
                         <TableCell className="font-semibold border p-1 text-center" colSpan={3}>Servicio + 35 Días</TableCell>
                      </TableRow>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Servicio</TableCell>
                         <TableCell className="border p-1 text-center">{lastServiceDate ? format(parseISO(lastServiceDate), 'dd/MM/yy') : '--'}</TableCell>
-                        <TableCell className="font-semibold border p-1 text-center" colSpan={2}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 21), 'dd/MM/yy') : '--'}</TableCell>
-                        <TableCell className="font-semibold border p-1 text-center" colSpan={3}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 35), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="border p-1 text-center" colSpan={2}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 21), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="border p-1 text-center" colSpan={3}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 35), 'dd/MM/yy') : '--'}</TableCell>
                      </TableRow>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Control Celo</TableCell>
@@ -221,14 +237,12 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         <TableCell className="border p-1 text-center" colSpan={2}></TableCell>
                         <TableCell className="font-semibold border p-1 text-center" colSpan={3}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 114), 'dd/MM/yy') : '--'}</TableCell>
                      </TableRow>
-
                 </TableBody>
             </Table>
             
-            {/* Event Tables */}
             <div className="grid grid-cols-3 gap-2 mt-2">
                 <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">MUERTE LECHONES</TableHead></TableRow></TableHeader>
                          <TableBody>
                             {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -236,7 +250,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     </Table>
                 </div>
                  <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">CAUSAS MUERTE</TableHead></TableRow></TableHeader>
                          <TableBody>
                             {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -244,7 +258,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     </Table>
                 </div>
                  <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">CUBRICIONES</TableHead></TableRow></TableHeader>
                          <TableBody>
                            {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -252,7 +266,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     </Table>
                 </div>
                  <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">ADOPCIONES</TableHead></TableRow></TableHeader>
                          <TableBody>
                            {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -260,7 +274,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     </Table>
                 </div>
                  <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">NOTAS</TableHead></TableRow></TableHeader>
                          <TableBody>
                             {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -268,7 +282,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                     </Table>
                 </div>
                  <div className="col-span-1">
-                    <Table className="border text-xs">
+                    <Table className="border text-[10px]">
                          <TableHeader><TableRow className="bg-gray-200 h-6"><TableHead className="p-1 font-bold text-center">DESTETES (PARCIALES)</TableHead></TableRow></TableHeader>
                          <TableBody>
                             {Array.from({length: 4}).map((_, i) => <TableRow key={i}><TableCell className="border p-1 h-6"></TableCell></TableRow>)}
@@ -279,3 +293,4 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
         </div>
     );
 }
+
