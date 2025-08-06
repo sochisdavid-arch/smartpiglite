@@ -147,34 +147,34 @@ const formatAge = (birthDate: string) => {
 }
 
 const InfoField = ({ label, value, className = '' }: { label: string, value: string | number | undefined, className?: string }) => (
-    <div className={`flex text-xs ${className}`}>
-        <span className="w-14 font-semibold">{label}:</span>
+    <div className={`flex text-[9px] leading-tight ${className}`}>
+        <span className="w-12 font-semibold">{label}:</span>
         <span className="font-mono">{value || '---'}</span>
     </div>
 );
 
 const MainTableRow = ({ label, cycleData, avgData, isHeader = false }: { label: string, cycleData?: any, avgData?: any, isHeader?: boolean }) => (
-    <div className={`flex items-center text-xs border-b border-black h-5 ${isHeader ? 'bg-gray-200 font-bold' : ''}`}>
-        <div className="w-[140px] font-semibold pl-1">{label}</div>
-        <div className="w-[80px] text-center font-mono border-l-2 border-black">{cycleData !== undefined ? cycleData : ''}</div>
-        <div className="w-[80px] text-center font-mono border-l-2 border-black">{avgData !== undefined ? avgData : ''}</div>
+    <div className={`flex items-center text-[10px] border-b border-black h-4 ${isHeader ? 'bg-gray-200 font-bold' : ''}`}>
+        <div className="w-[120px] font-semibold pl-1 truncate">{label}</div>
+        <div className="w-[70px] text-center font-mono border-l-2 border-black">{cycleData !== undefined && cycleData !== null ? cycleData : ''}</div>
+        <div className="w-[70px] text-center font-mono border-l-2 border-black">{avgData !== undefined && avgData !== null ? avgData : ''}</div>
     </div>
 )
 
 export function SowProfileCard({ sow }: { sow: Pig }) {
     const { cycles, kpis } = React.useMemo(() => processSowHistory(sow), [sow]);
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/analysis/sow-card?sowId=${sow.id}`: '')}`;
-    const lastCycle = cycles.find(c => c.farrowingDate) || {}; // Last cycle with a farrowing
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/analysis/sow-card?sowId=${sow.id}`: '')}`;
+    const lastCycle = cycles.find(c => c.farrowingDate) || {};
     const currentServiceCycle = cycles.find(c => c.serviceDate && !c.farrowingDate) || lastCycle || {};
 
     return (
-        <Card className="p-2 font-sans text-black bg-white w-full flex flex-col text-[11px] print:shadow-none print:border-none">
-           {/* Header */}
+        <Card className="p-1 font-sans text-black bg-white w-full flex flex-col text-[10px] leading-tight print:shadow-none print:border-none">
+            {/* Header */}
             <div className="flex justify-between items-start border-b-2 border-black pb-1">
                 <div className="flex items-start">
-                    <div className="mr-4">
-                        <div className="font-bold">Código</div>
-                        <div className="text-4xl font-bold">{sow.id.replace(/\D/g, '') || 'N/A'}</div>
+                    <div className="mr-2">
+                        <div className="font-bold text-xs">Código</div>
+                        <div className="text-2xl font-bold">{sow.id.replace(/\D/g, '') || 'N/A'}</div>
                     </div>
                     <div>
                         <InfoField label="ID" value={sow.id} />
@@ -182,36 +182,35 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         <InfoField label="Genética" value={sow.breed} />
                     </div>
                 </div>
-                 <div className="flex flex-col text-xs">
-                     <div className="flex justify-between">
-                         <span className="text-[10px]">gordiva Licencia de - 9.6.13-P1 agritecsoft.com</span>
+                <div className="flex flex-col">
+                    <div className="flex justify-between">
+                         <span className="text-[8px] text-gray-500">gordiva Licencia de - 9.6.13-P1 agritecsoft.com</span>
                          <Image src="https://placehold.co/80x20.png" alt="Logo" width={80} height={20} className="ml-auto" data-ai-hint="logo"/>
-                     </div>
-                     <div className="grid grid-cols-2 gap-x-4">
-                        <InfoField label="Partos" value={kpis.totalFarrowings} />
-                        <InfoField label="Estado" value={sow.status} />
-                        <InfoField label="Padre" value="---" />
-                        <InfoField label="Grupo" value="---" />
-                        <InfoField label="Madre" value="---" />
-                        <InfoField label="Ubicación" value="---" />
-                     </div>
-                </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-2">
+                       <InfoField label="Partos" value={kpis.totalFarrowings} />
+                       <InfoField label="Estado" value={sow.status} />
+                       <InfoField label="Padre" value="---" />
+                       <InfoField label="Grupo" value="---" />
+                       <InfoField label="Madre" value="---" />
+                       <InfoField label="Ubicación" value="---" />
+                    </div>
+               </div>
             </div>
 
             {/* Main Table */}
             <div className='flex flex-col border-2 border-black border-t-0'>
                 {/* Headers */}
-                <div className="flex border-b-2 border-black">
-                    <div className="w-[140px] font-bold text-center p-1">PARTOS</div>
-                    <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">{lastCycle.cycle || kpis.totalFarrowings || 0}</div>
-                    <div className="w-[80px] font-bold text-center p-1 border-l-2 border-black">PROMEDIO</div>
-                    {/* Empty headers for future cycles */}
+                <div className="flex border-b-2 border-black bg-gray-200 font-bold">
+                    <div className="w-[120px] text-center p-1">PARTOS</div>
+                    <div className="w-[70px] text-center p-1 border-l-2 border-black">{lastCycle.cycle || kpis.totalFarrowings || 0}</div>
+                    <div className="w-[70px] text-center p-1 border-l-2 border-black">PROMEDIO</div>
                     <div className="flex-1 border-l-2 border-black"></div>
                 </div>
                 
                 {/* Body */}
                 <div className="flex">
-                    <div className="w-[300px] flex-shrink-0">
+                    <div className="w-[260px] flex-shrink-0">
                         <MainTableRow label="Fecha Parto" cycleData={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
                         <MainTableRow label="Total Nacidos" cycleData={lastCycle.totalBorn} avgData={kpis.avgTotalBorn.toFixed(1)} />
                         <MainTableRow label="Nacidos Vivos" cycleData={lastCycle.liveBorn} avgData={kpis.avgLiveBorn.toFixed(1)} />
@@ -233,27 +232,26 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         <MainTableRow label="Abortos" cycleData={0} avgData={'0'}/>
                         <MainTableRow label="Último Comentario" />
                     </div>
-                     {/* Empty space for future cycles */}
                     <div className="flex-1 border-l-2 border-black">
                         <div className="h-full">&nbsp;</div>
                     </div>
                 </div>
 
-                 <div className="grid grid-cols-[140px_1fr] border-t-2 border-black text-xs">
-                    <div className="p-1 font-bold flex items-center">Machos: {currentServiceCycle.boarId || ''}</div>
-                    <div className="p-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
+                <div className="grid grid-cols-[120px_1fr] border-t-2 border-black text-[10px]">
+                    <div className="p-0.5 pl-1 font-bold flex items-center">Machos: {currentServiceCycle.boarId || ''}</div>
+                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
                         <div>Servicio: {currentServiceCycle.serviceDate ? format(parseISO(currentServiceCycle.serviceDate), 'dd/MM/yy') : ''}</div>
                         <div>Control Celo:</div>
                         <div>Diag. Gest.:</div>
                         <div>F. Parto:</div>
                     </div>
                 </div>
-                 <div className="grid grid-cols-[140px_1fr] border-y-2 border-black text-xs">
-                    <div className="p-1 font-bold">Servicio + 21 Días</div>
-                    <div className="p-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
+                <div className="grid grid-cols-[120px_1fr] border-y-2 border-black text-[10px]">
+                    <div className="p-0.5 pl-1 font-bold">Servicio + 21 Días</div>
+                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
                         <div>{currentServiceCycle.serviceDate ? format(addDays(parseISO(currentServiceCycle.serviceDate), 21), 'dd/MM/yy') : ''}</div>
                         <div className="col-span-2">
-                            <span className="font-bold">Servicio + 35 Días: </span>
+                            <span className="font-bold">Servicio + 35 Días: </span> 
                              {currentServiceCycle.serviceDate ? format(addDays(parseISO(currentServiceCycle.serviceDate), 35), 'dd/MM/yy') : ''}
                         </div>
                         <div className="flex justify-between items-center">
@@ -265,9 +263,9 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                         </div>
                     </div>
                 </div>
-                 <div className="grid grid-cols-[140px_1fr] border-b-2 border-black text-xs h-6">
-                    <div className="p-1 font-bold">F. Nac</div>
-                    <div className="p-1 font-bold border-l-2 border-black grid grid-cols-6">
+                <div className="grid grid-cols-[120px_1fr] border-b-2 border-black text-[10px] h-5">
+                    <div className="p-0.5 pl-1 font-bold">F. Nac</div>
+                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-6">
                         <div className="border-r-2 border-black text-center">Vivos</div>
                         <div className="border-r-2 border-black text-center">Muertos</div>
                         <div className="border-r-2 border-black text-center">Momificados</div>
@@ -291,16 +289,16 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
 }
 
 const TableShell = ({title, cols, rows}: {title: string, cols: string[], rows: number}) => (
-    <div className="border-2 border-black flex flex-col">
+    <div className="border-2 border-black flex flex-col text-[9px]">
         <h4 className="font-bold text-center border-b-2 border-black py-0.5">{title}</h4>
         {cols.length > 0 && (
              <div className={`grid grid-cols-${cols.length} font-bold border-b-2 border-black text-center divide-x-2 divide-black`}>
-                {cols.map(c => <div key={c} className="p-0.5">{c}</div>)}
+                {cols.map(c => <div key={c} className="p-0.5 truncate">{c}</div>)}
             </div>
         )}
         <div className="flex-grow grid grid-rows-4">
             {Array.from({length: rows}).map((_, i) => (
-                <div key={i} className={`grid grid-cols-${cols.length > 0 ? cols.length : 1} border-t border-black h-full`}>
+                <div key={i} className={`grid grid-cols-${cols.length > 0 ? cols.length : 1} border-t border-black h-4`}>
                     {cols.length > 0 ? cols.map((c, j) => <div key={j} className="border-r-2 border-black last:border-r-0"></div>) : <div></div>}
                 </div>
             ))}
