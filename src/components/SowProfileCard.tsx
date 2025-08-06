@@ -278,11 +278,11 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                 </div>
             </div>
             
-            <div className="mt-1 flex-grow grid grid-cols-2 grid-rows-3 gap-1">
+            <div className="mt-1 flex-grow grid grid-cols-3 grid-rows-2 gap-1">
                 <TableShell title="MUERTE LECHONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
                 <TableShell title="CAUSAS MUERTE" cols={['COLAS']} rows={4}/>
-                <TableShell title="ADOPCIONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
                 <TableShell title="CUBRICIONES" cols={['Fecha', 'Macho', 'Tipo /Téc']} rows={4}/>
+                <TableShell title="ADOPCIONES" cols={['Fecha', 'Número', 'Causa']} rows={4}/>
                 <TableShell title="NOTAS" cols={[]} rows={4}/>
                 <TableShell title="DESTETES (PARCIALES)" cols={['Fecha', 'Número', 'Peso Camada']} rows={4}/>
             </div>
@@ -308,3 +308,4 @@ const TableShell = ({title, cols, rows}: {title: string, cols: string[], rows: n
     </div>
 );
 
+    
