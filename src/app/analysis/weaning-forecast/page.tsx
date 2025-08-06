@@ -236,7 +236,7 @@ export default function WeaningForecastPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Información</AlertTitle>
                     <AlertDescription>
-                       El listado muestra las madres lactantes cuya fecha de destete (calculada a los {DEFAULT_LACTATION_DURATION} días post-parto) cae dentro del período seleccionado.
+                       Si informado el período, solamente serán listadas las madres que tendrán {DEFAULT_LACTATION_DURATION} días de lactancia en el período.
                     </AlertDescription>
                 </Alert>
 
