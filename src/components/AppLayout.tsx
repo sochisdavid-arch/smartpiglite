@@ -43,7 +43,8 @@ import {
   UserSearch,
   Activity,
   BarChart2,
-  GitCommitHorizontal
+  GitCommitHorizontal,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,6 +73,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/finance', label: 'Financiero', icon: Landmark },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
+    { href: '/forms', label: 'Formularios', icon: ClipboardList },
   ];
   
   const gestationAnalysisMenuItems = [
