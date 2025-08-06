@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Baby } from 'lucide-react';
+import { MoreHorizontal, Baby, Component } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { format, parseISO, isValid, differenceInWeeks } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -146,6 +146,17 @@ const getParityData = (pig: Pig) => {
     };
 };
 
+const KpiCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactElement }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
 
 export default function LactationPage() {
     const router = useRouter();
@@ -258,9 +269,11 @@ export default function LactationPage() {
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight">Cerdas en Lactancia</h1>
-                    <p className="text-muted-foreground">
-                        {lactatingSows.length} madres lactando con un total de {totalPiglets} lechones.
-                    </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                    <KpiCard title="Madres Lactando" value={lactatingSows.length} icon={<Component className="h-4 w-4 text-muted-foreground"/>} />
+                    <KpiCard title="Total Lechones" value={totalPiglets} icon={<Baby className="h-4 w-4 text-muted-foreground"/>} />
                 </div>
                 
                 <Card>

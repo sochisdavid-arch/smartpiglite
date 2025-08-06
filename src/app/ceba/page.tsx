@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO, isValid } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Component, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,18 @@ interface CebaBatch {
     events: any[];
     originBatchId?: string;
 }
+
+const KpiCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactElement }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
 
 export default function CebaPage() {
     const router = useRouter();
@@ -110,12 +122,15 @@ export default function CebaPage() {
                     </Button>
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-2">
+                    <KpiCard title="Lotes Activos" value={activeBatches.length} icon={<Component className="h-4 w-4 text-muted-foreground"/>} />
+                    <KpiCard title="Total de Cerdos" value={totalActivePigs} icon={<Users className="h-4 w-4 text-muted-foreground"/>} />
+                </div>
+
+
                 <Card>
                     <CardHeader>
-                        <CardTitle>Lotes Activos en Ceba</CardTitle>
-                        <CardDescription>
-                            {activeBatches.length} lotes activos con un total de {totalActivePigs} cerdos.
-                        </CardDescription>
+                        <CardTitle>Listado de Lotes en Ceba</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Table>

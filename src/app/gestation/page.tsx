@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat } from 'lucide-react';
+import { Filter, Search, PlusCircle, MoreHorizontal, X, Wheat, Users, Pregnant, Wind } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -168,6 +168,18 @@ const calculateProbableFarrowingDate = (inseminationDate: string) => {
     }
     return 'N/A';
 };
+
+const KpiCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactElement }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+)
 
 export default function GestationPage() {
   const [pigs, setPigs] = React.useState<Pig[]>([]);
@@ -368,32 +380,25 @@ export default function GestationPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Gestión de Animales</h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="w-full sm:w-auto"><Search className="mr-2 h-4 w-4" /> Buscar</Button>
-            <Button variant="outline" className="w-full sm:w-auto"><Filter className="mr-2 h-4 w-4" /> Filtros</Button>
+           <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
+                  <Wheat className="mr-2 h-4 w-4" />
+                  Registrar Consumo
+              </Button>
+              <Button onClick={openAddDialog}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Añadir Animal
+              </Button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Resumen de Hembras</h2>
-                    <p className="text-muted-foreground">
-                        {gestationCount} gestantes, {emptyCount} vacías, {replacementCount} de remplazo.
-                    </p>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" onClick={() => setIsConsumptionFormOpen(true)}>
-                        <Wheat className="mr-2 h-4 w-4" />
-                        Registrar Consumo
-                    </Button>
-                    <Button onClick={openAddDialog}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Añadir Animal
-                    </Button>
-                </div>
-            </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <KpiCard title="Hembras Gestantes" value={gestationCount} icon={<Pregnant className="h-4 w-4 text-muted-foreground"/>} />
+            <KpiCard title="Hembras Vacías" value={emptyCount} icon={<Wind className="h-4 w-4 text-muted-foreground"/>} />
+            <KpiCard title="Hembras de Remplazo" value={replacementCount} icon={<Users className="h-4 w-4 text-muted-foreground"/>} />
+        </div>
 
+        <div className="flex flex-col gap-6">
             <Dialog open={isConsumptionFormOpen} onOpenChange={setIsConsumptionFormOpen}>
                 <DialogContent>
                     <DialogHeader>
