@@ -162,10 +162,10 @@ export function PigDoctorForm() {
                 <FormLabel>Foto (Opcional)</FormLabel>
                  <div className="grid grid-cols-2 gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={startCamera}>
-                        <Camera className="mr-2 h-4 w-4" /> Usar Cámara
+                        <Camera className="mr-2 h-4 w-4" /> Cámara
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" /> Subir Imagen
+                        <Upload className="mr-2 h-4 w-4" /> Subir Foto
                     </Button>
                     <Input 
                         type="file" 
