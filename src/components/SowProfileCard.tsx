@@ -239,7 +239,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
 
                 <div className="grid grid-cols-[120px_1fr] border-t-2 border-black text-[10px]">
                     <div className="p-0.5 pl-1 font-bold flex items-center">Machos: {currentServiceCycle.boarId || ''}</div>
-                    <div className="p-0.5 pl-1 font-bold border-l-2 border-black grid grid-cols-4 items-center">
+                    <div className="p-0.5 pl-1 font-bold grid grid-cols-4 items-center">
                         <div>Servicio: {currentServiceCycle.serviceDate ? format(parseISO(currentServiceCycle.serviceDate), 'dd/MM/yy') : ''}</div>
                         <div>Control Celo:</div>
                         <div>Diag. Gest.:</div>
