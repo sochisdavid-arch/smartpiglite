@@ -9,24 +9,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-
-import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, add, sub } from 'date-fns';
+import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2, Checkbox as CheckboxIcon, Circle } from 'lucide-react';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, getDay, getHours, getWeek, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Checkbox } from '@/components/ui/checkbox';
+import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '@/components/ui/slider';
 
 interface Event {
     id: string;
     type: string;
     date: string;
+    details?: string;
     liveBorn?: number;
     stillborn?: number;
     mummified?: number;
-    details?: string;
+    birthWeight?: number;
+    duration?: number;
     [key: string]: any;
 }
 
@@ -37,272 +39,90 @@ interface Pig {
     events: Event[];
 }
 
-type GroupingUnit = 'year' | 'month' | 'week' | 'day';
-
-interface Metrics {
-    [key: string]: number;
-}
-
-const METRIC_DEFINITIONS = [
-    { key: 'partos', label: 'PARTOS', isHeader: true },
-    { key: 'partosPrevistos', label: 'Previstos' },
-    { key: 'partosRealizados', label: 'Realizados de los previstos' },
-    { key: 'tasaParicion', label: 'Tasa de parición', isPercentage: true },
-    { key: 'partosPeriodo', label: 'Partos del periodo' },
-    { key: 'partosHembraAno', label: 'Partos/Hembra/Año' , isBold: true},
-    { key: 'vivosHembraAno', label: 'Vivos/Hembra/Año', isBold: true },
-    
-    { key: 'nacimientos', label: 'NACIMIENTOS', isHeader: true },
-    { key: 'vivos', label: 'Vivos' },
-    { key: 'vivos_p', label: 'Vivos (%)', isPercentage: true },
-    { key: 'vivosMedia', label: 'Vivos (media)' },
-    { key: 'nacidosMuertos', label: 'Nacidos muertos' },
-    { key: 'nacidosMuertos_p', label: 'Nacidos muertos (%)', isPercentage: true },
-    { key: 'nacidosMuertosMedia', label: 'Nacidos muertos (media)' },
-    { key: 'momificados', label: 'Momificados' },
-    { key: 'momificados_p', label: 'Momificados (%)', isPercentage: true },
-    { key: 'momificadosMedia', label: 'Momificados (media)' },
-    { key: 'nacidosTotales', label: 'Nacidos Totales' },
-    { key: 'nacidosTotalesMedia', label: 'Nacidos totales (media)' },
-    { key: 'pesoTotalNacimiento', label: 'Peso total (Kg)' },
-    { key: 'pesoMedioNacimiento', label: 'Peso medio (Kg)' },
-    { key: 'hembrasNacidas', label: 'Hembras' },
-    { key: 'hembrasNacidas_p', label: 'Hembras (%)', isPercentage: true },
-    { key: 'hembrasNacidasMedia', label: 'Hembras (media)' },
-    { key: 'reproductoresNacidos', label: 'Reproductores' },
-    { key: 'reproductoresNacidos_p', label: 'Reproductores (%)', isPercentage: true },
-    { key: 'reproductoresNacidosMedia', label: 'Reproductores (media)' },
-    { key: 'bajaViabilidad', label: 'Lechones de baja viabilidad' },
-    { key: 'bajaViabilidad_p', label: 'Lechones de baja viabilidad (%)', isPercentage: true },
-    { key: 'bajaViabilidadMedia', label: 'Lechones de baja viabilidad (media)' },
-
-    { key: 'indicesParto', label: 'ÍNDICES COMPLEMENTARIOS DE PARTO', isHeader: true },
-    { key: 'cicloMedioParto', label: 'Ciclo medio' },
-    { key: 'mediaDuracionHoras', label: 'Media de duración (horas)' },
-    { key: 'periodoGestacion', label: 'Periodo de gestación' },
-    { key: 'intervaloEntrePartos', label: 'Intervalo entre partos' },
-    { key: 'pesoMadreParto', label: 'Peso de la madre en el parto' },
-    { key: 'variacionPesoServicioParto', label: 'Variación del peso (servicio, parto)', isPercentage: true },
-
-    { key: 'destete', label: 'DESTETE', isHeader: true },
-    { key: 'totalDestetes', label: 'Total de destetes' },
-    { key: 'desteteNodriza', label: 'Destete nodriza' },
-    { key: 'desteteNodriza_p', label: 'Destete nodriza (%)', isPercentage: true },
-    { key: 'periodoLactancia', label: 'Periodo de lactancia' },
-    { key: 'destetadosHembraAno', label: 'Destetados/Hembra/Año' , isBold: true},
-    { key: 'kgDestetadosHembraAno', label: 'Kg/Destetados/Hembra/Año', isBold: true },
-    
-    { key: 'destetados', label: 'DESTETADOS', isHeader: true },
-    { key: 'lechonesADestetar', label: 'Lechones a destetar' },
-    { key: 'destetadosRelacDest', label: 'Destetados relac. dest.' },
-    { key: 'destetadosRelacDest_p', label: 'Destetados relac. dest. (%)', isPercentage: true },
-    { key: 'destetadosMedia', label: 'Destetados (media)' },
-    { key: 'destetadosPeriodo', label: 'Destetados en el periodo' },
-    { key: 'edadMediaDestete', label: 'Edad media' },
-    { key: 'muertesRelacDest', label: 'Muertes relac. dest.' },
-    { key: 'muertesRelacDest_p', label: 'Muertes relac. dest. (%)', isPercentage: true },
-    { key: 'muertesRelacDestMedia', label: 'Muertes relac. dest. (media)' },
-    { key: 'muertesPeriodo', label: 'Muertes en el periodo' },
-    { key: 'muertesPeriodo_p', label: 'Muertes en el periodo (%)', isPercentage: true },
-    { key: 'pesoTotalDestete', label: 'Peso total (Kg)' },
-    { key: 'pesoMedioDestete', label: 'Peso medio (Kg)' },
-    { key: 'pesoNacidosKg', label: 'Peso de los nacidos (Kg)' },
-    { key: 'gpdKg', label: 'G.P.D. (Kg)' },
-
-    { key: 'indicesDestete', label: 'ÍNDICES COMPLEMENTARIOS DE DESTETE', isHeader: true },
-    { key: 'cicloMedio', label: 'Ciclo medio' },
-    { key: 'peso21dias', label: 'Peso a los 21 días' },
-    { key: 'pesoMadreDestete', label: 'Peso de la madre en el destete' },
-    { key: 'variacionPeso', label: 'Variación de Peso (Parto-Destete) (%)', isPercentage: true },
-    { key: 'alimentoConsumidoHembra', label: 'Alimento consum. hembra (Kg)' },
-    { key: 'consumoHembraDia', label: 'Consumo hembra/día (Kg)' },
-    { key: 'alimentoConsumidoLechones', label: 'Alimento consum. lechones (Kg)' },
-];
-
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
   "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   "Otro"
 ];
 
-const formatPeriodKey = (date: Date, unit: GroupingUnit): string => {
-    switch (unit) {
-        case 'year': return getYear(date).toString();
-        case 'month': return format(date, 'yyyy-MM');
-        case 'week': return `${getYear(date)}-W${getWeek(date, { weekStartsOn: 1, firstWeekContainsDate: 4 })}`;
-        case 'day': return format(date, 'yyyy-MM-dd');
-    }
-};
+const KpiCard = ({ title, value, meta, isBad }: { title: string, value: string | number, meta:string, isBad?: boolean }) => (
+    <Card>
+        <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{value}</span>
+                {isBad !== undefined && <div className={`h-2.5 w-2.5 rounded-full ${isBad ? 'bg-red-500' : 'bg-green-500'}`} />}
+            </div>
+            {meta && <p className="text-xs text-muted-foreground">{meta}</p>}
+        </CardContent>
+    </Card>
+);
 
-const getPeriodLabel = (key: string, unit: GroupingUnit): string => {
-    try {
-        if (unit === 'year') return key;
-        if (unit === 'month') return format(parseISO(`${key}-01`), 'MMM yyyy', { locale: es });
-        if (unit === 'week') {
-            const [year, weekNum] = key.split('-W');
-            return `Sem ${weekNum}, ${year}`;
-        }
-        if (unit === 'day') return format(parseISO(key), 'dd MMM yyyy', { locale: es });
-    } catch {
-        return key; // Fallback
-    }
-    return key;
-};
+const chartData = [
+  { name: '03/2024', pha: 2.24, dha: 26.08, kgdha: 155.75 },
+  { name: '04/2024', pha: 2.24, dha: 24.19, kgdha: 150.64 },
+  { name: '05/2024', pha: 2.05, dha: 20.54, kgdha: 136.49 },
+  { name: '06/2024', pha: 2.41, dha: 28.72, kgdha: 146.84 },
+  { name: '07/2024', pha: 2.52, dha: 25.73, kgdha: 150.28 },
+  { name: '08/2024', pha: 2.35, dha: 27.07, kgdha: 161.44 },
+  { name: '09/2024', pha: 2.35, dha: 24.72, kgdha: 148.28 },
+  { name: '10/2024', pha: 2.32, dha: 26.82, kgdha: 157.34 },
+  { name: '11/2024', pha: 2.47, dha: 25.89, kgdha: 138.49 },
+  { name: '12/2024', pha: 2.28, dha: 27.02, kgdha: 149.08 },
+  { name: '01/2025', pha: 2.19, dha: 17.78, kgdha: 89.09 },
+  { name: '02/2025', pha: 2.42, dha: 16.05, kgdha: 74.43 },
+  { name: '03/2025', pha: 2.42, dha: 19.58, kgdha: 112.06 },
+  { name: '04/2025', pha: 2.08, dha: 18.59, kgdha: 114.57 },
+  { name: '05/2025', pha: 2.46, dha: 33.62, kgdha: 132.88 },
+];
 
-const calculateMetrics = (pigs: Pig[], startDate: Date, endDate: Date, unit: GroupingUnit): Map<string, Metrics> => {
-    const periodMetrics = new Map<string, Metrics>();
-    // This is a placeholder. In a real app, you would have a comprehensive calculation logic
-    // based on all pig events.
-    return periodMetrics;
-};
+const distributionData = {
+    ciclo: [
+        { name: '<= 1', value: 2.42 },
+        { name: '2 ~ 2', value: 2.36 },
+        { name: '3 ~ 6', value: 2.28 },
+        { name: '>= 7', value: 2.33 },
+    ],
+    raza: [
+        { name: 'Duroc', value: 2.45 },
+        { name: 'Landrace', value: 2.38 },
+        { name: 'Yorkshire', value: 2.30 },
+        { name: 'PIC', value: 2.55 },
+    ]
+}
 
 export default function MaternityPerformancePage() {
-    const [pigs, setPigs] = React.useState<Pig[]>([]);
-    const [metrics, setMetrics] = React.useState<Map<string, Metrics>>(new Map());
-    
-    // Period navigation state
-    const [currentPeriodIndex, setCurrentPeriodIndex] = React.useState(0);
-    const [visiblePeriods, setVisiblePeriods] = React.useState<string[]>([]);
-    const [allPeriodKeys, setAllPeriodKeys] = React.useState<string[]>([]);
-    const periodsPerPage = 5;
-
-
     const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
-    const [groupBy, setGroupBy] = React.useState<GroupingUnit>('month');
     const [breedFilter, setBreedFilter] = React.useState('all');
+    const [cycleRange, setCycleRange] = React.useState([1, 20]);
+    const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'trimester' | 'year'>('month');
+    const [distributionBy, setDistributionBy] = React.useState<'ciclo' | 'raza'>('ciclo');
 
-    const [openCategories, setOpenCategories] = React.useState<{[key: string]: boolean}>({
-        'partos': true, 'nacimientos': true, 'indicesParto': true, 'destete': true,
-        'destetados': true, 'indicesDestete': true
-    });
-    
-    React.useEffect(() => {
-        const pigsFromStorage = localStorage.getItem('pigs');
-        const allPigs: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
-        setPigs(allPigs);
-    }, []);
-
-    const handleFilter = React.useCallback(() => {
-        const start = startOfDay(parseISO(startDate));
-        const end = endOfDay(parseISO(endDate));
-        
-        let filteredPigs = pigs;
-        if(breedFilter !== 'all') {
-            filteredPigs = pigs.filter(p => p.breed === breedFilter);
-        }
-
-        const calculatedMetrics = calculateMetrics(filteredPigs, start, end, groupBy);
-        setMetrics(calculatedMetrics);
-
-        let headers: Date[] = [];
-        if (groupBy === 'year') headers = eachYearOfInterval({ start, end });
-        else if (groupBy === 'month') headers = eachMonthOfInterval({ start, end });
-        else if (groupBy === 'week') headers = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
-        else if (groupBy === 'day') headers = eachDayOfInterval({ start, end });
-        
-        const headerKeys = headers.map(d => formatPeriodKey(d, groupBy)).sort();
-        setAllPeriodKeys(headerKeys);
-        setCurrentPeriodIndex(0);
-
-    }, [pigs, startDate, endDate, groupBy, breedFilter]);
-
-     React.useEffect(() => {
-        const end = Math.min(currentPeriodIndex + periodsPerPage, allPeriodKeys.length);
-        setVisiblePeriods(allPeriodKeys.slice(currentPeriodIndex, end));
-    }, [currentPeriodIndex, allPeriodKeys]);
-
-    React.useEffect(() => {
-        handleFilter();
-    }, [handleFilter]);
-    
-    const navigatePeriods = (direction: 'next' | 'prev') => {
-        if (direction === 'next') {
-            setCurrentPeriodIndex(prev => Math.min(prev + periodsPerPage, allPeriodKeys.length - periodsPerPage));
-        } else {
-            setCurrentPeriodIndex(prev => Math.max(prev - periodsPerPage, 0));
-        }
-    };
-
-
-    const toggleCategory = (key: string) => {
-        setOpenCategories(prev => ({ ...prev, [key]: !prev[key] }));
-    }
-
-    const formatValue = (value?: number, isPercentage = false) => {
-        if (value === undefined || value === null || isNaN(value)) return '-';
-        if (isPercentage) return value.toFixed(2);
-        return Math.round(value).toString();
-    };
-
-    const getTableData = () => {
-        const head = ['Métricas', 'Metas', ...visiblePeriods.map(p => getPeriodLabel(p, groupBy)), 'Media', 'Total'];
-        const body = METRIC_DEFINITIONS.map(metric => {
-             if (metric.isHeader) {
-                return { isHeader: true, label: metric.label, key: metric.key };
-            }
-             const categoryKey = METRIC_DEFINITIONS.find((m, index) => m.isHeader && index < METRIC_DEFINITIONS.findIndex(def => def.key === metric.key) && METRIC_DEFINITIONS.slice(index + 1).some(sub => sub.key === metric.key))?.key || 'default';
-
-
-            return {
-                isHeader: false, label: metric.label, goal: '-',
-                values: visiblePeriods.map(p => '-'),
-                average: '-', total: '-',
-                isBold: !!metric.isBold,
-                isPercentage: !!metric.isPercentage,
-                categoryKey
-            };
-        }).filter(Boolean);
-
-        return { head, body };
-    };
-
-    const { head, body } = getTableData();
-    
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h1 className="text-3xl font-bold tracking-tight">Desempeño de la maternidad</h1>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                                <Download className="mr-2 h-4 w-4" />
-                                Exportar
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem>Exportar a PDF</DropdownMenuItem>
-                            <DropdownMenuItem>Exportar a CSV</DropdownMenuItem>
-                            <DropdownMenuItem>Exportar a Excel (XLSX)</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                
+                <h1 className="text-3xl font-bold tracking-tight">Análisis de Máximo Potencial Productivo</h1>
                 <Card>
-                    <CardContent className="p-4 space-y-4">
+                    <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                             <div className="space-y-2">
                                 <Label htmlFor="start-date">Fecha inicial</Label>
-                                <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                <div className="relative">
+                                    <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="pr-8"/>
+                                    <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="end-date">Fecha final</Label>
-                                <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                                 <div className="relative">
+                                    <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="pr-8"/>
+                                    <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="group-by">Agrupar resultados por</Label>
-                                <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupingUnit)}>
-                                    <SelectTrigger id="group-by"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="year">Año</SelectItem>
-                                        <SelectItem value="month">Mes</SelectItem>
-                                        <SelectItem value="week">Semana</SelectItem>
-                                        <SelectItem value="day">Día</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="breed-filter">Buscar por raza</Label>
                                 <Select value={breedFilter} onValueChange={setBreedFilter}>
                                     <SelectTrigger id="breed-filter"><SelectValue /></SelectTrigger>
@@ -312,75 +132,139 @@ export default function MaternityPerformancePage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button onClick={handleFilter} className="w-full lg:w-auto"><Filter className="mr-2 h-4 w-4" />Filtrar</Button>
+                            <div className="space-y-2">
+                                <Label>Ciclo: {cycleRange[0]} - {cycleRange[1]}</Label>
+                                <Slider
+                                    defaultValue={cycleRange}
+                                    onValueCommit={setCycleRange}
+                                    max={20}
+                                    min={1}
+                                    step={1}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button className="w-full">Filtrar</Button>
+                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <KpiCard title="PARTO/HEMBRA/AÑO (PHA)" value="2,32" meta="Meta: 2,57" isBad={2.32 < 2.57} />
+                    <KpiCard title="DESTETADOS/HEMBRA/AÑO (DHA)" value="24,00" meta="Meta: 33,44" isBad={24 < 33.44}/>
+                    <KpiCard title="KG/DESTETADOS/HEMBRA/AÑO (KG/DHA)" value="139,67" meta="" />
+                </div>
 
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
-                            <CardTitle>Resultados del Análisis</CardTitle>
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('prev')} disabled={currentPeriodIndex === 0}>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="icon" onClick={() => navigatePeriods('next')} disabled={currentPeriodIndex + periodsPerPage >= allPeriodKeys.length}>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
+                            <CardTitle>Comparación de los Principales Índices</CardTitle>
+                             <div className="flex items-center gap-1 border p-1 rounded-md">
+                                <Button variant={timeGroup === 'week' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('week')}>Semana</Button>
+                                <Button variant={timeGroup === 'month' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('month')}>Mes</Button>
+                                <Button variant={timeGroup === 'trimester' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('trimester')}>Trimestre</Button>
+                                <Button variant={timeGroup === 'year' ? 'secondary' : 'outline'} size="sm" onClick={() => setTimeGroup('year')}>Año</Button>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[250px] sticky left-0 bg-card z-10">Métricas</TableHead>
-                                        <TableHead className="w-[100px] text-center">Metas</TableHead>
-                                        {visiblePeriods.map(p => (
-                                            <TableHead key={p} className="min-w-[100px] text-center">{getPeriodLabel(p, groupBy)}</TableHead>
-                                        ))}
-                                        <TableHead className="min-w-[100px] text-center font-bold">Media</TableHead>
-                                        <TableHead className="min-w-[100px] text-center font-bold">Total</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {body.map((row, index) => {
-                                        if (row.isHeader) {
-                                            return (
-                                                <TableRow key={index} className="bg-muted/50 hover:bg-muted/60 sticky left-0">
-                                                    <TableCell 
-                                                        className="font-bold sticky left-0 bg-muted/50 z-10 cursor-pointer" 
-                                                        onClick={() => toggleCategory(row.key)}
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            {openCategories[row.key] ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                                                            {row.label}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell colSpan={visiblePeriods.length + 3}></TableCell>
-                                                </TableRow>
-                                            )
-                                        }
-
-                                        if (!openCategories[row.categoryKey!]) return null;
-
-                                        return (
-                                            <TableRow key={index}>
-                                                <TableCell className={cn("sticky left-0 bg-card z-10", row.isBold && "font-bold")}>{row.label}</TableCell>
-                                                <TableCell className="text-center">{row.goal}</TableCell>
-                                                {row.values.map((val, i) => <TableCell key={i} className="text-center">{val}</TableCell>)}
-                                                <TableCell className="text-center">{row.average}</TableCell>
-                                                <TableCell className="text-center font-bold">{row.total}</TableCell>
-                                            </TableRow>
-                                        )
-                                    })}
-                                </TableBody>
-                            </Table>
+                    <CardContent className="space-y-8">
+                        <div>
+                             <h3 className="font-semibold text-md mb-2">Parto/Hembra/Año (PHA)</h3>
+                             <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 3]}/>
+                                    <Tooltip />
+                                    <Bar dataKey="pha" name="Parto/Hembra/Año (PHA)" fill="hsl(var(--chart-4))" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                         <div>
+                             <h3 className="font-semibold text-md mb-2">Destetados/Hembra/Año (DHA)</h3>
+                             <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 40]}/>
+                                    <Tooltip />
+                                    <Bar dataKey="dha" name="Destetados/Hembra/Año (DHA)" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div>
+                             <h3 className="font-semibold text-md mb-2">Kg/Destetados/Hembra/Año (Kg/DHA)</h3>
+                             <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 200]}/>
+                                    <Tooltip />
+                                    <Bar dataKey="kgdha" name="Kg/Destetados/Hembra/Año (Kg/DHA)" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </CardContent>
                 </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Distribución de Indicadores Productivos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="pha">
+                            <TabsList>
+                                <TabsTrigger value="pha">Parto/Hembra/Año (PHA)</TabsTrigger>
+                                <TabsTrigger value="dha">Destetados/Hembra/Año (DHA)</TabsTrigger>
+                                <TabsTrigger value="kgdha">Kg/Destetados/Hembra/Año (Kg/DHA)</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="pha" className="mt-4">
+                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                   <Card className="col-span-1">
+                                       <CardHeader><CardTitle className="text-sm">Por los datos de la madre</CardTitle></CardHeader>
+                                       <CardContent>
+                                           <RadioGroup defaultValue="ciclo" onValueChange={(v) => setDistributionBy(v as 'ciclo' | 'raza')}>
+                                               <div className="flex items-center space-x-2">
+                                                   <RadioGroupItem value="ciclo" id="ciclo" />
+                                                   <Label htmlFor="ciclo">Ciclo</Label>
+                                               </div>
+                                               <div className="flex items-center space-x-2">
+                                                   <RadioGroupItem value="raza" id="raza" />
+                                                   <Label htmlFor="raza">Raza</Label>
+                                               </div>
+                                           </RadioGroup>
+                                       </CardContent>
+                                   </Card>
+                                   <Card className="md:col-span-2">
+                                       <CardHeader><CardTitle className="text-sm">Desempeño de Parto/Hembra/Año (PHA)</CardTitle></CardHeader>
+                                       <CardContent>
+                                            <ResponsiveContainer width="100%" height={250}>
+                                                <BarChart data={distributionData[distributionBy]} layout="vertical">
+                                                    <XAxis type="number" domain={[0, 3]}/>
+                                                    <YAxis type="category" dataKey="name" width={60} fontSize={12}/>
+                                                    <Tooltip />
+                                                    <Bar dataKey="value" fill="hsl(var(--chart-4))" radius={[0,4,4,0]}>
+                                                        {distributionData[distributionBy].map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                           </ResponsiveContainer>
+                                       </CardContent>
+                                   </Card>
+                               </div>
+                            </TabsContent>
+                             <TabsContent value="dha" className="mt-4">
+                                <p className="text-center text-muted-foreground p-8">Gráficos de distribución para DHA.</p>
+                            </TabsContent>
+                             <TabsContent value="kgdha" className="mt-4">
+                                <p className="text-center text-muted-foreground p-8">Gráficos de distribución para Kg/DHA.</p>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                 </Card>
+
             </div>
         </AppLayout>
     );

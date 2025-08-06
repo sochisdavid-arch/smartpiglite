@@ -84,6 +84,8 @@ export default function BirthAnalysisPage() {
     const [cycleStart, setCycleStart] = React.useState<string | number>(1);
     const [cycleEnd, setCycleEnd] = React.useState<string | number>(20);
     const [timeGroup, setTimeGroup] = React.useState<'week' | 'month' | 'year'>('month');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
     // Data for rendering
     const [kpiData, setKpiData] = React.useState<any>({});
@@ -272,6 +274,9 @@ export default function BirthAnalysisPage() {
         { value: 'month', label: 'Mes' },
         { value: 'week', label: 'Semana' },
     ];
+    
+    const paginatedData = farrowingData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const totalPages = Math.ceil(farrowingData.length / rowsPerPage);
 
     return (
         <AppLayout>
@@ -510,7 +515,7 @@ export default function BirthAnalysisPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {farrowingData.length > 0 ? farrowingData.slice(0, 10).map((f, i) => (
+                                    {paginatedData.length > 0 ? paginatedData.map((f, i) => (
                                         <TableRow key={i}>
                                             <TableCell><Link href={`/analysis/sow-card?sowId=${f.sowId}`} className="text-primary underline">{f.sowId}</Link></TableCell>
                                             <TableCell>{format(parseISO(f.farrowingDate), 'dd/MM/yyyy')}</TableCell>
@@ -526,13 +531,17 @@ export default function BirthAnalysisPage() {
                             </Table>
                           </div>
                           <div className="flex items-center justify-between mt-4 text-sm">
-                              <div></div>
+                              <div className="flex gap-1">
+                                  {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
+                                      <Button key={page} variant={currentPage === page ? 'default': 'outline'} size="icon" className="h-8 w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
+                                  ))}
+                              </div>
                               <div className="text-muted-foreground">
                                   Total de resultados: {farrowingData.length}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Label>Líneas por página:</Label>
-                                <Select defaultValue="10">
+                                <Select value={String(rowsPerPage)} onValueChange={(v) => setRowsPerPage(Number(v))}>
                                     <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="10">10</SelectItem>
@@ -547,3 +556,5 @@ export default function BirthAnalysisPage() {
             </div>
         </AppLayout>
     );
+}
+
