@@ -42,7 +42,8 @@ import {
   ChevronDown,
   UserSearch,
   Activity,
-  BarChart2
+  BarChart2,
+  GitCommitHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,10 +84,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
   
   const lactationAnalysisMenuItems = [
-       { href: '/analysis/maternity-performance', label: 'Desempeño de la maternidad' },
+       { href: '/analysis/maternity-performance', label: 'Desempeño Maternidad' },
        { href: '/analysis/farrowing-forecast', label: 'Previsión de Parto' },
        { href: '/analysis/weaning-forecast', label: 'Previsión de Destete' },
        { href: '/analysis/birth-analysis', label: 'Análisis de Nacimientos' },
+       { href: '/analysis/lactation-analysis', label: 'Análisis de Destetados' },
   ];
   
   const productionAnalysisMenuItems = [
@@ -131,7 +133,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             isActive={isGestationAnalysisActive}
                             >
                             <div className="flex items-center gap-2">
-                                <Activity />
+                                <GitCommitHorizontal />
                                 <span>Análisis Gestación</span>
                             </div>
                             <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
@@ -255,3 +257,5 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    
