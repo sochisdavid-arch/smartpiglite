@@ -19,8 +19,20 @@ export interface FoodConsumptionRecord {
     area: string; // e.g., 'Precebo Lote X', 'Ceba Lote Y'
 }
 
+export interface MedicalConsumptionRecord {
+    id: string;
+    date: string;
+    productId: string;
+    productName: string;
+    category: 'medicamento' | 'vacuna';
+    quantity: number;
+    area: string; // e.g., 'Cerda PIG-001', 'Lote Precebo X'
+}
+
+
 const INVENTORY_STORAGE_KEY = 'farmInventory';
 const FOOD_CONSUMPTION_HISTORY_KEY = 'foodConsumptionHistory';
+const MEDICAL_CONSUMPTION_HISTORY_KEY = 'medicalConsumptionHistory';
 
 
 // Function to get the current inventory
@@ -74,21 +86,41 @@ export const deductFromStock = (
     }
 
     const product = inventory[productIndex];
+
+    if (product.stock < quantityToDeduct) {
+        return { success: false, message: `No hay suficiente stock de ${product.name}. Stock actual: ${product.stock}, se necesitan: ${quantityToDeduct}.` };
+    }
+
     inventory[productIndex].stock -= quantityToDeduct;
 
-    // If it's a food item, record the consumption if quantity is positive
-    if (product.category === 'alimento' && quantityToDeduct > 0) {
-        const consumptionHistory: FoodConsumptionRecord[] = JSON.parse(localStorage.getItem(FOOD_CONSUMPTION_HISTORY_KEY) || '[]');
-        const newRecord: FoodConsumptionRecord = {
-            id: `consumo-${Date.now()}-${Math.random()}`,
-            date: consumptionDate || new Date().toISOString(),
-            productId: product.id,
-            productName: product.name,
-            quantity: quantityToDeduct,
-            area: area || 'Área no especificada',
-        };
-        consumptionHistory.unshift(newRecord); // Add to the beginning
-        localStorage.setItem(FOOD_CONSUMPTION_HISTORY_KEY, JSON.stringify(consumptionHistory));
+    // Record consumption if quantity is positive
+    if (quantityToDeduct > 0) {
+        if (product.category === 'alimento') {
+            const consumptionHistory: FoodConsumptionRecord[] = JSON.parse(localStorage.getItem(FOOD_CONSUMPTION_HISTORY_KEY) || '[]');
+            const newRecord: FoodConsumptionRecord = {
+                id: `consumo-alim-${Date.now()}-${Math.random()}`,
+                date: consumptionDate || new Date().toISOString(),
+                productId: product.id,
+                productName: product.name,
+                quantity: quantityToDeduct,
+                area: area || 'Área no especificada',
+            };
+            consumptionHistory.unshift(newRecord); // Add to the beginning
+            localStorage.setItem(FOOD_CONSUMPTION_HISTORY_KEY, JSON.stringify(consumptionHistory));
+        } else if (product.category === 'medicamento' || product.category === 'vacuna') {
+             const consumptionHistory: MedicalConsumptionRecord[] = JSON.parse(localStorage.getItem(MEDICAL_CONSUMPTION_HISTORY_KEY) || '[]');
+             const newRecord: MedicalConsumptionRecord = {
+                id: `consumo-med-${Date.now()}-${Math.random()}`,
+                date: consumptionDate || new Date().toISOString(),
+                productId: product.id,
+                productName: product.name,
+                category: product.category,
+                quantity: quantityToDeduct,
+                area: area || 'Área no especificada',
+             };
+             consumptionHistory.unshift(newRecord);
+             localStorage.setItem(MEDICAL_CONSUMPTION_HISTORY_KEY, JSON.stringify(consumptionHistory));
+        }
     }
 
 

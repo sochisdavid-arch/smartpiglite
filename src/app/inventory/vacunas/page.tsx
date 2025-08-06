@@ -7,8 +7,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getInventory, updateInventory, InventoryItem } from '@/lib/inventory';
-import { ArrowLeft, PlusCircle, Syringe } from 'lucide-react';
+import { getInventory, updateInventory, InventoryItem, MedicalConsumptionRecord } from '@/lib/inventory';
+import { ArrowLeft, PlusCircle, Syringe, ArrowDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,12 +35,14 @@ interface MedicalPurchaseRecord {
 }
 
 const MEDICAL_PURCHASE_HISTORY_KEY = 'medicalPurchaseHistory';
+const MEDICAL_CONSUMPTION_HISTORY_KEY = 'medicalConsumptionHistory';
 
 export default function VacunasPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [vacunas, setVacunas] = React.useState<InventoryItem[]>([]);
     const [purchaseHistory, setPurchaseHistory] = React.useState<MedicalPurchaseRecord[]>([]);
+    const [consumptionHistory, setConsumptionHistory] = React.useState<MedicalConsumptionRecord[]>([]);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
 
     // Form states for automatic calculation
@@ -57,9 +59,15 @@ export default function VacunasPage() {
     const loadData = React.useCallback(() => {
         const allInventory = getInventory();
         setVacunas(allInventory.filter(item => item.category === 'vacuna'));
+        
         const storedPurchases = localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY);
         if (storedPurchases) {
             setPurchaseHistory(JSON.parse(storedPurchases).filter((p: any) => allInventory.some(i => i.id === p.productId && i.category === 'vacuna')));
+        }
+
+        const storedConsumptions = localStorage.getItem(MEDICAL_CONSUMPTION_HISTORY_KEY);
+        if (storedConsumptions) {
+            setConsumptionHistory(JSON.parse(storedConsumptions).filter((c: MedicalConsumptionRecord) => c.category === 'vacuna'));
         }
     }, []);
 
@@ -141,7 +149,7 @@ export default function VacunasPage() {
         allPurchases.unshift(newPurchase);
         localStorage.setItem(MEDICAL_PURCHASE_HISTORY_KEY, JSON.stringify(allPurchases));
 
-        toast({ title: 'Ingreso Registrado', description: `${totalVolume} dosis/ml de ${productName} añadidas al inventario.` });
+        toast({ title: 'Ingreso Registrado', description: `${totalVolume} dosis/ml de ${productName} añadidos al inventario.` });
         
         setIsFormOpen(false);
         resetFormState();
@@ -222,6 +230,39 @@ export default function VacunasPage() {
                                 )) : (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center">No hay compras registradas.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ArrowDown className="text-red-500"/>Historial de Salidas</CardTitle>
+                        <CardDescription>Consumos registrados automáticamente desde las fases productivas.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Lote/Animal Destino</TableHead>
+                                    <TableHead>Producto</TableHead>
+                                    <TableHead className="text-right">Cantidad Consumida (dosis/ml)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {consumptionHistory.length > 0 ? consumptionHistory.map(item => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>{isValid(parseISO(item.date)) ? format(parseISO(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell className="font-medium">{item.area}</TableCell>
+                                        <TableCell>{item.productName}</TableCell>
+                                        <TableCell className="text-right">{item.quantity.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                )) : (
+                                     <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center">No hay salidas de vacunas registradas.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
