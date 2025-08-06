@@ -160,21 +160,23 @@ export function PigDoctorForm() {
 
               <div className="space-y-4">
                 <FormLabel>Foto (Opcional)</FormLabel>
-                 <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={startCamera}>
-                        <Camera className="mr-2 h-4 w-4" /> Cámara
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" /> Subir Foto
-                    </Button>
-                    <Input 
-                        type="file" 
-                        className="hidden" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        accept="image/*"
-                    />
-                </div>
+                 {!(photoDataUri || isCameraActive) && (
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={startCamera}>
+                            <Camera className="mr-2 h-4 w-4" /> Cámara
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="mr-2 h-4 w-4" /> Subir Foto
+                        </Button>
+                        <Input 
+                            type="file" 
+                            className="hidden" 
+                            ref={fileInputRef} 
+                            onChange={handleFileChange} 
+                            accept="image/*"
+                        />
+                    </div>
+                 )}
 
                 { (photoDataUri || isCameraActive) && (
                     <div className="relative aspect-video w-full">
