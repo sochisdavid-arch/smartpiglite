@@ -89,6 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
        { href: '/analysis/weaning-forecast', label: 'Previsión de Destete' },
        { href: '/analysis/birth-analysis', label: 'Análisis de Nacimientos' },
        { href: '/analysis/lactation-analysis', label: 'Análisis de Destetados' },
+       { href: '/analysis/mortality-analysis', label: 'Análisis de Mortalidad' },
   ];
   
   const productionAnalysisMenuItems = [
