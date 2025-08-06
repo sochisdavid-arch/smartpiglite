@@ -2,9 +2,12 @@
 "use client"
 import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, addDays, isValid, format } from 'date-fns';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Bell, Baby, Repeat, HeartPulse } from 'lucide-react';
+import Link from 'next/link';
 
 interface Event {
     id: string;
@@ -24,6 +27,7 @@ interface Pig {
     breed: string;
     birthDate: string;
     gender: 'Hembra' | 'Macho';
+    status: 'Gestante' | 'Lactante' | 'Destetada' | 'Vacia' | 'Remplazo';
     events: Event[];
 }
 
@@ -37,6 +41,14 @@ interface KpiData {
   kgDha: number;
   totalPigs: number;
 }
+
+interface AlertData {
+    type: 'parto' | 'destete' | 'servicio';
+    pigId: string;
+    date: string;
+    message: string;
+}
+
 
 const KpiCard = ({ title, value, unit, description }: { title: string, value: string, unit?: string, description: string }) => (
     <Card>
@@ -52,6 +64,7 @@ const KpiCard = ({ title, value, unit, description }: { title: string, value: st
 
 export default function DashboardPage() {
     const [kpiData, setKpiData] = React.useState<KpiData | null>(null);
+    const [alerts, setAlerts] = React.useState<AlertData[]>([]);
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
@@ -59,12 +72,12 @@ export default function DashboardPage() {
             const allPigs: Pig[] = JSON.parse(pigsFromStorage);
             const sows = allPigs.filter(p => p.gender === 'Hembra');
             
+            // KPI Calculation
             if (sows.length > 0) {
                 let totalFarrowings = 0;
                 let totalLiveBorn = 0;
                 let totalWeaned = 0;
                 let totalWeanedKg = 0;
-                let totalNpd = 0;
                 let totalIds = 0;
                 let countIds = 0;
                 let farrowingIntervals: number[] = [];
@@ -120,17 +133,68 @@ export default function DashboardPage() {
                     totalPigs: allPigs.length,
                 });
             }
+
+            // Alerts Calculation
+            const today = new Date();
+            const upcomingAlerts: AlertData[] = [];
+            
+            sows.forEach(sow => {
+                const sortedEvents = [...sow.events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                const lastEvent = sortedEvents[0];
+
+                if (!lastEvent) return;
+
+                // Próximos Partos
+                if (sow.status === 'Gestante' && lastEvent.type === 'Inseminación') {
+                    const farrowingDate = addDays(parseISO(lastEvent.date), 114);
+                    const daysToFarrow = differenceInDays(farrowingDate, today);
+                    if (daysToFarrow >= 0 && daysToFarrow <= 7) {
+                        upcomingAlerts.push({
+                            type: 'parto',
+                            pigId: sow.id,
+                            date: format(farrowingDate, 'dd/MM/yyyy'),
+                            message: `Parto previsto para el ${format(farrowingDate, 'dd/MM/yyyy')} (en ${daysToFarrow} días).`
+                        });
+                    }
+                }
+
+                // Próximos Destetes
+                if (sow.status === 'Lactante' && lastEvent.type === 'Parto') {
+                    const weaningDate = addDays(parseISO(lastEvent.date), 21); // Assuming 21-day lactation
+                    const daysToWean = differenceInDays(weaningDate, today);
+                     if (daysToWean >= 0 && daysToWean <= 3) {
+                        upcomingAlerts.push({
+                            type: 'destete',
+                            pigId: sow.id,
+                            date: format(weaningDate, 'dd/MM/yyyy'),
+                            message: `Destete previsto para el ${format(weaningDate, 'dd/MM/yyyy')}.`
+                        });
+                    }
+                }
+
+                // Cerdas por cubrir
+                 if (sow.status === 'Destetada' && lastEvent.type === 'Destete') {
+                    const daysSinceWeaning = differenceInDays(today, parseISO(lastEvent.date));
+                    if (daysSinceWeaning >= 3 && daysSinceWeaning <= 10) {
+                         upcomingAlerts.push({
+                            type: 'servicio',
+                            pigId: sow.id,
+                            date: format(today, 'dd/MM/yyyy'),
+                            message: `Revisar celo. Han pasado ${daysSinceWeaning} días desde el destete.`
+                        });
+                    }
+                 }
+            });
+            
+            setAlerts(upcomingAlerts.sort((a,b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()));
         }
     }, []);
 
-    const productionData = [
-      { name: 'Ene', born: 98, weaned: 90 },
-      { name: 'Feb', born: 110, weaned: 105 },
-      { name: 'Mar', born: 125, weaned: 118 },
-      { name: 'Abr', born: 115, weaned: 110 },
-      { name: 'May', born: 130, weaned: 122 },
-      { name: 'Jun', born: 140, weaned: 135 },
-    ];
+    const alertIcons = {
+        parto: <Baby className="h-5 w-5 text-blue-500" />,
+        destete: <Repeat className="h-5 w-5 text-orange-500" />,
+        servicio: <HeartPulse className="h-5 w-5 text-pink-500" />,
+    };
 
   return (
     <AppLayout>
@@ -148,26 +212,36 @@ export default function DashboardPage() {
         </div>
         <Card>
             <CardHeader>
-                <CardTitle>Producción Mensual (Datos de Ejemplo)</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5"/>
+                    Alertas y Próximas Tareas
+                </CardTitle>
+                <CardDescription>Eventos importantes que requieren su atención en los próximos días.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={productionData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      borderColor: 'hsl(var(--border))',
-                      borderRadius: 'var(--radius)',
-                    }}
-                  />
-                  <Legend iconSize={10} />
-                  <Bar dataKey="born" fill="hsl(var(--chart-1))" name="Nacidos" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="weaned" fill="hsl(var(--chart-2))" name="Destetados" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {alerts.length > 0 ? (
+                <div className="space-y-4">
+                  {alerts.map((alert, index) => (
+                    <Alert key={index}>
+                      {alertIcons[alert.type]}
+                      <AlertTitle>
+                        <Link href={`/gestation/${alert.pigId}`} className="hover:underline">
+                          Cerda: {alert.pigId}
+                        </Link>
+                      </AlertTitle>
+                      <AlertDescription>
+                        {alert.message}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                    <Bell className="w-12 h-12 mb-4" />
+                    <p className="font-semibold">Todo en Orden</p>
+                    <p className="text-sm">No hay alertas importantes por ahora.</p>
+                </div>
+              )}
             </CardContent>
         </Card>
       </div>
