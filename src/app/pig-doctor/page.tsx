@@ -43,7 +43,7 @@ export default function PigDoctorPage() {
           <span className="font-semibold text-destructive block mt-2">Recuerde: esta herramienta es un asistente y no reemplaza el criterio de un médico veterinario profesional.</span>
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 flex-1">
+        <div className="flex flex-col gap-8">
           <PigDoctorInputCard 
             onNewDiagnosis={handleNewDiagnosis}
             onLoading={handleLoadingState}
