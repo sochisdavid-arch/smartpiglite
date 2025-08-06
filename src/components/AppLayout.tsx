@@ -85,6 +85,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const lactationAnalysisMenuItems = [
        { href: '/analysis/maternity-performance', label: 'Desempeño de la maternidad' },
        { href: '/analysis/farrowing-forecast', label: 'Previsión de Parto' },
+       { href: '/analysis/weaning-forecast', label: 'Previsión de Destete' },
   ];
   
   const productionAnalysisMenuItems = [
