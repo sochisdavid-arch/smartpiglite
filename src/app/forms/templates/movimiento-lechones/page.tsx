@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { Printer, ArrowLeft } from "lucide-react";
+import Link from 'next/link';
 
 export default function MovimientoLechonesForm() {
     const handlePrint = () => {
@@ -31,14 +32,20 @@ export default function MovimientoLechonesForm() {
           }
         }
       `}</style>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-end mb-4 no-print">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg">
+        <div className="flex justify-between items-center p-4 sm:p-8 border-b no-print">
+            <Button variant="outline" asChild>
+                <Link href="/forms">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver
+                </Link>
+            </Button>
             <Button onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimir Formulario
             </Button>
         </div>
-        <div className="bg-white p-8 sm:p-12 shadow-lg printable-area">
+        <div className="p-8 sm:p-12 printable-area">
           <Card className="w-full border-none shadow-none">
             <CardHeader>
               <CardTitle className="text-2xl">Formulario de Muerte/Movimiento de Lechones</CardTitle>
