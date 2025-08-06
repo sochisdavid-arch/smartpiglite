@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -8,61 +9,54 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2, Checkbox, Circle } from 'lucide-react';
-import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval } from 'date-fns';
+import { Filter, CalendarIcon, MoreHorizontal, SlidersHorizontal, BarChart2, Checkbox as CheckboxIcon, Circle } from 'lucide-react';
+import { format, parseISO, isValid, differenceInDays, startOfDay, endOfDay, sub, eachMonthOfInterval, getDay, getHours } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Checkbox as CheckboxUI } from '@/components/ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+interface Event {
+    id: string;
+    type: string;
+    date: string;
+    details?: string;
+    liveBorn?: number;
+    stillborn?: number;
+    mummified?: number;
+    birthWeight?: number;
+    duration?: number;
+    [key: string]: any;
+}
+
+interface Pig {
+    id: string;
+    breed: string;
+    birthDate: string;
+    events: Event[];
+}
+
+interface FarrowingData {
+    sowId: string;
+    farrowingDate: string;
+    cycle: number;
+    breed: string;
+    totalBorn: number;
+    liveBorn: number;
+    stillborn: number;
+    mummified: number;
+    birthWeight?: number;
+    gestationDays: number;
+    duration?: number;
+}
+
 const pigBreeds = [
   "Duroc", "Yorkshire", "Landrace", "Hampshire", "Pietrain", "Berkshire", "Chester White", "Spotted", "Poland China", "Tamworth", "Large Black", "Cerdo Ibérico",
-  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
+  "PIC", "Topigs Norsvin", "Hypor (Hendrix Genetics)", "Hypor (Hendrix Genetics)", "DanBred", "Genus", "Choice Genetics", "Genesus",
   "Otro"
 ];
-
-const mockData = {
-    totalFarrowings: 238,
-    totalLiveBorn: 2883,
-    avgTotalBorn: 12.37,
-    avgLiveBorn: 12.10,
-    birthLossPercent: 2.17,
-    avgStillborn: 1.08,
-    avgMummified: 0.27,
-    avgBirthWeight: 1.34
-};
-
-const mockMonthlyData = [
-  { name: '03/2024', partos: 16, nacidosTotales: 12.06, nacidosVivos: 11.8, momificados: 1.08, nacidosMuertos: 0.9, pesoMedio: 1.35 },
-  { name: '04/2024', partos: 15, nacidosTotales: 11.9, nacidosVivos: 11.7, momificados: 1.23, nacidosMuertos: 0.8, pesoMedio: 1.37 },
-  { name: '05/2024', partos: 19, nacidosTotales: 12.7, nacidosVivos: 12.5, momificados: 1.0, nacidosMuertos: 1.1, pesoMedio: 1.41 },
-  { name: '06/2024', partos: 15, nacidosTotales: 11.94, nacidosVivos: 11.8, momificados: 1.12, nacidosMuertos: 0.9, pesoMedio: 1.39 },
-  { name: '07/2024', partos: 17, nacidosTotales: 12.3, nacidosVivos: 12.1, momificados: 1.1, nacidosMuertos: 1.0, pesoMedio: 1.37 },
-  { name: '08/2024', partos: 14, nacidosTotales: 12.71, nacidosVivos: 12.6, momificados: 0.9, nacidosMuertos: 0.8, pesoMedio: 1.38 },
-  { name: '09/2024', partos: 18, nacidosTotales: 12.64, nacidosVivos: 12.5, momificados: 1.15, nacidosMuertos: 0.9, pesoMedio: 1.36 },
-  { name: '10/2024', partos: 20, nacidosTotales: 12.85, nacidosVivos: 12.7, momificados: 0.95, nacidosMuertos: 0.8, pesoMedio: 1.44 },
-  { name: '11/2024', partos: 19, nacidosTotales: 16.56, nacidosVivos: 16.4, momificados: 0.8, nacidosMuertos: 0.7, pesoMedio: 1.37 },
-  { name: '12/2024', partos: 13, nacidosTotales: 8.53, nacidosVivos: 8.4, momificados: 1.5, nacidosMuertos: 1.2, pesoMedio: 1.31 },
-  { name: '01/2025', partos: 15, nacidosTotales: 12.43, nacidosVivos: 12.2, momificados: 1.0, nacidosMuertos: 0.9, pesoMedio: 1.40 },
-  { name: '02/2025', partos: 14, nacidosTotales: 12.3, nacidosVivos: 12.1, momificados: 1.2, nacidosMuertos: 1.0, pesoMedio: 1.38 },
-];
-
-const mockHeatmapData = [
-    [0.00, 0.00, 0.42, 0.00, 0.00, 0.00, 0.00, 0.42],
-    [2.52, 5.46, 0.42, 0.42, 0.42, 1.26, 2.10, 12.61],
-    [8.82, 7.14, 1.68, 0.84, 0.00, 1.68, 3.36, 24.07],
-    [11.76, 7.14, 5.04, 0.42, 2.10, 4.62, 8.82, 39.90],
-    [4.62, 6.72, 3.36, 1.26, 2.68, 1.68, 3.36, 22.65],
-    [28.57, 26.47, 10.92, 2.94, 5.20, 9.24, 17.65, 100]
-];
-
-const mockDistributionData = {
-    gestationDays: [{ name: '< 113', value: 8.82 }, { name: '114-115', value: 68.87 }, { name: '116-117', value: 21.43 }, { name: '> 117', value: 1.88 }],
-    cycle: [{ name: '< 1', value: 16.38 }, { name: '2-3', value: 14.71 }, { name: '3-6', value: 58.82 }, { name: '> 6', value: 10.09 }],
-    duration: [{ name: '< 2h', value: 0.42 }, { name: '2-3h', value: 8.82 }, { name: '3-5h', value: 29.58 }, { name: '5-7h', value: 23.95 }, { name: '> 7h', value: 11.22 }],
-};
 
 const KpiCard = ({ title, value, subValue, isGood, isBad }: { title: string, value: string | number, subValue?: string, isGood?: boolean, isBad?: boolean }) => (
     <Card>
@@ -80,6 +74,181 @@ const KpiCard = ({ title, value, subValue, isGood, isBad }: { title: string, val
 );
 
 export default function BirthAnalysisPage() {
+    const [allPigs, setAllPigs] = React.useState<Pig[]>([]);
+    const [farrowingData, setFarrowingData] = React.useState<FarrowingData[]>([]);
+
+    // Filter states
+    const [startDate, setStartDate] = React.useState<string>(format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd'));
+    const [endDate, setEndDate] = React.useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const [breedFilter, setBreedFilter] = React.useState('all');
+    const [cycleStart, setCycleStart] = React.useState<string | number>(1);
+    const [cycleEnd, setCycleEnd] = React.useState<string | number>(20);
+
+    // Data for rendering
+    const [kpiData, setKpiData] = React.useState<any>({});
+    const [monthlyData, setMonthlyData] = React.useState<any[]>([]);
+    const [distributionData, setDistributionData] = React.useState<any>({});
+    const [heatmapData, setHeatmapData] = React.useState<number[][]>([]);
+
+
+    React.useEffect(() => {
+        const pigsFromStorage = localStorage.getItem('pigs');
+        if (pigsFromStorage) {
+            setAllPigs(JSON.parse(pigsFromStorage));
+        }
+    }, []);
+
+    const handleFilter = React.useCallback(() => {
+        const start = startOfDay(parseISO(startDate));
+        const end = endOfDay(parseISO(endDate));
+        
+        let filteredPigs = allPigs;
+        if(breedFilter !== 'all') {
+            filteredPigs = filteredPigs.filter(p => p.breed === breedFilter);
+        }
+        
+        const farrowings: FarrowingData[] = [];
+        filteredPigs.forEach(pig => {
+            let cycle = 0;
+            const sortedEvents = [...pig.events].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            
+            let lastServiceDate: string | null = null;
+            sortedEvents.forEach(event => {
+                if(event.type === 'Inseminación' || event.type === 'Monta Natural') {
+                    lastServiceDate = event.date;
+                }
+                if (event.type === 'Parto') {
+                    cycle++;
+                    const farrowingDate = parseISO(event.date);
+                    if (farrowingDate >= start && farrowingDate <= end && cycle >= Number(cycleStart) && cycle <= Number(cycleEnd)) {
+                        const gestationDays = lastServiceDate ? differenceInDays(farrowingDate, parseISO(lastServiceDate)) : 0;
+                        const liveBorn = event.liveBorn || 0;
+                        const stillborn = event.stillborn || 0;
+                        const mummified = event.mummified || 0;
+                        
+                        farrowings.push({
+                            sowId: pig.id,
+                            farrowingDate: event.date,
+                            cycle: cycle,
+                            breed: pig.breed,
+                            totalBorn: liveBorn + stillborn + mummified,
+                            liveBorn: liveBorn,
+                            stillborn: stillborn,
+                            mummified: mummified,
+                            birthWeight: event.birthWeight,
+                            gestationDays: gestationDays,
+                            duration: event.duration
+                        });
+                    }
+                    lastServiceDate = null; // Reset after farrowing
+                }
+            });
+        });
+
+        setFarrowingData(farrowings);
+
+        // --- Calculate KPIs ---
+        const totalFarrowings = farrowings.length;
+        if (totalFarrowings > 0) {
+            const totalLiveBorn = farrowings.reduce((sum, f) => sum + f.liveBorn, 0);
+            const totalBorn = farrowings.reduce((sum, f) => sum + f.totalBorn, 0);
+            const totalStillborn = farrowings.reduce((sum, f) => sum + f.stillborn, 0);
+            const totalMummified = farrowings.reduce((sum, f) => sum + f.mummified, 0);
+            const farrowingsWithWeight = farrowings.filter(f => f.birthWeight && f.birthWeight > 0);
+            const totalWeight = farrowingsWithWeight.reduce((sum, f) => sum + f.birthWeight!, 0);
+
+            setKpiData({
+                totalFarrowings,
+                totalLiveBorn,
+                avgTotalBorn: totalBorn / totalFarrowings,
+                avgLiveBorn: totalLiveBorn / totalFarrowings,
+                birthLossPercent: totalBorn > 0 ? ((totalStillborn + totalMummified) / totalBorn) * 100 : 0,
+                avgBirthWeight: farrowingsWithWeight.length > 0 ? totalWeight / farrowingsWithWeight.length : 0,
+            });
+            
+            // --- Monthly Data ---
+            const months = eachMonthOfInterval({ start, end });
+            const monthlyMetrics = months.map(month => {
+                const monthKey = format(month, 'yyyy-MM');
+                const monthFarrowings = farrowings.filter(f => format(parseISO(f.farrowingDate), 'yyyy-MM') === monthKey);
+                const mfCount = monthFarrowings.length;
+                if(mfCount === 0) return { name: format(month, 'MM/yyyy'), partos: 0, nacidosTotales: 0, nacidosVivos: 0, momificados: 0, nacidosMuertos: 0, pesoMedio: 0 };
+                
+                const mLiveBorn = monthFarrowings.reduce((s,f) => s + f.liveBorn, 0);
+                const mTotalBorn = monthFarrowings.reduce((s,f) => s + f.totalBorn, 0);
+                const mStillborn = monthFarrowings.reduce((s,f) => s + f.stillborn, 0);
+                const mMummified = monthFarrowings.reduce((s,f) => s + f.mummified, 0);
+                
+                return {
+                    name: format(month, 'MM/yyyy'),
+                    partos: mfCount,
+                    nacidosTotales: mTotalBorn / mfCount,
+                    nacidosVivos: mLiveBorn / mfCount,
+                    momificados: mTotalBorn > 0 ? (mMummified / mTotalBorn) * 100 : 0,
+                    nacidosMuertos: mTotalBorn > 0 ? (mStillborn / mTotalBorn) * 100 : 0,
+                    pesoMedio: monthFarrowings.filter(f => f.birthWeight).reduce((s,f)=> s + f.birthWeight!, 0) / monthFarrowings.filter(f => f.birthWeight).length || 0,
+                };
+            });
+            setMonthlyData(monthlyMetrics);
+            
+            // --- Distribution Data ---
+            const gestationDays = [
+                { name: '< 113', value: (farrowings.filter(f => f.gestationDays < 113).length / totalFarrowings) * 100 },
+                { name: '114-115', value: (farrowings.filter(f => f.gestationDays >= 114 && f.gestationDays <= 115).length / totalFarrowings) * 100 },
+                { name: '116-117', value: (farrowings.filter(f => f.gestationDays >= 116 && f.gestationDays <= 117).length / totalFarrowings) * 100 },
+                { name: '> 117', value: (farrowings.filter(f => f.gestationDays > 117).length / totalFarrowings) * 100 },
+            ];
+             const cycle = [
+                { name: '1', value: (farrowings.filter(f => f.cycle === 1).length / totalFarrowings) * 100 },
+                { name: '2-3', value: (farrowings.filter(f => f.cycle >= 2 && f.cycle <= 3).length / totalFarrowings) * 100 },
+                { name: '4-6', value: (farrowings.filter(f => f.cycle >= 4 && f.cycle <= 6).length / totalFarrowings) * 100 },
+                { name: '> 6', value: (farrowings.filter(f => f.cycle > 6).length / totalFarrowings) * 100 },
+            ];
+            const farrowingsWithDuration = farrowings.filter(f => f.duration);
+            const duration = farrowingsWithDuration.length > 0 ? [
+                { name: '< 2h', value: (farrowingsWithDuration.filter(f => f.duration! < 2).length / farrowingsWithDuration.length) * 100 },
+                { name: '2-3h', value: (farrowingsWithDuration.filter(f => f.duration! >= 2 && f.duration! <= 3).length / farrowingsWithDuration.length) * 100 },
+                { name: '3-5h', value: (farrowingsWithDuration.filter(f => f.duration! > 3 && f.duration! <= 5).length / farrowingsWithDuration.length) * 100 },
+                { name: '> 5h', value: (farrowingsWithDuration.filter(f => f.duration! > 5).length / farrowingsWithDuration.length) * 100 },
+            ] : [];
+            setDistributionData({ gestationDays, cycle, duration });
+            
+            // --- Heatmap Data ---
+            const heatmap = Array(5).fill(0).map(() => Array(7).fill(0)); // 5 time slots, 7 days
+            farrowings.forEach(f => {
+                const date = parseISO(f.farrowingDate);
+                const day = getDay(date) === 0 ? 6 : getDay(date) - 1; // 0 Mon, 6 Sun
+                const hour = getHours(date);
+                let hourIndex = 0;
+                if(hour >= 0 && hour < 6) hourIndex = 3;
+                else if (hour >= 6 && hour < 12) hourIndex = 2;
+                else if (hour >= 12 && hour < 18) hourIndex = 1;
+                else if (hour >= 18 && hour < 24) hourIndex = 0;
+                
+                heatmap[hourIndex][day]++;
+            });
+            const heatmapPercent = heatmap.map(row => row.map(cell => totalFarrowings > 0 ? (cell / totalFarrowings) * 100 : 0));
+            const totalRow = Array(7).fill(0).map((_, colIndex) => heatmapPercent.reduce((sum, row) => sum + row[colIndex], 0));
+            const finalHeatmap = heatmapPercent.map((row, rowIndex) => [...row, heatmapPercent[rowIndex].reduce((sum, cell) => sum + cell, 0)]);
+            finalHeatmap.push([...totalRow, totalRow.reduce((s,c) => s+c, 0)]);
+
+            setHeatmapData(finalHeatmap);
+
+
+        } else {
+            setKpiData({});
+            setMonthlyData([]);
+            setDistributionData({});
+            setHeatmapData([]);
+        }
+
+    }, [allPigs, startDate, endDate, breedFilter, cycleStart, cycleEnd]);
+    
+    React.useEffect(() => {
+        if(allPigs.length > 0) handleFilter();
+    }, [allPigs, handleFilter]);
+
+
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
@@ -90,20 +259,20 @@ export default function BirthAnalysisPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="start-date">Fecha inicial</Label>
                                 <div className="relative">
-                                    <Input id="start-date" type="date" defaultValue="2024-05-01" className="pr-8"/>
+                                    <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="pr-8"/>
                                     <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="end-date">Fecha final</Label>
                                  <div className="relative">
-                                    <Input id="end-date" type="date" defaultValue="2025-05-31" className="pr-8"/>
+                                    <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="pr-8"/>
                                     <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 </div>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="breed-filter">Buscar por raza</Label>
-                                <Select defaultValue="all">
+                                <Select value={breedFilter} onValueChange={setBreedFilter}>
                                     <SelectTrigger id="breed-filter"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">Todas las razas</SelectItem>
@@ -114,14 +283,14 @@ export default function BirthAnalysisPage() {
                             <div className="space-y-2 col-span-2">
                                 <Label>Ciclo entre</Label>
                                 <div className="flex items-center gap-2">
-                                    <Input type="number" placeholder="1" defaultValue="1" />
+                                    <Input type="number" placeholder="1" value={cycleStart} onChange={e => setCycleStart(e.target.value)} />
                                     <span>a</span>
-                                    <Input type="number" placeholder="20" defaultValue="20" />
+                                    <Input type="number" placeholder="20" value={cycleEnd} onChange={e => setCycleEnd(e.target.value)} />
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button variant="outline" size="icon"><SlidersHorizontal className="h-4 w-4"/></Button>
-                                <Button className="w-full">Filtrar</Button>
+                                <Button className="w-full" onClick={handleFilter}>Filtrar</Button>
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                             </div>
                         </div>
@@ -129,11 +298,11 @@ export default function BirthAnalysisPage() {
                 </Card>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <KpiCard title="TOTAL DE PARTOS" value={mockData.totalFarrowings} subValue={`Nacidos Vivos: ${mockData.totalLiveBorn}`} />
-                    <KpiCard title="NACIDOS TOTALES" value={mockData.avgTotalBorn.toFixed(2)} subValue="Meta: 14,43" isBad={true}/>
-                    <KpiCard title="% PÉRDIDAS DE NACIMIENTO" value={`${mockData.birthLossPercent.toFixed(2)}%`} subValue="Meta: 1,80" isGood={true}/>
-                    <KpiCard title="NACIDOS VIVOS" value={mockData.avgLiveBorn.toFixed(2)} subValue="Meta: 14,00" isBad={true}/>
-                    <KpiCard title="PESO MEDIO (KG)" value={mockData.avgBirthWeight.toFixed(2)} subValue="Meta: 1,38" isGood={true}/>
+                    <KpiCard title="TOTAL DE PARTOS" value={kpiData.totalFarrowings || 0} subValue={`Nacidos Vivos: ${kpiData.totalLiveBorn || 0}`} />
+                    <KpiCard title="NACIDOS TOTALES" value={kpiData.avgTotalBorn?.toFixed(2) || '0.00'} subValue="Meta: 14,43" isBad={(kpiData.avgTotalBorn || 0) < 14.43}/>
+                    <KpiCard title="% PÉRDIDAS DE NACIMIENTO" value={`${kpiData.birthLossPercent?.toFixed(2) || '0.00'}%`} subValue="Meta: 1,80" isGood={(kpiData.birthLossPercent || 0) < 1.8}/>
+                    <KpiCard title="NACIDOS VIVOS" value={kpiData.avgLiveBorn?.toFixed(2) || '0.00'} subValue="Meta: 14,00" isBad={(kpiData.avgLiveBorn || 0) < 14}/>
+                    <KpiCard title="PESO MEDIO (KG)" value={kpiData.avgBirthWeight?.toFixed(2) || '0.00'} subValue="Meta: 1,38" isGood={(kpiData.avgBirthWeight || 0) >= 1.38}/>
                 </div>
 
                 <Card>
@@ -141,24 +310,14 @@ export default function BirthAnalysisPage() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Comparación de los Principales Índices</CardTitle>
                             <div className="flex items-center gap-1 border p-1 rounded-md">
-                                <Button variant="ghost" size="sm">Semana</Button>
                                 <Button variant="secondary" size="sm">Mes</Button>
-                                <Button variant="ghost" size="sm">Trimestre</Button>
-                                <Button variant="ghost" size="sm">Año</Button>
-                                <Button variant="ghost" size="sm">Grupo</Button>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-8">
                         <div>
-                            <div className="flex gap-4 items-center mb-2">
-                                <CheckboxUI id="partos-total" defaultChecked/>
-                                <Label htmlFor="partos-total" className="text-sm">Total de partos</Label>
-                                <CheckboxUI id="partos-vivos"/>
-                                <Label htmlFor="partos-vivos" className="text-sm text-muted-foreground">Nacidos</Label>
-                            </div>
                              <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={mockMonthlyData}>
+                                <BarChart data={monthlyData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
                                     <YAxis fontSize={10} tickLine={false} axisLine={false} allowDecimals={false}/>
@@ -168,52 +327,39 @@ export default function BirthAnalysisPage() {
                             </ResponsiveContainer>
                         </div>
                         <div>
-                            <div className="flex gap-4 items-center mb-2">
-                                <CheckboxUI id="nac-total" defaultChecked/>
-                                <Label htmlFor="nac-total" className="text-sm">Media de nacidos totales</Label>
-                                <CheckboxUI id="nac-vivos" defaultChecked/>
-                                <Label htmlFor="nac-vivos" className="text-sm text-muted-foreground">Media de nacidos vivos</Label>
-                            </div>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={mockMonthlyData}>
+                                <BarChart data={monthlyData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
                                     <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 20]}/>
                                     <Tooltip formatter={(v, n) => [`${Number(v).toFixed(2)}`, n === 'nacidosTotales' ? 'Nacidos Totales' : 'Nacidos Vivos']}/>
-                                    <Bar dataKey="nacidosTotales" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                                    <Legend />
+                                    <Bar dataKey="nacidosTotales" name="Media de Nacidos Totales" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                                    <Bar dataKey="nacidosVivos" name="Media de Nacidos Vivos" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                          <div>
-                            <div className="flex gap-4 items-center mb-2">
-                                <CheckboxUI id="p-momif" defaultChecked/>
-                                <Label htmlFor="p-momif" className="text-sm">% Momificados</Label>
-                                <CheckboxUI id="p-muertos" defaultChecked/>
-                                <Label htmlFor="p-muertos" className="text-sm text-muted-foreground">% Nacidos muertos</Label>
-                            </div>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={mockMonthlyData}>
+                                <BarChart data={monthlyData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} unit="%" domain={[0, 4]}/>
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} unit="%" domain={[0, 'dataMax + 2']}/>
                                     <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`}/>
-                                    <Bar dataKey="momificados" name="% Momificados" stackId="a" fill="hsl(var(--chart-3))" />
-                                    <Bar dataKey="nacidosMuertos" name="% Nacidos Muertos" stackId="a" fill="hsl(var(--chart-4))" radius={[4,4,0,0]}/>
+                                     <Legend />
+                                    <Bar dataKey="momificados" name="% Momificados" stackId="a" fill="hsl(var(--chart-4))" />
+                                    <Bar dataKey="nacidosMuertos" name="% Nacidos Muertos" stackId="a" fill="hsl(var(--chart-5))" radius={[4,4,0,0]}/>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div>
-                            <RadioGroup defaultValue="peso-medio" className="flex gap-4 mb-2">
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="peso-medio" id="r1" /><Label htmlFor="r1" className="text-sm">Peso medio (Kg)</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="peso-total" id="r2" /><Label htmlFor="r2" className="text-sm text-muted-foreground">Peso total (Kg)</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="peso-camada" id="r3" /><Label htmlFor="r3" className="text-sm text-muted-foreground">Peso de la camada (Kg)</Label></div>
-                            </RadioGroup>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={mockMonthlyData}>
+                                <BarChart data={monthlyData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 2]}/>
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} domain={[0, 'dataMax + 0.5']}/>
                                     <Tooltip formatter={(v) => `${Number(v).toFixed(2)} kg`}/>
+                                    <Legend />
                                     <Bar dataKey="pesoMedio" name="Peso Medio" fill="hsl(var(--chart-1))" radius={[4,4,0,0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -229,10 +375,6 @@ export default function BirthAnalysisPage() {
                         <Tabs defaultValue="partos">
                             <TabsList>
                                 <TabsTrigger value="partos">Partos</TabsTrigger>
-                                <TabsTrigger value="nacidos">Nacidos Totales</TabsTrigger>
-                                <TabsTrigger value="perdidas">Pérdidas</TabsTrigger>
-                                <TabsTrigger value="vivos">Nacidos Vivos</TabsTrigger>
-                                <TabsTrigger value="peso">Peso nacimiento (Kg)</TabsTrigger>
                             </TabsList>
                             <TabsContent value="partos" className="mt-4">
                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -240,10 +382,10 @@ export default function BirthAnalysisPage() {
                                        <CardHeader><CardTitle className="text-sm">Días de gestación</CardTitle></CardHeader>
                                        <CardContent>
                                            <ResponsiveContainer width="100%" height={150}>
-                                                <BarChart data={mockDistributionData.gestationDays} layout="vertical">
-                                                    <XAxis type="number" hide />
+                                                <BarChart data={distributionData.gestationDays} layout="vertical">
+                                                    <XAxis type="number" hide unit="%"/>
                                                     <YAxis type="category" dataKey="name" width={60} fontSize={10}/>
-                                                    <Tooltip formatter={(v) => `${v}%`} />
+                                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
                                                     <Bar dataKey="value" fill="hsl(var(--chart-5))" radius={[0,4,4,0]}/>
                                                 </BarChart>
                                            </ResponsiveContainer>
@@ -253,10 +395,10 @@ export default function BirthAnalysisPage() {
                                        <CardHeader><CardTitle className="text-sm">Ciclo medio</CardTitle></CardHeader>
                                        <CardContent>
                                            <ResponsiveContainer width="100%" height={150}>
-                                                <BarChart data={mockDistributionData.cycle} layout="vertical">
-                                                    <XAxis type="number" hide />
+                                                <BarChart data={distributionData.cycle} layout="vertical">
+                                                    <XAxis type="number" hide unit="%"/>
                                                     <YAxis type="category" dataKey="name" width={40} fontSize={10}/>
-                                                    <Tooltip formatter={(v) => `${v}%`} />
+                                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
                                                     <Bar dataKey="value" fill="hsl(var(--chart-5))" radius={[0,4,4,0]}/>
                                                 </BarChart>
                                            </ResponsiveContainer>
@@ -266,10 +408,10 @@ export default function BirthAnalysisPage() {
                                        <CardHeader><CardTitle className="text-sm">Duración</CardTitle></CardHeader>
                                        <CardContent>
                                            <ResponsiveContainer width="100%" height={150}>
-                                                <BarChart data={mockDistributionData.duration} layout="vertical">
-                                                    <XAxis type="number" hide />
+                                                <BarChart data={distributionData.duration} layout="vertical">
+                                                    <XAxis type="number" hide unit="%"/>
                                                     <YAxis type="category" dataKey="name" width={50} fontSize={10}/>
-                                                    <Tooltip formatter={(v) => `${v}%`} />
+                                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
                                                     <Bar dataKey="value" fill="hsl(var(--chart-5))" radius={[0,4,4,0]}/>
                                                 </BarChart>
                                            </ResponsiveContainer>
@@ -289,24 +431,24 @@ export default function BirthAnalysisPage() {
                                 <thead>
                                     <tr className="bg-muted/50">
                                         <th className="p-2 border font-normal">Horario</th>
-                                        <th className="p-2 border font-normal">Domingo</th>
                                         <th className="p-2 border font-normal">Lunes</th>
                                         <th className="p-2 border font-normal">Martes</th>
                                         <th className="p-2 border font-normal">Miércoles</th>
                                         <th className="p-2 border font-normal">Jueves</th>
                                         <th className="p-2 border font-normal">Viernes</th>
                                         <th className="p-2 border font-normal">Sábado</th>
+                                        <th className="p-2 border font-normal">Domingo</th>
                                         <th className="p-2 border font-normal">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {mockHeatmapData.map((row, rowIndex) => (
+                                    {heatmapData.length > 0 && ['18:00-23:59','12:00-17:59','06:00-11:59','00:00-05:59','Total'].map((label, rowIndex) => (
                                         <tr key={rowIndex}>
                                             <td className="p-2 border font-medium text-left">
-                                                {['Sin horario','18:00-23:59','12:00-17:59','06:00-11:59','00:00-05:59','Total'][rowIndex]}
+                                                {label}
                                             </td>
-                                            {row.map((cell, cellIndex) => (
-                                                <td key={cellIndex} className="p-2 border" style={{backgroundColor: `hsl(260, 100%, ${100 - (cell/40 * 50)}%)`, color: cell > 20 ? 'white': 'inherit'}}>
+                                            {heatmapData[rowIndex]?.map((cell, cellIndex) => (
+                                                <td key={cellIndex} className="p-2 border" style={{backgroundColor: `hsl(260, 100%, ${100 - (cell > 0 ? (cell/40 * 50) : 0)}%)`, color: cell > 20 ? 'white': 'inherit'}}>
                                                     {cell.toFixed(2)}%
                                                 </td>
                                             ))}
@@ -330,34 +472,30 @@ export default function BirthAnalysisPage() {
                                         <TableHead>Fecha</TableHead>
                                         <TableHead>Ciclo</TableHead>
                                         <TableHead>Raza</TableHead>
-                                        <TableHead>Composición del servicio</TableHead>
                                         <TableHead>Total de nacidos</TableHead>
+                                        <TableHead>Nacidos vivos</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {[...Array(10)].map((_, i) => (
+                                    {farrowingData.length > 0 ? farrowingData.slice(0, 10).map((f, i) => (
                                         <TableRow key={i}>
-                                            <TableCell><Link href="/analysis/sow-card" className="text-primary underline">195-1</Link></TableCell>
-                                            <TableCell>08/03/2024</TableCell>
-                                            <TableCell>1</TableCell>
-                                            <TableCell>CHOICE</TableCell>
-                                            <TableCell>Primerizas</TableCell>
-                                            <TableCell>1</TableCell>
+                                            <TableCell><Link href={`/analysis/sow-card?sowId=${f.sowId}`} className="text-primary underline">{f.sowId}</Link></TableCell>
+                                            <TableCell>{format(parseISO(f.farrowingDate), 'dd/MM/yyyy')}</TableCell>
+                                            <TableCell>{f.cycle}</TableCell>
+                                            <TableCell>{f.breed}</TableCell>
+                                            <TableCell>{f.totalBorn}</TableCell>
+                                            <TableCell>{f.liveBorn}</TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : (
+                                        <TableRow><TableCell colSpan={6} className="text-center h-24">No hay datos para los filtros seleccionados.</TableCell></TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                           </div>
                           <div className="flex items-center justify-between mt-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <Button size="icon" variant="outline" className="h-8 w-8">1</Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8">2</Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8">3</Button>
-                                <span>...</span>
-                                <Button size="icon" variant="ghost" className="h-8 w-8">10</Button>
-                              </div>
+                              <div></div>
                               <div className="text-muted-foreground">
-                                  Total de resultados: 238
+                                  Total de resultados: {farrowingData.length}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Label>Líneas por página:</Label>
@@ -377,3 +515,6 @@ export default function BirthAnalysisPage() {
         </AppLayout>
     );
 }
+
+
+    
