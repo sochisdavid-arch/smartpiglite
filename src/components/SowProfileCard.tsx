@@ -147,82 +147,97 @@ const processSowHistory = (sow: Pig): SowData => {
 export function SowProfileCard({ sow }: { sow: Pig }) {
     const { cycles, kpis, lastService } = React.useMemo(() => processSowHistory(sow), [sow]);
     const lastCycle = cycles[0] || {};
+    const lastServiceDate = lastService?.date;
+    const lastBoarId = lastService?.boarId;
     
     return (
         <div className="bg-white p-4 space-y-2 text-[10px]">
-             <div className="grid grid-cols-4 gap-2 mb-2 text-xs">
-                <div className="col-span-2 space-y-1">
-                    <p><strong>CÓDIGO:</strong> {sow.id}</p>
-                    <p><strong>ID:</strong> {sow.id}</p>
-                    <p><strong>FECHA NACIMIENTO:</strong> {isValid(parseISO(sow.birthDate)) ? format(parseISO(sow.birthDate), 'dd/MM/yyyy') : '--'}</p>
-                    <p><strong>GENÉTICA:</strong> {sow.breed}</p>
+            {/* Encabezado */}
+            <div className="grid grid-cols-12 gap-2 mb-2">
+                <div className="col-span-5 space-y-px">
+                    <p className="flex justify-between"><strong>CÓDIGO:</strong> <span>{sow.id}</span></p>
+                    <p className="flex justify-between"><strong>ID:</strong> <span>{sow.id}</span></p>
+                    <p className="flex justify-between"><strong>FECHA NACIMIENTO:</strong> <span>{isValid(parseISO(sow.birthDate)) ? format(parseISO(sow.birthDate), 'dd/MM/yyyy') : '--'}</span></p>
+                    <p className="flex justify-between"><strong>GENÉTICA:</strong> <span>{sow.breed}</span></p>
                 </div>
-                 <div className="col-span-2 space-y-1 text-left">
-                    <p><strong>GRANJA:</strong> Granja Demo</p>
-                    <p><strong>ESTADO:</strong> {sow.status}</p>
-                    <p><strong>Nº PARTOS:</strong> {kpis.totalFarrowings}</p>
-                    <p><strong>UBICACIÓN:</strong> {sow.location || '--'}</p>
+                <div className="col-span-2 flex items-center justify-center">
+                    <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${window.location.origin}/analysis/sow-card?sowId=${sow.id}`)}`}
+                        alt="QR Code"
+                        width={60}
+                        height={60}
+                    />
+                </div>
+                <div className="col-span-5 space-y-px">
+                    <p className="flex justify-between"><strong>GRANJA:</strong> <span>Granja Demo</span></p>
+                    <p className="flex justify-between"><strong>ESTADO:</strong> <span>{sow.status}</span></p>
+                    <p className="flex justify-between"><strong>Nº PARTOS:</strong> <span>{kpis.totalFarrowings}</span></p>
+                    <p className="flex justify-between"><strong>UBICACIÓN:</strong> <span>{sow.location || '--'}</span></p>
                 </div>
             </div>
 
+            {/* Tabla Principal */}
             <Table className="border text-[10px]">
                 <TableHeader>
                     <TableRow className="h-6 bg-gray-200">
-                        <TableHead className="border p-1 font-bold w-[25%]">PARTOS</TableHead>
-                        <TableHead className="border p-1 text-center font-bold w-[15%]">ÚLTIMO</TableHead>
-                        <TableHead className="border p-1 text-center font-bold w-[15%]">PROMEDIO</TableHead>
-                        <TableHead className="border p-1 font-bold text-center" colSpan={4}>CICLO DE SERVICIO ACTUAL</TableHead>
+                        <TableHead className="p-1 font-bold w-[25%]">PARTOS</TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[15%]">ÚLTIMO</TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[15%]">PROMEDIO</TableHead>
+                        <TableHead className="p-1 font-bold text-center w-[45%]" colSpan={4}>CICLO DE SERVICIO ACTUAL</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow className="h-6">
+                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Fecha Parto</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--'}</TableCell>
                         <TableCell className="border p-1 text-center">--</TableCell>
-                        <TableCell className="font-semibold border-b p-1" rowSpan={4}>Machos</TableCell>
-                        <TableCell className="border-b p-1 text-center" colSpan={3} rowSpan={4}>{lastService?.boarId || '--'}</TableCell>
+                        <TableCell className="font-semibold border-b p-1">Machos</TableCell>
+                        <TableCell className="border-b p-1 text-center" colSpan={3}>{lastBoarId || '--'}</TableCell>
                      </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Total Nacidos</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.totalBorn || '--'}</TableCell>
                         <TableCell className="border p-1 text-center">{kpis.avgTotalBorn.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold border-b p-1">Servicio</TableCell>
+                        <TableCell className="border-b p-1 text-center">{lastServiceDate ? format(parseISO(lastServiceDate), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="font-semibold border-b p-1 text-center">Servicio + 21 Días</TableCell>
+                        <TableCell className="border-b p-1 text-center">{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 21), 'dd/MM/yy') : '--'}</TableCell>
                     </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Nacidos Vivos</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.liveBorn || '--'}</TableCell>
                         <TableCell className="border p-1 text-center">{kpis.avgLiveBorn.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold border-b p-1">Control Celo</TableCell>
+                        <TableCell className="border-b p-1 text-center"></TableCell>
+                        <TableCell className="font-semibold border-b p-1 text-center">Servicio + 35 Días</TableCell>
+                        <TableCell className="border-b p-1 text-center">{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 35), 'dd/MM/yy') : '--'}</TableCell>
                     </TableRow>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Nacidos Muertos</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.stillborn || '--'}</TableCell>
                         <TableCell className="border p-1 text-center">{kpis.avgStillborn.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold border-b p-1">Diag. Gestación</TableCell>
+                        <TableCell className="border-b p-1"></TableCell>
+                        <TableCell className="font-semibold border-b p-1 text-center">F. Estimada Parto</TableCell>
+                        <TableCell className="border-b p-1 text-center">{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 114), 'dd/MM/yy') : '--'}</TableCell>
                     </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Momificados</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.mummified || '--'}</TableCell>
                         <TableCell className="border p-1 text-center">{kpis.avgMummified.toFixed(2)}</TableCell>
-                        <TableCell className="font-semibold border-b p-1">Servicio</TableCell>
-                        <TableCell className="border-b p-1 text-center">{lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : '--'}</TableCell>
-                        <TableCell className="font-semibold border-b p-1 text-center">Servicio + 21 Días</TableCell>
-                        <TableCell className="border-b p-1 text-center">{lastService?.date ? format(addDays(parseISO(lastService.date), 21), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="p-1" colSpan={4}></TableCell>
                     </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Destetados</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.pigletsWeaned || '--'}</TableCell>
                         <TableCell className="border p-1 text-center">{kpis.avgWeaned.toFixed(2)}</TableCell>
-                        <TableCell className="font-semibold border-b p-1">Control Celo</TableCell>
-                        <TableCell className="border-b p-1 text-center"></TableCell>
-                        <TableCell className="font-semibold border-b p-1 text-center">Servicio + 35 Días</TableCell>
-                        <TableCell className="border-b p-1 text-center">{lastService?.date ? format(addDays(parseISO(lastService.date), 35), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="p-1" colSpan={4}></TableCell>
                     </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Fecha Destete</TableCell>
                         <TableCell className="border p-1 text-center">{lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : '--'}</TableCell>
                         <TableCell className="border p-1 text-center">--</TableCell>
-                        <TableCell className="font-semibold border-b p-1">Diag. Gestación</TableCell>
-                        <TableCell className="border-b p-1"></TableCell>
-                        <TableCell className="font-semibold border-b p-1 text-center">F. Estimada Parto</TableCell>
-                        <TableCell className="border-b p-1 text-center">{lastService?.date ? format(addDays(parseISO(lastService.date), 114), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="p-1" colSpan={4}></TableCell>
                     </TableRow>
                     <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Peso Promedio</TableCell>
@@ -304,3 +319,5 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
         </div>
     );
 }
+
+    
