@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -14,13 +14,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPigDiagnosis, type PigDoctorOutput } from '@/ai/flows/pig-doctor';
 import { Camera, Loader2, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Label } from './ui/label';
 
 const formSchema = z.object({
   symptoms: z.string().min(10, { message: "Describa los síntomas con al menos 10 caracteres." }),
@@ -35,7 +36,7 @@ type PigDoctorInputCardProps = {
 }
 
 export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoading }: PigDoctorInputCardProps) {
-  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,31 +53,36 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
   const { setValue, watch } = form;
   const photoDataUri = watch('photoDataUri');
 
-  const startCamera = async () => {
-    try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                setIsCameraActive(true);
-                setValue('photoDataUri', undefined); // Clear any uploaded photo
-            }
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'La cámara no es soportada por este navegador.' });
+  const getCameraPermission = async () => {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+           toast({ variant: 'destructive', title: 'Error', description: 'La cámara no es soportada por este navegador.' });
+           setHasCameraPermission(false);
+           return;
         }
-    } catch (error) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setHasCameraPermission(true);
+      } catch (error) {
         console.error('Error accessing camera:', error);
-        toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, habilita los permisos de la cámara.' });
-    }
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Acceso a la Cámara Denegado',
+          description: 'Por favor, habilita los permisos de la cámara en los ajustes de tu navegador.',
+        });
+      }
   };
 
   const stopCamera = () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream;
-          stream.getTracks().forEach(track => track.stop());
-          videoRef.current.srcObject = null;
-      }
-      setIsCameraActive(false);
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setHasCameraPermission(null);
   };
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +91,9 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
       const reader = new FileReader();
       reader.onloadend = () => {
         setValue('photoDataUri', reader.result as string);
-        stopCamera();
+        if (hasCameraPermission) {
+          stopCamera();
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -97,7 +105,7 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
 
     let submissionValues = { ...values };
 
-    if (isCameraActive && videoRef.current && canvasRef.current) {
+    if (hasCameraPermission && videoRef.current && canvasRef.current) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         canvas.width = video.videoWidth;
@@ -123,13 +131,13 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
   }
 
   const clearImage = () => {
-      setValue('photoDataUri', undefined);
-      if (isCameraActive) {
-          stopCamera();
-      }
-      if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-      }
+    setValue('photoDataUri', undefined);
+    if (hasCameraPermission) {
+      stopCamera();
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }
 
   return (
@@ -157,40 +165,50 @@ export function PigDoctorInputCard({ onNewDiagnosis, onLoading, onError, isLoadi
 
               <div className="space-y-4">
                 <FormLabel>Foto (Opcional)</FormLabel>
-                 {!(photoDataUri || isCameraActive) && (
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={startCamera}>
-                            <Camera className="mr-2 h-4 w-4" /> Cámara
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                            <Upload className="mr-2 h-4 w-4" /> Subir Foto
-                        </Button>
-                        <Input 
-                            type="file" 
-                            className="hidden" 
-                            ref={fileInputRef} 
-                            onChange={handleFileChange} 
-                            accept="image/*"
-                        />
-                    </div>
-                 )}
-
-                { (photoDataUri || isCameraActive) && (
+                {!(photoDataUri || hasCameraPermission) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={getCameraPermission}>
+                        <Camera className="mr-2 h-4 w-4" /> Cámara
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" /> Subir Foto
+                    </Button>
+                    <Input 
+                        type="file" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept="image/*"
+                    />
+                  </div>
+                )}
+                
+                {(photoDataUri || hasCameraPermission !== null) && (
                     <div className="relative aspect-video w-full">
-                        {isCameraActive ? (
+                        {hasCameraPermission ? (
                             <video ref={videoRef} autoPlay muted className="w-full h-full object-cover rounded-md bg-muted" />
                         ) : photoDataUri ? (
                             <img src={photoDataUri} alt="Vista previa" className="w-full h-full object-cover rounded-md" />
+                        ) : hasCameraPermission === false ? (
+                             <Alert variant="destructive">
+                                <AlertTitle>Acceso a la Cámara Denegado</AlertTitle>
+                                <AlertDescription>
+                                    Habilite los permisos en su navegador para usar la cámara.
+                                </AlertDescription>
+                            </Alert>
                         ) : null}
-                         <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                            onClick={clearImage}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+
+                        {(photoDataUri || hasCameraPermission) && (
+                             <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-6 w-6 rounded-full z-10"
+                                onClick={clearImage}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
                         <canvas ref={canvasRef} className="hidden" />
                     </div>
                 )}
