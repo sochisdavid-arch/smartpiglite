@@ -11,6 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Check, ChevronsUpDown, UserSearch, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SowProfileCard, type SowData } from '@/components/SowProfileCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 interface Pig {
     id: string;
@@ -21,6 +24,77 @@ interface Pig {
     events: any[]; // Using 'any' for simplicity, should be typed Event[]
 }
 
+const FarrowingRecordForm = () => (
+    <div className="bg-white py-8 print:p-4">
+      <Card className="w-full max-w-4xl mx-auto border-none shadow-none">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">REGISTRO DE PARTO</CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs">
+          <div className="grid grid-cols-3 gap-4 mb-4 border p-2 rounded-md">
+            <div className="flex items-baseline gap-2"><p className="font-bold">FECHA PARTO:</p><div className="border-b flex-1"></div></div>
+            <div className="flex items-baseline gap-2"><p className="font-bold">HORA INICIO:</p><div className="border-b flex-1"></div></div>
+            <div className="flex items-baseline gap-2"><p className="font-bold">HORA FIN:</p><div className="border-b flex-1"></div></div>
+            <div className="flex items-baseline gap-2"><p className="font-bold">PESO CAMADA:</p><div className="border-b flex-1"></div></div>
+            <div className="flex items-baseline gap-2"><p className="font-bold">PESO PROMEDIO:</p><div className="border-b flex-1"></div></div>
+            <div className="flex items-baseline gap-2"><p className="font-bold">Nº CERDA:</p><div className="border-b flex-1"></div></div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="col-span-1">
+               <Table className="border">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="p-1 text-center font-bold text-black border" colSpan={3}>TEMPERATURA</TableHead>
+                    </TableRow>
+                    <TableRow>
+                      <TableHead className="p-1 text-center font-bold text-black border">DÍA</TableHead>
+                      <TableHead className="p-1 text-center font-bold text-black border">MAÑANA</TableHead>
+                      <TableHead className="p-1 text-center font-bold text-black border">TARDE</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow><TableCell className="p-1 border text-center font-bold">1</TableCell><TableCell className="p-1 border h-6"></TableCell><TableCell className="p-1 border h-6"></TableCell></TableRow>
+                    <TableRow><TableCell className="p-1 border text-center font-bold">2</TableCell><TableCell className="p-1 border h-6"></TableCell><TableCell className="p-1 border h-6"></TableCell></TableRow>
+                    <TableRow><TableCell className="p-1 border text-center font-bold">3</TableCell><TableCell className="p-1 border h-6"></TableCell><TableCell className="p-1 border h-6"></TableCell></TableRow>
+                  </TableBody>
+                </Table>
+            </div>
+          </div>
+
+          <Table className="border">
+              <TableHeader>
+                  <TableRow>
+                      <TableHead className="p-1 border text-center text-black font-bold">Nº</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">PESO</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">HORA</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">VIVO</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">MUERTO</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">MOMIA</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">DEFORME</TableHead>
+                      <TableHead className="p-1 border text-center text-black font-bold">BAJA V.</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {Array.from({ length: 20 }).map((_, index) => (
+                      <TableRow key={index}>
+                          <TableCell className="p-1 border h-6 text-center font-bold">{index + 1}</TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                          <TableCell className="p-1 border"></TableCell>
+                      </TableRow>
+                  ))}
+              </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+);
+
 
 export default function SowCardPage() {
     const searchParams = useSearchParams();
@@ -29,6 +103,7 @@ export default function SowCardPage() {
     const [allSows, setAllSows] = React.useState<Pig[]>([]);
     const [selectedSow, setSelectedSow] = React.useState<Pig | null>(null);
     const [open, setOpen] = React.useState(false);
+    const [activeTab, setActiveTab] = React.useState("sow-card");
 
 
     React.useEffect(() => {
@@ -44,27 +119,26 @@ export default function SowCardPage() {
     }, [sowIdFromQuery]);
 
     const handlePrint = () => {
-        const printContent = document.getElementById('printable-sow-card');
+        const printContent = document.getElementById(activeTab === 'sow-card' ? 'printable-sow-card' : 'printable-farrowing-form');
         if (printContent) {
             const printHtml = printContent.innerHTML;
-            const originalContent = document.body.innerHTML;
-
             const printWindow = window.open('', '', 'height=800,width=1200');
+
             if(printWindow) {
                 printWindow.document.write('<html><head><title>Imprimir Ficha</title>');
-                printWindow.document.write('<style>body { font-family: Arial, sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 4px; text-align: left; font-size: 10px; } </style>');
-                printWindow.document.write('</head><body>');
+                // Injecting Tailwind CSS via CDN for printing styles
+                printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+                 printWindow.document.write('<style>body { font-family: Arial, sans-serif; } @media print { .no-print { display: none; } } </style>');
+                printWindow.document.write('</head><body style="padding: 20px;">');
                 printWindow.document.write(printHtml);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            } else {
-                 document.body.innerHTML = printHtml;
-                 window.print();
-                 document.body.innerHTML = originalContent;
-                 window.location.reload();
+
+                setTimeout(() => { // Timeout to ensure styles are loaded
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
             }
         }
     };
@@ -73,7 +147,7 @@ export default function SowCardPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
                     <div className="flex items-center gap-4">
                         <UserSearch className="h-8 w-8 text-primary" />
                         <h1 className="text-3xl font-bold tracking-tight">Ficha de la Madre</h1>
@@ -125,24 +199,47 @@ export default function SowCardPage() {
                         </Popover>
                          <Button onClick={handlePrint} disabled={!selectedSow}>
                             <Printer className="mr-2 h-4 w-4" />
-                            Imprimir / Exportar
+                            Imprimir Vista
                         </Button>
                     </div>
                 </div>
-
-                {selectedSow ? (
-                     <div id="printable-sow-card">
-                        <SowProfileCard sow={selectedSow} />
-                    </div>
-                ) : (
-                    <Card className="flex items-center justify-center min-h-[400px] border-dashed">
-                        <div className="text-center text-muted-foreground">
-                            <UserSearch className="h-16 w-16 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold">Seleccione una madre</h3>
-                            <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
-                        </div>
-                    </Card>
-                )}
+                
+                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 print:hidden">
+                        <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
+                        <TabsTrigger value="farrowing-form">Formulario de Parto</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="sow-card">
+                        {selectedSow ? (
+                            <div id="printable-sow-card">
+                                <SowProfileCard sow={selectedSow} />
+                            </div>
+                        ) : (
+                            <Card className="flex items-center justify-center min-h-[400px] border-dashed">
+                                <div className="text-center text-muted-foreground">
+                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
+                                    <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
+                                </div>
+                            </Card>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="farrowing-form">
+                         {selectedSow ? (
+                            <div id="printable-farrowing-form">
+                                <FarrowingRecordForm />
+                            </div>
+                         ) : (
+                             <Card className="flex items-center justify-center min-h-[400px] border-dashed">
+                                <div className="text-center text-muted-foreground">
+                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
+                                    <p>Primero debe seleccionar una madre para ver su formulario de parto.</p>
+                                </div>
+                            </Card>
+                         )}
+                    </TabsContent>
+                </Tabs>
             </div>
         </AppLayout>
     );

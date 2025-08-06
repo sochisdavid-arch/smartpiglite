@@ -10,7 +10,6 @@ import Link from 'next/link';
 const forms = [
     { title: "Formulario de Servicio", description: "Registrar una inseminación o monta natural con fecha y reproductor.", href: "/forms/templates/servicio" },
     { title: "Formulario de Parto", description: "Recolectar todos los datos de un nuevo parto.", href: "/forms/templates/parto" },
-    { title: "Registro Detallado de Parto (Dorso)", description: "Ficha para el registro individual de lechones y control post-parto.", href: "/forms/templates/parto-reverso" },
     { title: "Formulario de Destete", description: "Registrar los detalles de un destete de camada.", href: "/forms/templates/destete" },
     { title: "Pérdida Reproductiva", description: "Anotar abortos, repeticiones de celo u otras pérdidas.", href: "/forms/templates/perdida-reproductiva" },
     { title: "Muerte/Movimiento de Lechones", description: "Registrar bajas y transferencias de lechones en maternidad.", href: "/forms/templates/movimiento-lechones" },
