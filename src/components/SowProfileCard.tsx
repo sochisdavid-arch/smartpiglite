@@ -191,7 +191,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
     const lastService = sowData.services.slice().reverse()[0];
     
     return (
-        <Card className="p-2 font-sans text-[10px] bg-white text-black w-[210mm] min-h-[297mm]">
+        <Card className="p-2 font-sans text-[10px] bg-white text-black w-[210mm] min-h-[297mm] flex flex-col">
            {/* Header */}
             <div className="flex justify-between items-start border-b border-black pb-1">
                 <div className="flex items-start">
@@ -218,118 +218,124 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                 </div>
             </div>
 
-            {/* Main Body */}
-            <div className="flex">
-                {/* Left Column */}
-                <div className="w-1/2 pr-2 border-r border-black">
-                    <div className="grid grid-cols-6 font-bold text-center border-b border-black">
-                        <div className="col-span-2">PARTOS</div>
-                        <div className="col-span-2">{lastCycle.cycle || '0'}</div>
-                        <div className="col-span-2">PROMEDIO</div>
-                    </div>
-                    
-                    <DetailField label="Fecha Parto" value={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
-                    <DetailField label="Total Nacidos" value={lastCycle.totalBorn} avg={sowData.kpis.avgTotalBorn.toFixed(1)} />
-                    <DetailField label="Nacidos Vivos" value={lastCycle.liveBorn} avg={sowData.kpis.avgLiveBorn.toFixed(1)} />
-                    <DetailField label="Nacidos Muertos" value={lastCycle.stillborn} avg={sowData.kpis.avgStillborn.toFixed(1)} />
-                    <DetailField label="Momificados" value={lastCycle.mummified} avg={sowData.kpis.avgMummified.toFixed(1)} />
-                    <DetailField label="Adoptados" value="0" avg="0.0" />
-                    <DetailField label="Muertes Registradas" value="0" avg="0.0" />
-                    <DetailField label="Intervalo Partos" value={lastCycle.farrowingInterval} avg={sowData.kpis.avgFarrowingInterval.toFixed(0)} />
-                    <DetailField label="Días Gestación" value={lastCycle.gestationDays} avg={lastCycle.gestationDays ? lastCycle.gestationDays.toFixed(0) : ''} />
-                    <DetailField label="Fecha Destete" value={lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : ''} />
-                    <DetailField label="Destetados" value={lastCycle.pigletsWeaned} avg={sowData.kpis.avgWeaned.toFixed(1)} />
-                    <DetailField label="Camadas Nodriza" value="0" />
-                    <DetailField label="Días Lactancia" value={lastCycle.lactationDays} avg={sowData.kpis.avgLactationDays.toFixed(1)} />
-                    <DetailField label="Peso Medio" value={lastCycle.avgWeaningWeight?.toFixed(1)} avg={sowData.kpis.avgWeaningWeight.toFixed(1)} />
-                    <DetailField label="SPI (BVSP)" />
-                    <DetailField label="Número de Servicios" value={sowData.services.length} avg={sowData.kpis.totalServices.toFixed(1)} />
-                    <DetailField label="Fecha Último Servicio" value={lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''} />
-                    <DetailField label="Macho" value={lastService?.boarId || ''} />
-                    <DetailField label="Abortos" value="0" avg="0"/>
-                    <DetailField label="Último Comentario" />
-                    
-                    <div className="grid grid-cols-6 gap-1 mt-2 text-center border-t border-b border-black py-1">
-                        <div className="font-bold">Machos</div>
-                        <div>TRAXX</div>
-                        <div>TRAXX</div>
-                        <div className="col-span-3">Control Celo:</div>
-                    </div>
-                     <div className="grid grid-cols-6 gap-1 text-center py-1">
-                        <div className="font-bold">Servicio:</div>
-                        <div>{lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''}</div>
-                        <div>{lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''}</div>
-                        <div className="col-span-3">Diag. Gest: {sowData.currentCycleDetails.servicePlus35}</div>
-                    </div>
+            {/* Top Section - Main data table */}
+            <div className='flex flex-col'>
+                {/* Header Row */}
+                <div className="grid grid-cols-12 font-bold text-center border-b border-black">
+                    <div className="col-span-5 p-1">PARTOS</div>
+                    <div className="col-span-2 p-1 border-l border-black">{lastCycle.cycle || '0'}</div>
+                    <div className="col-span-2 p-1 border-l border-black">PROMEDIO</div>
+                    <div className="col-span-3 p-1 border-l border-black"></div>
                 </div>
 
-                {/* Right Column (empty tables and QR) */}
-                <div className="w-1/2 pl-2">
-                    <div className="grid grid-cols-3 gap-1 mb-1">
-                         <div className="border border-black p-1 text-center">
-                            <div className="font-bold">Servicio + 21 Días</div>
-                            <div>{sowData.currentCycleDetails.servicePlus21}</div>
-                        </div>
-                        <div className="border border-black p-1 text-center">
-                            <div className="font-bold">Servicio + 35 Días</div>
-                            <div>{sowData.currentCycleDetails.servicePlus35}</div>
-                        </div>
-                        <div className="border border-black p-1 text-center">
-                            <div className="font-bold">F. Estimada Parto</div>
-                            <div>{sowData.currentCycleDetails.estimatedFarrowing}</div>
-                        </div>
+                {/* Data Rows */}
+                <div className="flex text-[10px] border-b border-black">
+                    {/* Left Column */}
+                    <div className='w-1/2 border-r border-black'>
+                        <DetailField label="Fecha Parto" value={lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : ''} />
+                        <DetailField label="Total Nacidos" value={lastCycle.totalBorn} avg={sowData.kpis.avgTotalBorn.toFixed(1)} />
+                        <DetailField label="Nacidos Vivos" value={lastCycle.liveBorn} avg={sowData.kpis.avgLiveBorn.toFixed(1)} />
+                        <DetailField label="Nacidos Muertos" value={lastCycle.stillborn} avg={sowData.kpis.avgStillborn.toFixed(1)} />
+                        <DetailField label="Momificados" value={lastCycle.mummified} avg={sowData.kpis.avgMummified.toFixed(1)} />
+                        <DetailField label="Adoptados" value="0" avg="0.0" />
+                        <DetailField label="Muertes Registradas" value="0" avg="0.0" />
+                        <DetailField label="Intervalo Partos" value={lastCycle.farrowingInterval} avg={sowData.kpis.avgFarrowingInterval.toFixed(0)} />
+                        <DetailField label="Días Gestación" value={lastCycle.gestationDays} avg={lastCycle.gestationDays ? lastCycle.gestationDays.toFixed(0) : ''} />
+                        <DetailField label="Fecha Destete" value={lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : ''} />
+                        <DetailField label="Destetados" value={lastCycle.pigletsWeaned} avg={sowData.kpis.avgWeaned.toFixed(1)} />
+                        <DetailField label="Camadas Nodriza" value="0" />
+                        <DetailField label="Días Lactancia" value={lastCycle.lactationDays} avg={sowData.kpis.avgLactationDays.toFixed(1)} />
+                        <DetailField label="Peso Medio" value={lastCycle.avgWeaningWeight?.toFixed(1)} avg={sowData.kpis.avgWeaningWeight.toFixed(1)} />
+                        <DetailField label="SPI (BVSP)" />
+                        <DetailField label="Número de Servicios" value={sowData.services.length} avg={sowData.kpis.totalServices.toFixed(1)} />
+                        <DetailField label="Fecha Último Servicio" value={lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''} />
+                        <DetailField label="Macho" value={lastService?.boarId || ''} />
+                        <DetailField label="Abortos" value="0" avg="0"/>
+                        <DetailField label="Último Comentario" />
                     </div>
-                    
-                    <div className="grid grid-cols-12 gap-1 border-y border-x border-black text-center font-bold">
-                        <div className="col-span-3 border-r border-black p-1">F. Nac</div>
-                        <div className="col-span-2 border-r border-black p-1">Vivos</div>
-                        <div className="col-span-2 border-r border-black p-1">Muertos</div>
-                        <div className="col-span-2 border-r border-black p-1">Momificados</div>
-                        <div className="col-span-3 p-1">Peso Nac.</div>
-                    </div>
-                    {Array.from({length: 4}).map((_, i) => (
-                         <div key={i} className="grid grid-cols-12 gap-1 border-b border-x border-black h-4">
-                            <div className="col-span-3 border-r border-black"></div>
-                            <div className="col-span-2 border-r border-black"></div>
-                            <div className="col-span-2 border-r border-black"></div>
-                            <div className="col-span-2 border-r border-black"></div>
-                            <div className="col-span-3"></div>
+                     {/* Right Column */}
+                    <div className='w-1/2 flex flex-col'>
+                         <div className="grid grid-cols-3 gap-1 mb-1 p-1">
+                             <div className="border border-black p-1 text-center">
+                                <div className="font-bold">Servicio + 21 Días</div>
+                                <div>{sowData.currentCycleDetails.servicePlus21}</div>
+                            </div>
+                            <div className="border border-black p-1 text-center">
+                                <div className="font-bold">Servicio + 35 Días</div>
+                                <div>{sowData.currentCycleDetails.servicePlus35}</div>
+                            </div>
+                            <div className="border border-black p-1 text-center">
+                                <div className="font-bold">F. Estimada Parto</div>
+                                <div>{sowData.currentCycleDetails.estimatedFarrowing}</div>
+                            </div>
                         </div>
-                    ))}
-
-                    <div className="grid grid-cols-2 gap-1 mt-1">
-                        <div>
-                             <h4 className="font-bold text-center border border-black">MUERTE LECHONES</h4>
-                             <TableShell cols={['Fecha', 'Número', 'Causa']} rows={5}/>
+                        <div className="grid grid-cols-12 gap-1 border-y border-x border-black text-center font-bold">
+                            <div className="col-span-3 border-r border-black p-1">F. Nac</div>
+                            <div className="col-span-2 border-r border-black p-1">Vivos</div>
+                            <div className="col-span-2 border-r border-black p-1">Muertos</div>
+                            <div className="col-span-2 border-r border-black p-1">Momificados</div>
+                            <div className="col-span-3 p-1">Peso Nac.</div>
                         </div>
-                        <div>
-                            <h4 className="font-bold text-center border border-black">CAUSAS MUERTE</h4>
-                            <div className="border-x border-b border-black h-[105px]"></div>
+                        {Array.from({length: 4}).map((_, i) => (
+                            <div key={i} className="grid grid-cols-12 gap-1 border-b border-x border-black h-4">
+                                <div className="col-span-3 border-r border-black"></div>
+                                <div className="col-span-2 border-r border-black"></div>
+                                <div className="col-span-2 border-r border-black"></div>
+                                <div className="col-span-2 border-r border-black"></div>
+                                <div className="col-span-3"></div>
+                            </div>
+                        ))}
+                         <div className="grid grid-cols-6 gap-1 mt-auto text-center border-t border-b border-black py-1">
+                            <div className="font-bold">Machos</div>
+                            <div>TRAXX</div>
+                            <div>TRAXX</div>
+                            <div className="col-span-3">Control Celo:</div>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1 mt-1">
-                        <div>
-                             <h4 className="font-bold text-center border border-black">CUBRICIONES</h4>
-                             <TableShell cols={['Fecha', 'Macho', 'Tipo /Téc']} rows={5}/>
-                        </div>
-                        <div>
-                             <h4 className="font-bold text-center border border-black">ADOPCIONES</h4>
-                             <TableShell cols={['Fecha', 'Número', 'Causa']} rows={5}/>
-                        </div>
-                    </div>
-                     <div className="grid grid-cols-2 gap-1 mt-1">
-                        <div>
-                             <h4 className="font-bold text-center border border-black">NOTAS</h4>
-                             <div className="border-x border-b border-black h-[105px]"></div>
-                        </div>
-                        <div>
-                             <h4 className="font-bold text-center border border-black">DESTETES (PARCIALES)</h4>
-                             <TableShell cols={['Fecha', 'Número', 'Peso Camada']} rows={5}/>
+                        <div className="grid grid-cols-6 gap-1 text-center py-1">
+                            <div className="font-bold">Servicio:</div>
+                            <div>{lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''}</div>
+                            <div>{lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : ''}</div>
+                            <div className="col-span-3">Diag. Gest: {sowData.currentCycleDetails.servicePlus35}</div>
                         </div>
                     </div>
                 </div>
             </div>
-             <div className="flex justify-end mt-1">
+
+            {/* Bottom Section - Event tables */}
+            <div className="mt-1 flex-grow">
+                 <div className="grid grid-cols-2 gap-1">
+                    <div>
+                         <h4 className="font-bold text-center border border-black">MUERTE LECHONES</h4>
+                         <TableShell cols={['Fecha', 'Número', 'Causa']} rows={5}/>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-center border border-black">CAUSAS MUERTE</h4>
+                        <div className="border-x border-b border-black h-[105px]"></div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                    <div>
+                         <h4 className="font-bold text-center border border-black">CUBRICIONES</h4>
+                         <TableShell cols={['Fecha', 'Macho', 'Tipo /Téc']} rows={5}/>
+                    </div>
+                    <div>
+                         <h4 className="font-bold text-center border border-black">ADOPCIONES</h4>
+                         <TableShell cols={['Fecha', 'Número', 'Causa']} rows={5}/>
+                    </div>
+                </div>
+                 <div className="grid grid-cols-2 gap-1 mt-1">
+                    <div>
+                         <h4 className="font-bold text-center border border-black">NOTAS</h4>
+                         <div className="border-x border-b border-black h-[105px]"></div>
+                    </div>
+                    <div>
+                         <h4 className="font-bold text-center border border-black">DESTETES (PARCIALES)</h4>
+                         <TableShell cols={['Fecha', 'Número', 'Peso Camada']} rows={5}/>
+                    </div>
+                </div>
+            </div>
+
+             <div className="flex justify-end mt-auto">
                 <Image src={qrUrl} alt="QR Code" width={50} height={50} data-ai-hint="qr code"/>
             </div>
         </Card>
@@ -350,3 +356,4 @@ const TableShell = ({cols, rows}: {cols: string[], rows: number}) => (
     </div>
 )
 
+    
