@@ -38,7 +38,7 @@ interface CycleData {
     weaningDate?: string;
     liveBorn: number;
     stillborn: number;
-    mummified: number;
+    mummified?: number;
     pigletsWeaned: number;
     gestationDays?: number;
     lactationDays?: number;
@@ -278,3 +278,4 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
         </div>
     );
 }
+

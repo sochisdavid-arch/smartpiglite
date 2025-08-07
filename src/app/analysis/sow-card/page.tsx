@@ -10,7 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, UserSearch, Printer, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SowProfileCard, processSowHistory, type SowData } from '@/components/SowProfileCard';
+import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -27,6 +27,7 @@ interface Pig {
     status: string;
     gender: string;
     events: any[]; // Using 'any' for simplicity, should be typed Event[]
+    location?: string;
 }
 
 const FarrowingRecordForm = () => (
@@ -138,9 +139,9 @@ export default function SowCardPage() {
 
     const handlePrint = () => {
         const printableContent = document.getElementById(
-             activeTab === 'sow-card' ? 'printable-sow-card' : 'printable-farrowing-form'
+            activeTab === 'sow-card' ? 'printable-sow-card' : 'printable-farrowing-form'
         );
-
+        
         if (printableContent) {
             const printWindow = window.open('', '_blank', 'height=800,width=1200');
             if (printWindow) {
@@ -173,7 +174,7 @@ export default function SowCardPage() {
             }
         }
     };
-
+    
     const handleExport = async (formatType: 'pdf' | 'xlsx') => {
         if (!selectedSow || !sowData) return;
         
@@ -209,7 +210,7 @@ export default function SowCardPage() {
                     [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, 'Granja Demo'],
                     [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
                     [{content: `FECHA NACIMIENTO:`, styles: {fontStyle: 'bold'}}, format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), {content: `Nº PARTOS:`, styles: {fontStyle: 'bold'}}, kpis.totalFarrowings],
-                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, sow.location || '--']
+                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, selectedSow.location || '--']
                 ];
 
                 autoTable(doc, {
@@ -224,9 +225,9 @@ export default function SowCardPage() {
                         2: { cellWidth: 60 },
                         3: { cellWidth: 'auto' },
                     },
-                    didDrawCell: (data) => {
-                        if (data.column.index === 1 && data.row.index === 0) {
-                             doc.addImage(img, 'PNG', data.cell.x + 125, data.cell.y - 5, 50, 50);
+                     didDrawCell: (data) => {
+                        if (data.column.index === 3 && data.row.index === 0) {
+                             doc.addImage(img, 'PNG', data.cell.x + 80, data.cell.y - 5, 50, 50);
                         }
                     }
                 });
@@ -304,16 +305,17 @@ export default function SowCardPage() {
                 autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['NOTAS']], startX: margin + bottomTableConfig.tableWidth + 5 });
                 autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['DESTETES (PARCIALES)']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2 });
 
+
                 doc.save(`ficha_vida_${selectedSow.id}.pdf`);
             };
 
 
         } else if (formatType === 'xlsx') {
-            const sowInfo = [
-                { "Métrica": "ID", "Valor": sow.id },
-                { "Métrica": "Raza", "Valor": sow.breed },
-                { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(sow.birthDate), 'dd/MM/yyyy') },
-                { "Métrica": "Estado", "Valor": sow.status },
+             const sowInfo = [
+                { "Métrica": "ID", "Valor": selectedSow.id },
+                { "Métrica": "Raza", "Valor": selectedSow.breed },
+                { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') },
+                { "Métrica": "Estado", "Valor": selectedSow.status },
             ];
             const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
 
@@ -456,3 +458,4 @@ export default function SowCardPage() {
         </AppLayout>
     );
 }
+
