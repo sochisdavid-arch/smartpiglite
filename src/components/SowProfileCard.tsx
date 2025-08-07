@@ -209,7 +209,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                 <TableBody>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1 w-[12.5%]">Machos</TableCell>
-                        <TableCell className="border p-1 text-center" colSpan={2}>{lastBoarId || '--'}</TableCell>
+                        <TableCell className="border p-1 text-center">{lastBoarId || '--'}</TableCell>
                         <TableCell className="font-semibold border p-1">Servicio</TableCell>
                         <TableCell className="border p-1 text-center w-[12.5%]">{lastServiceDate ? format(parseISO(lastServiceDate), 'dd/MM/yy') : '--'}</TableCell>
                         <TableCell className="font-semibold border p-1 text-center w-[12.5%]">Servicio + 21 Días</TableCell>
@@ -217,16 +217,16 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
                      </TableRow>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1">Control Celo</TableCell>
-                        <TableCell className="border p-1" colSpan={2}></TableCell>
+                        <TableCell className="border p-1"></TableCell>
                         <TableCell className="font-semibold border p-1">Diag. Gestación</TableCell>
                         <TableCell className="border p-1"></TableCell>
                         <TableCell className="font-semibold border p-1 text-center">Servicio + 35 Días</TableCell>
                         <TableCell className="border p-1 text-center">{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 35), 'dd/MM/yy') : '--'}</TableCell>
                      </TableRow>
                       <TableRow className="h-6">
-                        <TableCell className="font-semibold border p-1" colSpan={3}></TableCell>
+                        <TableCell className="font-semibold border p-1"></TableCell>
                         <TableCell className="font-semibold border p-1 text-center" colSpan={2}>F. Estimada Parto</TableCell>
-                        <TableCell className="border p-1 text-center" colSpan={2}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 114), 'dd/MM/yy') : '--'}</TableCell>
+                        <TableCell className="border p-1 text-center" colSpan={3}>{lastServiceDate ? format(addDays(parseISO(lastServiceDate), 114), 'dd/MM/yy') : '--'}</TableCell>
                      </TableRow>
                       <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1 text-sm bg-gray-200" colSpan={2}>Fecha Parto: ___________</TableCell>
