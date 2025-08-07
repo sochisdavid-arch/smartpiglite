@@ -17,6 +17,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format, parseISO, addDays } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 interface Pig {
@@ -131,7 +132,8 @@ export default function SowCardPage() {
             const printWindow = window.open('', '_blank', 'height=800,width=1200');
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Imprimir Ficha</title>');
-                printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>'); // For styling
+                // Using Tailwind CDN for simplicity in print window
+                printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>'); 
                 printWindow.document.write('<style>body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</style>');
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(printableContent.innerHTML);
@@ -147,10 +149,12 @@ export default function SowCardPage() {
     };
 
     const handleExport = (formatType: 'pdf' | 'xlsx') => {
+        if (!selectedSow) return;
+        
         if (activeTab === 'farrowing-form') {
             const doc = new jsPDF();
             autoTable(doc, {
-                html: '#printable-farrowing-form table', // Simplified selector
+                html: '#printable-farrowing-form table', // Simplified selector for printing the form
                 startY: 10,
                 theme: 'grid',
                 styles: { fontSize: 8 },
@@ -159,7 +163,6 @@ export default function SowCardPage() {
             return;
         }
 
-        if (!selectedSow) return;
 
         const sowData = processSowHistory(selectedSow);
 
@@ -175,7 +178,7 @@ export default function SowCardPage() {
                 ['CÓDIGO:', selectedSow.id, 'GRANJA:', 'Granja Demo'],
                 ['ID:', selectedSow.id, 'ESTADO:', selectedSow.status],
                 ['FECHA NACIMIENTO:', format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), 'Nº PARTOS:', sowData.kpis.totalFarrowings],
-                ['GENÉTICA:', selectedSow.breed, 'UBICACIÓN:', selectedSow.location || '--']
+                ['GENÉTICA:', selectedSow.breed, 'UBICACIÓN:', sowData.location || '--']
             ];
             
             autoTable(doc, {
@@ -366,12 +369,12 @@ export default function SowCardPage() {
                         </Card>
                     ) : (
                        <>
-                         <div id="printable-sow-card" className={cn(activeTab !== "sow-card" && "hidden")}>
-                           <SowProfileCard sow={selectedSow} />
-                         </div>
-                         <div id="printable-farrowing-form" className={cn(activeTab !== "farrowing-form" && "hidden")}>
+                        <div id="printable-sow-card" className={cn(activeTab !== 'sow-card' && 'hidden')}>
+                            <SowProfileCard sow={selectedSow} />
+                        </div>
+                        <div id="printable-farrowing-form" className={cn(activeTab !== 'farrowing-form' && 'hidden')}>
                             <FarrowingRecordForm />
-                         </div>
+                        </div>
                        </>
                     )}
                 </Tabs>
@@ -379,4 +382,3 @@ export default function SowCardPage() {
         </AppLayout>
     );
 }
-
