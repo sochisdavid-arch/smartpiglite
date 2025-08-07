@@ -18,7 +18,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format, parseISO, addDays, isValid } from 'date-fns';
-import { asBlob } from 'html-to-docx';
 
 
 interface Pig {
@@ -175,7 +174,7 @@ export default function SowCardPage() {
         }
     };
 
-    const handleExport = async (formatType: 'pdf' | 'xlsx' | 'docx') => {
+    const handleExport = async (formatType: 'pdf' | 'xlsx') => {
         if (!selectedSow || !sowData) return;
         
         if (activeTab === 'farrowing-form') {
@@ -210,7 +209,7 @@ export default function SowCardPage() {
                     [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, 'Granja Demo'],
                     [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
                     [{content: `FECHA NACIMIENTO:`, styles: {fontStyle: 'bold'}}, format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), {content: `Nº PARTOS:`, styles: {fontStyle: 'bold'}}, kpis.totalFarrowings],
-                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, selectedSow.location || '--']
+                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, sow.location || '--']
                 ];
 
                 autoTable(doc, {
@@ -354,40 +353,6 @@ export default function SowCardPage() {
             XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
             XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
             XLSX.writeFile(wb, `ficha_vida_${selectedSow.id}.xlsx`);
-        } else if (formatType === 'docx') {
-            const printableElement = document.getElementById('printable-sow-card');
-            if(printableElement) {
-                const htmlString = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                    <style>
-                        body { font-family: Arial, sans-serif; font-size: 10px; }
-                        table { border-collapse: collapse; width: 100%; font-size: 10px; }
-                        td, th { border: 1px solid black; padding: 2px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        .header-table { border: none; }
-                        .header-table td { border: none; }
-                        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-                        .grid-item { border: 1px solid black; }
-                        .grid-item-header { background-color: #f2f2f2; text-align: center; font-weight: bold; padding: 2px; }
-                        .grid-item-body { height: 80px; }
-                    </style>
-                    </head>
-                    <body>
-                        ${printableElement.innerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = await asBlob(htmlString);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ficha_vida_${selectedSow.id}.docx`;
-                a.click();
-                URL.revokeObjectURL(url);
-            }
         }
     };
 
@@ -455,7 +420,6 @@ export default function SowCardPage() {
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleExport('docx')}>Exportar a Word</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -492,4 +456,3 @@ export default function SowCardPage() {
         </AppLayout>
     );
 }
-
