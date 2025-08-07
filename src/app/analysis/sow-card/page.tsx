@@ -8,11 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, UserSearch, Printer } from 'lucide-react';
+import { Check, ChevronsUpDown, UserSearch, Printer, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SowProfileCard, type SowData } from '@/components/SowProfileCard';
+import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { format, parseISO } from 'date-fns';
 
 
 interface Pig {
@@ -126,7 +131,6 @@ export default function SowCardPage() {
 
             if(printWindow) {
                 printWindow.document.write('<html><head><title>Imprimir Ficha</title>');
-                // Injecting Tailwind CSS via CDN for printing styles
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
                  printWindow.document.write('<style>body { font-family: Arial, sans-serif; } @media print { .no-print { display: none; } } </style>');
                 printWindow.document.write('</head><body style="padding: 20px;">');
@@ -135,11 +139,71 @@ export default function SowCardPage() {
                 printWindow.document.close();
                 printWindow.focus();
 
-                setTimeout(() => { // Timeout to ensure styles are loaded
+                setTimeout(() => {
                     printWindow.print();
                     printWindow.close();
                 }, 500);
             }
+        }
+    };
+
+    const handleExport = (formatType: 'pdf' | 'xlsx') => {
+        if (activeTab === 'farrowing-form') {
+            const doc = new jsPDF();
+            autoTable(doc, {
+                html: '#printable-farrowing-form',
+                startY: 10,
+                theme: 'plain',
+                styles: { fontSize: 8, cellPadding: 1, overflow: 'linebreak' },
+                didDrawCell: (data) => {
+                    if (data.section === 'body') {
+                        // Custom styling to mimic the form
+                        if (data.row.index === 0 && data.column.index === 0) { // Header
+                             doc.setFont('helvetica', 'bold');
+                        }
+                         // Add borders to all cells
+                        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+                    }
+                }
+            });
+            doc.save(`formulario_parto_${selectedSow?.id || 'nuevo'}.pdf`);
+            return;
+        }
+
+        if (!selectedSow) return;
+
+        const sowData = processSowHistory(selectedSow);
+        
+        if (formatType === 'pdf') {
+            const doc = new jsPDF();
+            doc.text(`Ficha de Vida - Cerda: ${selectedSow.id}`, 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Raza: ${selectedSow.breed} | Estado: ${selectedSow.status}`, 14, 22);
+
+            autoTable(doc, {
+                head: [['Métrica', 'Valor']],
+                body: Object.entries(sowData.kpis).map(([key, value]) => [key, typeof value === 'number' ? value.toFixed(2) : value]),
+                startY: 30,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+
+            autoTable(doc, {
+                head: [['Ciclo', 'Fecha Parto', 'NV', 'NM', 'Mom', 'Dest', 'Días Gest.', 'Días Lact.']],
+                body: sowData.cycles.map(c => [c.cycle, c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yy') : '-', c.liveBorn, c.stillborn, c.mummified, c.pigletsWeaned, c.gestationDays || '-', c.lactationDays || '-']),
+                startY: (doc as any).lastAutoTable.finalY + 10,
+                theme: 'grid',
+                headStyles: { fillColor: '#e07a5f' },
+            });
+            
+            doc.save(`ficha_vida_${selectedSow.id}.pdf`);
+        } else if (formatType === 'xlsx') {
+            const kpiSheet = XLSX.utils.json_to_sheet(Object.entries(sowData.kpis).map(([key, value]) => ({ Métrica: key, Valor: value })));
+            const cycleSheet = XLSX.utils.json_to_sheet(sowData.cycles.map(c => ({...c, farrowingDate: c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : ''})));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
+            XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
+            XLSX.writeFile(wb, `ficha_vida_${selectedSow.id}.xlsx`);
         }
     };
 
@@ -152,7 +216,7 @@ export default function SowCardPage() {
                         <UserSearch className="h-8 w-8 text-primary" />
                         <h1 className="text-3xl font-bold tracking-tight">Ficha de la Madre</h1>
                     </div>
-                     <div className="flex gap-2">
+                     <div className="flex flex-wrap items-center gap-2">
                         <Popover open={open} onOpenChange={setOpen}>
                             <PopoverTrigger asChild>
                                 <Button
@@ -197,10 +261,22 @@ export default function SowCardPage() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                         <Button onClick={handlePrint} disabled={!selectedSow}>
+                         <Button variant="outline" onClick={handlePrint} disabled={!selectedSow}>
                             <Printer className="mr-2 h-4 w-4" />
-                            Imprimir Vista
+                            Imprimir
                         </Button>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button disabled={!selectedSow}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Exportar
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleExport('xlsx')} disabled={activeTab === 'farrowing-form'}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
                 
