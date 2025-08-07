@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 
 interface Pig {
@@ -157,11 +157,9 @@ export default function SowCardPage() {
                 styles: { fontSize: 8, cellPadding: 1, overflow: 'linebreak' },
                 didDrawCell: (data) => {
                     if (data.section === 'body') {
-                        // Custom styling to mimic the form
-                        if (data.row.index === 0 && data.column.index === 0) { // Header
+                        if (data.row.index === 0 && data.column.index === 0) { 
                              doc.setFont('helvetica', 'bold');
                         }
-                         // Add borders to all cells
                         doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
                     }
                 }
@@ -179,18 +177,45 @@ export default function SowCardPage() {
             doc.text(`Ficha de Vida - Cerda: ${selectedSow.id}`, 14, 15);
             doc.setFontSize(10);
             doc.text(`Raza: ${selectedSow.breed} | Estado: ${selectedSow.status}`, 14, 22);
+            
+            const kpiBody = Object.entries(sowData.kpis).map(([key, value]) => {
+                const kpiLabels: Record<string, string> = {
+                    totalFarrowings: 'Total de Partos',
+                    avgTotalBorn: 'Prom. Total Nacidos',
+                    avgLiveBorn: 'Prom. Nacidos Vivos',
+                    avgStillborn: 'Prom. Mortinatos',
+                    avgMummified: 'Prom. Momificados',
+                    avgWeaned: 'Prom. Destetados',
+                    avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
+                    avgGestation: 'Prom. Días Gestación',
+                    avgLactation: 'Prom. Días Lactancia',
+                    avgWeanToService: 'Prom. Destete-Servicio (días)'
+                };
+                return [kpiLabels[key] || key, typeof value === 'number' ? value.toFixed(2) : value];
+            });
 
             autoTable(doc, {
                 head: [['Métrica', 'Valor']],
-                body: Object.entries(sowData.kpis).map(([key, value]) => [key, typeof value === 'number' ? value.toFixed(2) : value]),
+                body: kpiBody,
                 startY: 30,
                 theme: 'grid',
                 headStyles: { fillColor: '#e07a5f' },
             });
 
+            const cycleBody = sowData.cycles.map(c => [
+                c.cycle,
+                c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yy') : '-',
+                c.liveBorn,
+                c.stillborn,
+                c.mummified,
+                c.pigletsWeaned,
+                c.gestationDays ?? '-',
+                c.lactationDays ?? '-'
+            ]);
+
             autoTable(doc, {
                 head: [['Ciclo', 'Fecha Parto', 'NV', 'NM', 'Mom', 'Dest', 'Días Gest.', 'Días Lact.']],
-                body: sowData.cycles.map(c => [c.cycle, c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yy') : '-', c.liveBorn, c.stillborn, c.mummified, c.pigletsWeaned, c.gestationDays || '-', c.lactationDays || '-']),
+                body: cycleBody,
                 startY: (doc as any).lastAutoTable.finalY + 10,
                 theme: 'grid',
                 headStyles: { fillColor: '#e07a5f' },
@@ -198,8 +223,37 @@ export default function SowCardPage() {
             
             doc.save(`ficha_vida_${selectedSow.id}.pdf`);
         } else if (formatType === 'xlsx') {
-            const kpiSheet = XLSX.utils.json_to_sheet(Object.entries(sowData.kpis).map(([key, value]) => ({ Métrica: key, Valor: value })));
-            const cycleSheet = XLSX.utils.json_to_sheet(sowData.cycles.map(c => ({...c, farrowingDate: c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : ''})));
+             const kpiDataForSheet = Object.entries(sowData.kpis).map(([key, value]) => {
+                 const kpiLabels: Record<string, string> = {
+                    totalFarrowings: 'Total de Partos',
+                    avgTotalBorn: 'Prom. Total Nacidos',
+                    avgLiveBorn: 'Prom. Nacidos Vivos',
+                    avgStillborn: 'Prom. Mortinatos',
+                    avgMummified: 'Prom. Momificados',
+                    avgWeaned: 'Prom. Destetados',
+                    avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
+                    avgGestation: 'Prom. Días Gestación',
+                    avgLactation: 'Prom. Días Lactancia',
+                    avgWeanToService: 'Prom. Destete-Servicio (días)'
+                };
+                return { Métrica: kpiLabels[key] || key, Valor: typeof value === 'number' ? value.toFixed(2) : value };
+             });
+            const kpiSheet = XLSX.utils.json_to_sheet(kpiDataForSheet);
+
+            const cycleDataForSheet = sowData.cycles.map(c => ({
+                'Ciclo': c.cycle,
+                'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
+                'Nacidos Vivos': c.liveBorn,
+                'Mortinatos': c.stillborn,
+                'Momificados': c.mummified,
+                'Destetados': c.pigletsWeaned,
+                'Dias Gestacion': c.gestationDays,
+                'Dias Lactancia': c.lactationDays,
+                'Intervalo Partos': c.farrowingInterval,
+                'Dias Destete-Servicio': c.weaningToServiceDays
+            }));
+            const cycleSheet = XLSX.utils.json_to_sheet(cycleDataForSheet);
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
             XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
