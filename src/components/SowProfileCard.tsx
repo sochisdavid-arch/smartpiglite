@@ -59,7 +59,7 @@ export interface SowData {
     };
 }
 
-const processSowHistory = (sow: Pig): SowData => {
+export const processSowHistory = (sow: Pig): SowData => {
     const cycles: CycleData[] = [];
     const generalEvents: Event[] = [];
     let cycleCounter = 0;
@@ -206,7 +206,7 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
             </Table>
             
             <Table className="border text-[10px]">
-                 <TableBody>
+                <TableBody>
                      <TableRow className="h-6">
                         <TableCell className="font-semibold border p-1 w-[12.5%]">Machos</TableCell>
                         <TableCell className="border p-1 text-center" colSpan={2}>{lastBoarId || '--'}</TableCell>

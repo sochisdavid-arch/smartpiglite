@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 
 
 interface Pig {
