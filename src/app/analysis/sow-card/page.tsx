@@ -339,36 +339,25 @@ export default function SowCardPage() {
                         <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
                         <TabsTrigger value="farrowing-form">Formulario de Parto</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="sow-card">
-                        {selectedSow ? (
-                            <div id="printable-sow-card">
-                                <SowProfileCard sow={selectedSow} />
+                    
+                    <div className={cn(!selectedSow && "hidden")}>
+                        <div id="printable-sow-card" className={cn(activeTab !== "sow-card" && "hidden")}>
+                           {selectedSow && <SowProfileCard sow={selectedSow} />}
+                        </div>
+                        <div id="printable-farrowing-form" className={cn(activeTab !== "farrowing-form" && "hidden")}>
+                            <FarrowingRecordForm />
+                        </div>
+                    </div>
+
+                    {!selectedSow ? (
+                        <Card className="flex items-center justify-center min-h-[400px] border-dashed mt-4">
+                            <div className="text-center text-muted-foreground">
+                                <UserSearch className="h-16 w-16 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold">Seleccione una madre</h3>
+                                <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
                             </div>
-                        ) : (
-                            <Card className="flex items-center justify-center min-h-[400px] border-dashed">
-                                <div className="text-center text-muted-foreground">
-                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
-                                    <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
-                                </div>
-                            </Card>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="farrowing-form">
-                         {selectedSow ? (
-                            <div id="printable-farrowing-form">
-                                <FarrowingRecordForm />
-                            </div>
-                         ) : (
-                             <Card className="flex items-center justify-center min-h-[400px] border-dashed">
-                                <div className="text-center text-muted-foreground">
-                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
-                                    <p>Primero debe seleccionar una madre para ver su formulario de parto.</p>
-                                </div>
-                            </Card>
-                         )}
-                    </TabsContent>
+                        </Card>
+                    ) : null }
                 </Tabs>
             </div>
         </AppLayout>
