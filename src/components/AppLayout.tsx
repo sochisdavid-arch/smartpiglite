@@ -109,7 +109,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Logo className="size-7" />
-            <span className="font-bold text-lg">SmartPig Lite</span>
+            <span className="font-bold text-lg">SmartPig</span>
           </div>
         </SidebarHeader>
         <SidebarContent>

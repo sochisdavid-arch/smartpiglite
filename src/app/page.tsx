@@ -91,7 +91,7 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Logo className="h-12 w-12" />
           </div>
-          <CardTitle className="text-2xl font-bold">SmartPig Lite</CardTitle>
+          <CardTitle className="text-2xl font-bold">SmartPig</CardTitle>
           <CardDescription>Introduce tus credenciales para iniciar sesión</CardDescription>
         </CardHeader>
         <CardContent>

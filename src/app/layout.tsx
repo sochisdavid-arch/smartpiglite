@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'SmartPig Lite',
+  title: 'SmartPig',
   description: 'Gestión porcina inteligente para optimizar la producción y la salud.',
 };
 
