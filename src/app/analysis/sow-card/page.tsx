@@ -16,6 +16,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format, parseISO, addDays } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 interface Pig {
@@ -378,3 +379,4 @@ export default function SowCardPage() {
         </AppLayout>
     );
 }
+
