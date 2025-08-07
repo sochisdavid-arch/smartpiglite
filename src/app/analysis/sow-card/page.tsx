@@ -18,6 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format, parseISO, addDays, isValid } from 'date-fns';
+import { asBlob } from 'html-to-docx';
 
 
 interface Pig {
@@ -174,7 +175,7 @@ export default function SowCardPage() {
         }
     };
 
-    const handleExport = (formatType: 'pdf' | 'xlsx') => {
+    const handleExport = async (formatType: 'pdf' | 'xlsx' | 'docx') => {
         if (!selectedSow || !sowData) return;
         
         if (activeTab === 'farrowing-form') {
@@ -205,15 +206,6 @@ export default function SowCardPage() {
             img.crossOrigin = "Anonymous";
             img.src = qrCodeUrl;
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0);
-                const dataURL = canvas.toDataURL('image/png');
-                
-                doc.addImage(dataURL, 'PNG', 265, finalY + 5, 50, 50);
-
                 const headerData = [
                     [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, 'Granja Demo'],
                     [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
@@ -232,12 +224,17 @@ export default function SowCardPage() {
                         1: { cellWidth: 120 },
                         2: { cellWidth: 60 },
                         3: { cellWidth: 'auto' },
+                    },
+                    didDrawCell: (data) => {
+                        if (data.column.index === 1 && data.row.index === 0) {
+                             doc.addImage(img, 'PNG', data.cell.x + 125, data.cell.y - 5, 50, 50);
+                        }
                     }
                 });
                 finalY = (doc as any).lastAutoTable.finalY + 10;
 
                 const mainTableBody = [
-                    ['Fecha Parto', lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--', '--', '', '', '', ''],
+                     ['Fecha Parto', lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--', '--', '', '', '', ''],
                     ['Total Nacidos', lastCycle.totalBorn || '--', kpis.avgTotalBorn.toFixed(2), '', '', '', ''],
                     ['Nacidos Vivos', lastCycle.liveBorn || '--', kpis.avgLiveBorn.toFixed(2), '', '', '', ''],
                     ['Nacidos Muertos', lastCycle.stillborn || '--', kpis.avgStillborn.toFixed(2), '', '', '', ''],
@@ -289,34 +286,39 @@ export default function SowCardPage() {
                 });
                 finalY = (doc as any).lastAutoTable.finalY + 10;
                 
-                // Bottom tables - row 1
-                let firstRowY = finalY;
                 const bottomTableConfig = {
-                    startY: firstRowY,
-                    theme: 'grid',
+                    startY: finalY,
+                    theme: 'grid' as const,
                     styles: { fontSize: 8, cellPadding: 1, minCellHeight: 10 },
-                    headStyles: { fillColor: '#e0e0e0', textColor: '#333', fontStyle: 'bold', halign: 'center' },
-                    body: Array.from({length: 4}).map(() => ['']), // 4 empty rows
-                    tableWidth: (pageWidth - margin * 2 - 10) / 3 // 10 is for gap
+                    headStyles: { fillColor: '#e0e0e0', textColor: '#333', fontStyle: 'bold', halign: 'center' as const },
+                    body: Array.from({length: 4}).map(() => ['']),
+                    tableWidth: (pageWidth - margin * 2 - 10) / 3
                 };
 
-                autoTable(doc, { ...bottomTableConfig, head: [['MUERTE LECHONES']], columnStyles: { 0: { minCellHeight: 50}}});
-                autoTable(doc, { ...bottomTableConfig, head: [['CAUSAS MUERTE']], startX: margin + bottomTableConfig.tableWidth + 5});
-                autoTable(doc, { ...bottomTableConfig, head: [['CUBRICIONES']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2});
+                autoTable(doc, { ...bottomTableConfig, head: [['MUERTE LECHONES']], columnStyles: { 0: { minCellHeight: 50 } } });
+                autoTable(doc, { ...bottomTableConfig, head: [['CAUSAS MUERTE']], startX: margin + bottomTableConfig.tableWidth + 5 });
+                autoTable(doc, { ...bottomTableConfig, head: [['CUBRICIONES']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2 });
                 let firstRowFinalY = (doc as any).lastAutoTable.finalY;
 
-                // Bottom tables - row 2
                 let secondRowY = firstRowFinalY + 10;
-                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['ADOPCIONES']]});
-                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['NOTAS']], startX: margin + bottomTableConfig.tableWidth + 5});
-                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['DESTETES (PARCIALES)']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2});
+                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['ADOPCIONES']] });
+                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['NOTAS']], startX: margin + bottomTableConfig.tableWidth + 5 });
+                autoTable(doc, { ...bottomTableConfig, startY: secondRowY, head: [['DESTETES (PARCIALES)']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2 });
 
                 doc.save(`ficha_vida_${selectedSow.id}.pdf`);
             };
 
 
         } else if (formatType === 'xlsx') {
-             const kpiDataForSheet = Object.entries(sowData.kpis).map(([key, value]) => {
+            const sowInfo = [
+                { "Métrica": "ID", "Valor": sow.id },
+                { "Métrica": "Raza", "Valor": sow.breed },
+                { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(sow.birthDate), 'dd/MM/yyyy') },
+                { "Métrica": "Estado", "Valor": sow.status },
+            ];
+            const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
+
+            const kpiDataForSheet = Object.entries(sowData.kpis).map(([key, value]) => {
                  const kpiLabels: Record<string, string> = {
                     totalFarrowings: 'Total de Partos',
                     avgTotalBorn: 'Prom. Total Nacidos',
@@ -338,7 +340,7 @@ export default function SowCardPage() {
                 'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
                 'Nacidos Vivos': c.liveBorn,
                 'Mortinatos': c.stillborn,
-                'Momificados': c.mummified,
+                'Momias': c.mummified,
                 'Destetados': c.pigletsWeaned,
                 'Dias Gestacion': c.gestationDays,
                 'Dias Lactancia': c.lactationDays,
@@ -348,9 +350,44 @@ export default function SowCardPage() {
             const cycleSheet = XLSX.utils.json_to_sheet(cycleDataForSheet);
 
             const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, sowInfoSheet, "Info Cerda");
             XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
             XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
             XLSX.writeFile(wb, `ficha_vida_${selectedSow.id}.xlsx`);
+        } else if (formatType === 'docx') {
+            const printableElement = document.getElementById('printable-sow-card');
+            if(printableElement) {
+                const htmlString = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; font-size: 10px; }
+                        table { border-collapse: collapse; width: 100%; font-size: 10px; }
+                        td, th { border: 1px solid black; padding: 2px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .header-table { border: none; }
+                        .header-table td { border: none; }
+                        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+                        .grid-item { border: 1px solid black; }
+                        .grid-item-header { background-color: #f2f2f2; text-align: center; font-weight: bold; padding: 2px; }
+                        .grid-item-body { height: 80px; }
+                    </style>
+                    </head>
+                    <body>
+                        ${printableElement.innerHTML}
+                    </body>
+                    </html>
+                `;
+
+                const blob = await asBlob(htmlString);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ficha_vida_${selectedSow.id}.docx`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
         }
     };
 
@@ -418,6 +455,7 @@ export default function SowCardPage() {
                             <DropdownMenuContent>
                                 <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleExport('docx')}>Exportar a Word</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -440,10 +478,10 @@ export default function SowCardPage() {
                             </Card>
                         ) : (
                            <>
-                            <div id="printable-sow-card" className={cn(activeTab !== 'sow-card' && 'hidden')}>
-                                <SowProfileCard sow={selectedSow} />
+                            <div id="printable-sow-card" className={cn(activeTab !== 'sow-card' && 'hidden print:block')}>
+                                {selectedSow && <SowProfileCard sow={selectedSow} />}
                             </div>
-                            <div id="printable-farrowing-form" className={cn(activeTab !== 'farrowing-form' && 'hidden print:block')}>
+                            <div id="printable-farrowing-form" className={cn(activeTab !== 'farrowing-form' && 'hidden', activeTab === 'farrowing-form' && 'block')}>
                                 <FarrowingRecordForm />
                             </div>
                            </>
