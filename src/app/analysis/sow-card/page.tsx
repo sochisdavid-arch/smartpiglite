@@ -5,19 +5,19 @@ import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, UserSearch, Printer, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SowProfileCard, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { jsPDF } from 'jspdf';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format, parseISO, addDays } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 interface Pig {
@@ -123,7 +123,7 @@ export default function SowCardPage() {
         }
     }, [sowIdFromQuery]);
 
-     const handlePrint = () => {
+    const handlePrint = () => {
         const printableContent = document.getElementById(
             activeTab === 'sow-card' ? 'printable-sow-card' : 'printable-farrowing-form'
         );
@@ -132,7 +132,6 @@ export default function SowCardPage() {
             const printWindow = window.open('', '_blank', 'height=800,width=1200');
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Imprimir Ficha</title>');
-                // Using Tailwind CDN for simplicity in print window
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>'); 
                 printWindow.document.write('<style>body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</style>');
                 printWindow.document.write('</head><body>');
@@ -154,7 +153,7 @@ export default function SowCardPage() {
         if (activeTab === 'farrowing-form') {
             const doc = new jsPDF();
             autoTable(doc, {
-                html: '#printable-farrowing-form table', // Simplified selector for printing the form
+                html: '#printable-farrowing-form table',
                 startY: 10,
                 theme: 'grid',
                 styles: { fontSize: 8 },
@@ -167,79 +166,128 @@ export default function SowCardPage() {
         const sowData = processSowHistory(selectedSow);
 
         if (formatType === 'pdf') {
-            const doc = new jsPDF({ format: 'a4', unit: 'pt' });
+            const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
             const pageHeight = doc.internal.pageSize.height;
             const pageWidth = doc.internal.pageSize.width;
             const margin = 20;
             let finalY = margin;
-
-            // Header Section
-            const headerData = [
-                ['CÓDIGO:', selectedSow.id, 'GRANJA:', 'Granja Demo'],
-                ['ID:', selectedSow.id, 'ESTADO:', selectedSow.status],
-                ['FECHA NACIMIENTO:', format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), 'Nº PARTOS:', sowData.kpis.totalFarrowings],
-                ['GENÉTICA:', selectedSow.breed, 'UBICACIÓN:', sowData.location || '--']
-            ];
             
-            autoTable(doc, {
-                body: headerData,
-                startY: finalY,
-                theme: 'plain',
-                styles: { fontSize: 8, cellPadding: 1 },
-                columnStyles: {
-                    0: { fontStyle: 'bold', cellWidth: 90 },
-                    1: { cellWidth: 120 },
-                    2: { fontStyle: 'bold', cellWidth: 60 },
-                    3: { cellWidth: 'auto' },
-                }
-            });
-            finalY = (doc as any).lastAutoTable.finalY;
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(`${window.location.origin}/analysis/sow-card?sowId=${selectedSow.id}`)}`;
 
-            // Main Farrowing Table
-            const lastCycle = sowData.cycles[0] || {};
-            const kpi = sowData.kpis;
+            // Use an image to bypass CORS issues if any
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = qrCodeUrl;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL('image/png');
+                
+                doc.addImage(dataURL, 'PNG', 265, 25, 50, 50);
 
-            const mainTableBody = [
-                ['Fecha Parto', lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--', '--'],
-                ['Total Nacidos', lastCycle.totalBorn || '--', kpi.avgTotalBorn.toFixed(2)],
-                ['Nacidos Vivos', lastCycle.liveBorn || '--', kpi.avgLiveBorn.toFixed(2)],
-                ['Nacidos Muertos', lastCycle.stillborn || '--', kpi.avgStillborn.toFixed(2)],
-                ['Momificados', lastCycle.mummified || '--', kpi.avgMummified.toFixed(2)],
-                ['Destetados', lastCycle.pigletsWeaned || '--', kpi.avgWeaned.toFixed(2)],
-                ['Fecha Destete', lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : '--', '--'],
-                ['Peso Promedio', '', ''],
-                ['Intervalo Partos (días)', lastCycle.farrowingInterval || '--', kpi.avgFarrowingInterval.toFixed(0)],
-                ['Días Gestación', lastCycle.gestationDays || '--', kpi.avgGestation.toFixed(0)],
-                ['Días Lactancia', lastCycle.lactationDays || '--', kpi.avgLactation.toFixed(0)],
-                ['Destete a Servicio (días)', lastCycle.weaningToServiceDays ?? '--', kpi.avgWeanToService.toFixed(0)]
-            ];
+                // Header Table
+                const headerData = [
+                    [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, 'Granja Demo'],
+                    [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
+                    [{content: `FECHA NACIMIENTO:`, styles: {fontStyle: 'bold'}}, format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), {content: `Nº PARTOS:`, styles: {fontStyle: 'bold'}}, sowData.kpis.totalFarrowings],
+                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, sowData.location || '--']
+                ];
+                autoTable(doc, {
+                    body: headerData,
+                    startY: finalY,
+                    theme: 'plain',
+                    styles: { fontSize: 8, cellPadding: 1 },
+                    tableWidth: 'wrap',
+                    columnStyles: {
+                        0: { cellWidth: 90 },
+                        1: { cellWidth: 120 },
+                        2: { cellWidth: 60 },
+                        3: { cellWidth: 'auto' },
+                    }
+                });
+                finalY = (doc as any).lastAutoTable.finalY;
 
-             autoTable(doc, {
-                head: [['PARTOS', 'ÚLTIMO', 'PROMEDIO']],
-                body: mainTableBody,
-                startY: finalY + 10,
-                theme: 'grid',
-                headStyles: { fillColor: '#e0e0e0', textColor: '#333', fontStyle: 'bold' },
-                styles: { fontSize: 8, cellPadding: 2 }
-            });
-            finalY = (doc as any).lastAutoTable.finalY;
+                // Main Farrowing Table
+                const lastCycle = sowData.cycles[0] || {};
+                const kpi = sowData.kpis;
+                const mainTableBody = [
+                    ['Fecha Parto', lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--', '--', '', '', '', ''],
+                    ['Total Nacidos', lastCycle.totalBorn || '--', kpi.avgTotalBorn.toFixed(2), '', '', '', ''],
+                    ['Nacidos Vivos', lastCycle.liveBorn || '--', kpi.avgLiveBorn.toFixed(2), '', '', '', ''],
+                    ['Nacidos Muertos', lastCycle.stillborn || '--', kpi.avgStillborn.toFixed(2), '', '', '', ''],
+                    ['Momificados', lastCycle.mummified || '--', kpi.avgMummified.toFixed(2), '', '', '', ''],
+                    ['Destetados', lastCycle.pigletsWeaned || '--', kpi.avgWeaned.toFixed(2), '', '', '', ''],
+                    ['Fecha Destete', lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : '--', '--', '', '', '', ''],
+                    ['Peso Promedio', '', '', '', '', '', ''],
+                    ['Intervalo Partos (días)', lastCycle.farrowingInterval || '--', kpi.avgFarrowingInterval.toFixed(0), '', '', '', ''],
+                    ['Días Gestación', lastCycle.gestationDays || '--', kpi.avgGestation.toFixed(0), '', '', '', ''],
+                    ['Días Lactancia', lastCycle.lactationDays || '--', kpi.avgLactation.toFixed(0), '', '', '', ''],
+                    ['Destete a Servicio (días)', lastCycle.weaningToServiceDays ?? '--', kpi.avgWeanToService.toFixed(0), '', '', '', '']
+                ];
+                autoTable(doc, {
+                    head: [['PARTOS', 'ÚLTIMO', 'PROMEDIO', '', '', '', '']],
+                    body: mainTableBody,
+                    startY: finalY + 5,
+                    theme: 'grid',
+                    headStyles: { fillColor: '#e0e0e0', textColor: '#333', fontStyle: 'bold', fontSize: 8 },
+                    styles: { fontSize: 8, cellPadding: 1, minCellHeight: 10 },
+                    columnStyles: {
+                        0: { cellWidth: 90, fontStyle: 'bold' },
+                        1: { halign: 'center', cellWidth: 45 },
+                        2: { halign: 'center', cellWidth: 45 },
+                    }
+                });
+                finalY = (doc as any).lastAutoTable.finalY;
 
-            // Service Cycle Table
-            const lastService = sowData.lastService;
-            const serviceTable = [
-                 ['Machos', lastService?.boarId || '--', {content: 'Servicio', styles: {fontStyle: 'bold'}}, lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : '--', {content: 'Servicio + 21 Días', styles: {fontStyle: 'bold'}}, lastService?.date ? format(addDays(parseISO(lastService.date), 21), 'dd/MM/yy') : '--'],
-                 [{content: 'Control Celo', styles: {fontStyle: 'bold'}}, '', {content: 'Diag. Gestación', styles: {fontStyle: 'bold'}}, '', {content: 'Servicio + 35 Días', styles: {fontStyle: 'bold'}}, lastService?.date ? format(addDays(parseISO(lastService.date), 35), 'dd/MM/yy') : '--'],
-                 ['', {content: 'F. Estimada Parto', colSpan: 2, styles: {fontStyle: 'bold', halign: 'center'}}, {content: lastService?.date ? format(addDays(parseISO(lastService.date), 114), 'dd/MM/yy') : '--', colSpan:3, styles: {halign: 'center'}}]
-            ];
+                // Service Cycle Table
+                const lastService = sowData.lastService;
+                const serviceTable = [
+                    [{content: 'Machos', styles: {fontStyle: 'bold'}}, lastService?.boarId || '--', {content: 'Servicio', styles: {fontStyle: 'bold'}}, lastService?.date ? format(parseISO(lastService.date), 'dd/MM/yy') : '--', {content: 'Servicio + 21 Días', styles: {fontStyle: 'bold'}}, lastService?.date ? format(addDays(parseISO(lastService.date), 21), 'dd/MM/yy') : '--'],
+                    [{content: 'Control Celo', styles: {fontStyle: 'bold'}}, '', {content: 'Diag. Gestación', styles: {fontStyle: 'bold'}}, '', {content: 'Servicio + 35 Días', styles: {fontStyle: 'bold'}}, lastService?.date ? format(addDays(parseISO(lastService.date), 35), 'dd/MM/yy') : '--'],
+                    ['', {content: 'F. Estimada Parto', colSpan: 2, styles: {fontStyle: 'bold', halign: 'center'}}, {content: lastService?.date ? format(addDays(parseISO(lastService.date), 114), 'dd/MM/yy') : '--', colSpan:3, styles: {halign: 'center'}}]
+                ];
+                autoTable(doc, {
+                    body: serviceTable,
+                    startY: finalY + 5,
+                    theme: 'grid',
+                    styles: { fontSize: 8, cellPadding: 1, minCellHeight: 12 },
+                    columnStyles: { 0: {cellWidth: 90}}
+                });
+                 finalY = (doc as any).lastAutoTable.finalY;
+                
+                autoTable(doc, {
+                    body: [[ {content: 'Fecha Parto: ___________', styles: {fontStyle: 'bold'}}, {content: 'Vivos: ____', styles: {fontStyle: 'bold'}}, {content: 'Ubicación: ____________', styles: {fontStyle: 'bold'}}, {content: 'Causa de Muerte: ________________', styles: {fontStyle: 'bold'}} ]],
+                    startY: finalY + 5,
+                    theme: 'grid',
+                    styles: { fontSize: 8, cellPadding: 2, minCellHeight: 12, fillColor: '#e0e0e0' }
+                });
+                finalY = (doc as any).lastAutoTable.finalY;
 
-            autoTable(doc, {
-                body: serviceTable,
-                startY: finalY + 5,
-                theme: 'grid',
-                styles: { fontSize: 8, cellPadding: 2 }
-            });
+                // Bottom tables
+                const bottomTableConfig = {
+                    startY: finalY + 10,
+                    theme: 'grid',
+                    styles: { fontSize: 8, cellPadding: 1, minCellHeight: 10 },
+                    headStyles: { fillColor: '#e0e0e0', textColor: '#333', fontStyle: 'bold', halign: 'center' },
+                    body: Array.from({length: 4}).map(() => ['']), // 4 empty rows
+                    tableWidth: (pageWidth - margin * 2 - 10) / 3 // 10 is for gap
+                };
 
-            doc.save(`ficha_vida_${selectedSow.id}.pdf`);
+                autoTable(doc, { ...bottomTableConfig, head: [['MUERTE LECHONES']], columnStyles: { 0: { minCellHeight: 50}}});
+                autoTable(doc, { ...bottomTableConfig, head: [['CAUSAS MUERTE']], startX: margin + bottomTableConfig.tableWidth + 5});
+                autoTable(doc, { ...bottomTableConfig, head: [['CUBRICIONES']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2});
+                finalY = (doc as any).lastAutoTable.finalY;
+
+                autoTable(doc, { ...bottomTableConfig, startY: finalY + 10, head: [['ADOPCIONES']]});
+                autoTable(doc, { ...bottomTableConfig, startY: finalY + 10, head: [['NOTAS']], startX: margin + bottomTableConfig.tableWidth + 5});
+                autoTable(doc, { ...bottomTableConfig, startY: finalY + 10, head: [['DESTETES (PARCIALES)']], startX: margin + (bottomTableConfig.tableWidth + 5) * 2});
+
+                doc.save(`ficha_vida_${selectedSow.id}.pdf`);
+            };
+
 
         } else if (formatType === 'xlsx') {
              const kpiDataForSheet = Object.entries(sowData.kpis).map(([key, value]) => {
