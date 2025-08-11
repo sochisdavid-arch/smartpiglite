@@ -247,7 +247,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                      <div className="group-data-[collapsible=icon]:hidden flex flex-col">
                         <span className="text-sm font-semibold text-sidebar-foreground">Admin de la Granja</span>
-                        <span className="text-xs text-muted-foreground">admin@smartpig.com</span>
+                        <span className="text-xs text-sidebar-foreground/80">admin@smartpig.com</span>
                     </div>
                 </div>
               </DropdownMenuTrigger>
