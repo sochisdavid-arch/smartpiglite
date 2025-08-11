@@ -59,6 +59,8 @@ export default function LoginPage() {
       if (error instanceof FirebaseError) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
           description = "Correo electrónico o contraseña incorrectos. Por favor, verifica tus credenciales.";
+        } else if (error.code === 'auth/invalid-email') {
+            description = "El formato del correo electrónico es inválido. Por favor, verifica que esté bien escrito.";
         }
       }
       toast({
