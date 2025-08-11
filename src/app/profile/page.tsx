@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,24 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ProfilePage() {
+    const [profileImage, setProfileImage] = React.useState<string | null>("https://placehold.co/100x100.png");
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfileImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleButtonClick = () => {
+        fileInputRef.current?.click();
+    };
+
     return (
         <AppLayout>
             <div className="max-w-2xl mx-auto">
@@ -20,10 +39,17 @@ export default function ProfilePage() {
                     <CardContent className="space-y-6">
                         <div className="flex items-center gap-4">
                             <Avatar className="h-20 w-20">
-                                <AvatarImage src="https://placehold.co/100x100.png" />
+                                <AvatarImage src={profileImage || undefined} />
                                 <AvatarFallback>A</AvatarFallback>
                             </Avatar>
-                            <Button variant="outline">Cambiar foto</Button>
+                            <Input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                className="hidden"
+                                accept="image/*"
+                            />
+                            <Button variant="outline" onClick={handleButtonClick}>Cambiar foto</Button>
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-2">
