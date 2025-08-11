@@ -49,6 +49,16 @@ export default function SettingsPage() {
             return;
         }
 
+        if (!window.isSecureContext) {
+            toast({
+                variant: 'destructive',
+                title: 'Contexto no seguro',
+                description: 'Las notificaciones solo se pueden activar en un sitio con HTTPS o en localhost.',
+            });
+            setPushNotificationsEnabled(false);
+            return;
+        }
+
         if (checked) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
@@ -56,7 +66,7 @@ export default function SettingsPage() {
                 toast({ title: 'Notificaciones Activadas', description: 'Recibirás notificaciones importantes.' });
                 new Notification('¡Bienvenido a las notificaciones!', {
                     body: 'Gracias por activar las notificaciones de SmartPig.',
-                    icon: '/logo.svg' 
+                    icon: '/favicon.ico' 
                 });
             } else {
                 setPushNotificationsEnabled(false);
