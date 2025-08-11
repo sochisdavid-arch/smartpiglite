@@ -118,12 +118,6 @@ export default function LoginPage() {
           </div>
           <div className="grid gap-2">
             <Button variant="outline" onClick={handleGoogleSignIn}>
-              <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
-                <path
-                  fill="currentColor"
-                  d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.84-4.84 1.84-5.84 0-10.62-4.7-10.62-10.62s4.78-10.62 10.62-10.62c3.37 0 5.39 1.37 6.63 2.54l2.54-2.54C19.52 1.18 16.37 0 12.48 0 5.59 0 .02 5.59.02 12.5s5.57 12.5 12.46 12.5c7.05 0 12.2-4.85 12.2-12.65 0-.85-.07-1.65-.2-2.44H12.48z"
-                />
-              </svg>
               Google
             </Button>
           </div>
