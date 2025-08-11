@@ -44,7 +44,9 @@ import {
   Activity,
   BarChart2,
   GitCommitHorizontal,
-  ClipboardList
+  ClipboardList,
+  TestTube,
+  Warehouse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -90,9 +92,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/gestation', label: 'Gestación', icon: HeartPulse },
     { href: '/lactation', label: 'Lactancia', icon: Baby },
-    { href: '/verracos', label: 'Verracos', icon: GitCommitHorizontal },
+    { href: '/verracos', label: 'Verracos', icon: TestTube },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
-    { href: '/ceba', label: 'Ceba', icon: Beef },
+    { href: '/ceba', label: 'Ceba', icon: Warehouse },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/finance', label: 'Financiero', icon: Landmark },
