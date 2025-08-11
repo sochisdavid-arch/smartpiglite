@@ -31,7 +31,6 @@ import {
   LogOut,
   User,
   HeartPulse,
-  Baby,
   GanttChartSquare,
   Beef,
   Boxes,
@@ -49,6 +48,7 @@ import {
   Warehouse,
 } from 'lucide-react';
 import { SpermIcon } from '@/components/icons/sperm-icon';
+import { BabyBottleIcon } from '@/components/icons/baby-bottle-icon';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -92,7 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { href: '/gestation', label: 'Gestación', icon: SpermIcon },
-    { href: '/lactation', label: 'Lactancia', icon: Baby },
+    { href: '/lactation', label: 'Lactancia', icon: BabyBottleIcon },
     { href: '/verracos', label: 'Verracos', icon: TestTube },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
     { href: '/ceba', label: 'Ceba', icon: Warehouse },
@@ -250,7 +250,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                      <div className="group-data-[collapsible=icon]:hidden flex flex-col">
                         <span className="text-sm font-semibold text-sidebar-foreground">Admin de la Granja</span>
-                        <span className="text-xs text-sidebar-foreground/80">admin@smartpig.com</span>
+                        <span className="text-xs text-sidebar-foreground/90">admin@smartpig.com</span>
                     </div>
                 </div>
               </DropdownMenuTrigger>
