@@ -11,8 +11,7 @@ import { Logo } from '@/components/Logo';
 import { auth } from '@/lib/firebase';
 import { 
   signInWithPopup, 
-  GoogleAuthProvider, 
-  OAuthProvider,
+  GoogleAuthProvider,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { FirebaseError } from 'firebase/app';
@@ -44,25 +43,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleMicrosoftSignIn = async () => {
-    const provider = new OAuthProvider('microsoft.com');
-    try {
-      await signInWithPopup(auth, provider);
-      router.push('/dashboard');
-    } catch (error) {
-      if (error instanceof FirebaseError && ['auth/cancelled-popup-request', 'auth/popup-closed-by-user', 'auth/popup-blocked'].includes(error.code)) {
-        console.log("Sign-in popup action cancelled or blocked by user/browser.");
-        return;
-      }
-      console.error("Error during Microsoft sign-in:", error);
-       toast({
-        variant: "destructive",
-        title: "Error de inicio de sesión con Microsoft",
-        description: "No se pudo iniciar sesión. Por favor, inténtalo de nuevo más tarde.",
-      });
-    }
-  };
-  
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -136,7 +116,7 @@ export default function LoginPage() {
               <span className="bg-card px-2 text-muted-foreground">O continuar con</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2">
             <Button variant="outline" onClick={handleGoogleSignIn}>
               <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
                 <path
@@ -145,15 +125,6 @@ export default function LoginPage() {
                 />
               </svg>
               Google
-            </Button>
-            <Button variant="outline" onClick={handleMicrosoftSignIn}>
-              <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
-                <path 
-                fill="currentColor"
-                d="M11.97 2.6l.03 8.32L3.12 12V3.53l8.85- .93M12.03 2.6L20.88 3.5v8.53l-8.85-1.03V2.6M3.12 12.7l8.85 1.02v7.75l-8.85-.93V12.7m8.91 1.02l8.85-1.02v8.53l-8.85.93V13.72z" 
-                />
-              </svg>
-              Microsoft
             </Button>
           </div>
           <div className="mt-4 text-center text-sm">
