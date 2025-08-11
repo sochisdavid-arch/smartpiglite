@@ -89,6 +89,9 @@ body {
 }
 
 @media print {
+  body {
+    background-color: white;
+  }
   body > :not(#printable-content) {
     display: none;
   }
@@ -99,7 +102,7 @@ body {
     top: 0;
     width: 100%;
     height: 100%;
-    padding: 20px;
+    padding: 0;
     margin: 0;
   }
 }

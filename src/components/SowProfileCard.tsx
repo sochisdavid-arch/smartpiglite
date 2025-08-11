@@ -5,6 +5,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, parseISO, isValid, differenceInDays, addDays } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Logo } from './Logo';
 
 interface Event {
     id: string;
@@ -152,6 +153,20 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
     
     return (
         <div className="bg-white p-2 space-y-1 text-[10px] w-full">
+            <div className="print-header hidden print:block mb-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Logo className="h-12 w-12 text-primary" />
+                        <div>
+                            <h1 className="text-xl font-bold text-primary">SmartPig</h1>
+                            <p className="text-sm text-muted-foreground">Granja Demo</p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <h2 className="text-2xl font-bold uppercase">Ficha de Vida de la Madre</h2>
+                    </div>
+                </div>
+            </div>
             {/* Encabezado */}
             <div className="grid grid-cols-12 gap-x-2 mb-1">
                 <div className="col-span-5 space-y-px">
@@ -278,4 +293,3 @@ export function SowProfileCard({ sow }: { sow: Pig }) {
         </div>
     );
 }
-

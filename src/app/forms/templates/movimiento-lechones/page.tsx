@@ -6,71 +6,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Download, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { Logo } from "@/components/Logo";
 
 export default function MovimientoLechonesForm() {
-    const handleExport = (format: 'pdf' | 'csv' | 'xlsx') => {
-        const doc = new jsPDF();
-        const tableHead = [['ID Madre', 'Tipo Evento', 'Cantidad', 'Causa (Muerte)', 'Madre Origen/Destino']];
-        const tableBody = Array.from({ length: 15 }).map(() => Array(5).fill(''));
-
-        const title = "Formulario de Muerte/Movimiento de Lechones";
-        doc.text(title, 14, 16);
-
-        if (format === 'pdf') {
-            autoTable(doc, {
-                head: tableHead,
-                body: tableBody,
-                startY: 24,
-                headStyles: { fillColor: '#e07a5f' }
-            });
-            doc.save(`formulario_movimiento_lechones.pdf`);
-        } else {
-            const worksheet = XLSX.utils.aoa_to_sheet([
-                [title],
-                [],
-                ...tableHead,
-                ...tableBody
-            ]);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Formulario");
-            XLSX.writeFile(workbook, `formulario_movimiento_lechones.${format}`);
-        }
+    const handlePrint = () => {
+        window.print();
     };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg">
-        <div className="flex justify-between items-center p-4 sm:p-8 border-b">
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:bg-white print:p-0">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
+        <div className="flex justify-between items-center p-4 sm:p-8 border-b print:hidden">
             <Button variant="outline" asChild>
                 <Link href="/forms">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Link>
             </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button>
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Excel (XLSX)</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport('csv')}>CSV</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <Button onClick={handlePrint}>
+                <Download className="mr-2 h-4 w-4" />
+                Imprimir o Guardar como PDF
+            </Button>
         </div>
         <div className="p-8 sm:p-12">
+           <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
+                        <p className="text-muted-foreground">Granja Demo</p>
+                    </div>
+                </div>
+                 <div className="text-right">
+                    <h2 className="text-2xl font-bold uppercase">Movimiento de Lechones</h2>
+                </div>
+            </div>
           <Card className="w-full border-none shadow-none">
-            <CardHeader>
-              <CardTitle className="text-2xl">Formulario de Muerte/Movimiento de Lechones</CardTitle>
-              <CardDescription>Para recolección de bajas y transferencias de lechones en maternidad.</CardDescription>
-            </CardHeader>
             <CardContent>
                <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
                   <div className="flex items-baseline gap-2">

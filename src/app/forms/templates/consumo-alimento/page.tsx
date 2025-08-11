@@ -7,72 +7,42 @@ import { Button } from "@/components/ui/button";
 import { Download, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-
+import { Logo } from "@/components/Logo";
 
 export default function ConsumoAlimentoForm() {
-    const handleExport = (format: 'pdf' | 'csv' | 'xlsx') => {
-        const doc = new jsPDF();
-        const tableHead = [['Día', 'Alimento', 'Cantidad (kg)', 'Observaciones']];
-        const tableBody = Array.from({ length: 7 }).map((_, i) => [`Día ${i+1}`, '', '', '']);
-
-        const title = "Formulario de Consumo de Alimento";
-        doc.text(title, 14, 16);
-
-        if (format === 'pdf') {
-            autoTable(doc, {
-                head: tableHead,
-                body: tableBody,
-                startY: 24
-            });
-            doc.save(`formulario_consumo_alimento.pdf`);
-        } else {
-            const worksheet = XLSX.utils.aoa_to_sheet([
-                [title],
-                [],
-                ...tableHead,
-                ...tableBody,
-                [],
-                ['Observaciones Generales de la Semana:']
-            ]);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Formulario");
-            XLSX.writeFile(workbook, `formulario_consumo_alimento.${format}`);
-        }
+    const handlePrint = () => {
+        window.print();
     };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg">
-        <div className="flex justify-between items-center p-4 sm:p-8 border-b">
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:bg-white print:p-0">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
+        <div className="flex justify-between items-center p-4 sm:p-8 border-b print:hidden">
             <Button variant="outline" asChild>
                 <Link href="/forms">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Link>
             </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button>
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Excel (XLSX)</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleExport('csv')}>CSV</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <Button onClick={handlePrint}>
+                <Download className="mr-2 h-4 w-4" />
+                Imprimir o Guardar como PDF
+            </Button>
         </div>
-        <div className="p-8 sm:p-12">
+        <div id="printable-content" className="p-8 sm:p-12">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
+                        <p className="text-muted-foreground">Granja Demo</p>
+                    </div>
+                </div>
+                 <div className="text-right">
+                    <h2 className="text-2xl font-bold uppercase">Consumo de Alimento</h2>
+                </div>
+            </div>
           <Card className="w-full border-none shadow-none">
-            <CardHeader>
-              <CardTitle className="text-2xl">Formulario de Consumo de Alimento</CardTitle>
-              <CardDescription>Para recolección de consumo de alimento en lotes de precebo o ceba.</CardDescription>
-            </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
                   <div className="flex items-baseline gap-2">
