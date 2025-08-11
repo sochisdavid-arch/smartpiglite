@@ -34,7 +34,7 @@ export default function SignupPage() {
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
+      router.push('/licensing');
     } catch (error) {
       console.error("Error during email sign-up:", error);
       let description = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
