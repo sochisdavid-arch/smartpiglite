@@ -15,7 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import * as XLSX from 'xlsx';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, addDays } from 'date-fns';
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 
 interface Pig {
     id: string;
@@ -111,16 +113,18 @@ export default function SowCardPage() {
 
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
-        const allPigs: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
-        const femalePigs = allPigs.filter(p => p.gender === 'Hembra');
-        setAllSows(femalePigs);
+        if (pigsFromStorage) {
+            const allPigs: Pig[] = JSON.parse(pigsFromStorage);
+            const femalePigs = allPigs.filter(p => p.gender === 'Hembra');
+            setAllSows(femalePigs);
 
-        if (sowIdFromQuery) {
-            const sowToSelect = femalePigs.find(s => s.id === sowIdFromQuery);
-            if(sowToSelect) {
-                const processedData = processSowHistory(sowToSelect);
-                setSelectedSow(sowToSelect);
-                setSowData(processedData);
+            if (sowIdFromQuery) {
+                const sowToSelect = femalePigs.find(s => s.id === sowIdFromQuery);
+                if(sowToSelect) {
+                    const processedData = processSowHistory(sowToSelect);
+                    setSelectedSow(sowToSelect);
+                    setSowData(processedData);
+                }
             }
         }
     }, [sowIdFromQuery]);
@@ -137,17 +141,153 @@ export default function SowCardPage() {
     const handlePrint = () => {
         window.print();
     };
-    
-    const handleExport = (formatType: 'pdf' | 'xlsx') => {
+
+    const handleExport = async (formatType: 'pdf' | 'xlsx') => {
         if (!selectedSow || !sowData) return;
-        
+        const { cycles, kpis, lastService } = sowData;
+        const lastCycle = cycles[0] || {};
+
         if (formatType === 'pdf') {
-            handlePrint();
-            return;
+            const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+            let finalY = 0;
+
+            const addHeader = () => {
+                const headerData = [
+                    [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, 'Granja Demo'],
+                    [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
+                    [{content: `FECHA NACIMIENTO:`, styles: {fontStyle: 'bold'}}, format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy'), {content: `Nº PARTOS:`, styles: {fontStyle: 'bold'}}, kpis.totalFarrowings],
+                    [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, selectedSow.location || '--']
+                ];
+
+                autoTable(doc, {
+                    body: headerData,
+                    startY: 20,
+                    theme: 'plain',
+                    styles: { fontSize: 6, cellPadding: 1 },
+                    columnStyles: {
+                        0: { cellWidth: 50 },
+                        1: { cellWidth: 'auto' },
+                        2: { cellWidth: 60 },
+                        3: { cellWidth: 'auto' },
+                    },
+                    didDrawCell: (data) => {
+                         if (data.section === 'body' && data.column.index % 2 === 0) {
+                            doc.setFont(undefined, 'bold');
+                         }
+                    }
+                });
+
+                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(`${window.location.origin}/analysis/sow-card?sowId=${selectedSow.id}`)}`;
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = qrCodeUrl;
+                img.onload = () => {
+                    doc.addImage(img, 'PNG', 155, 25, 30, 30);
+                }
+                finalY = (doc as any).lastAutoTable.finalY + 5;
+            };
+
+            const addMainTable = () => {
+                 autoTable(doc, {
+                    head: [['PARTOS', 'ÚLTIMO', 'PROMEDIO']],
+                    body: [
+                        ['Fecha Parto', lastCycle.farrowingDate ? format(parseISO(lastCycle.farrowingDate), 'dd/MM/yy') : '--', '--'],
+                        ['Total Nacidos', lastCycle.totalBorn || '--', kpis.avgTotalBorn.toFixed(2)],
+                        ['Nacidos Vivos', lastCycle.liveBorn || '--', kpis.avgLiveBorn.toFixed(2)],
+                        ['Nacidos Muertos', lastCycle.stillborn || '--', kpis.avgStillborn.toFixed(2)],
+                        ['Momificados', lastCycle.mummified || '--', kpis.avgMummified.toFixed(2)],
+                        ['Destetados', lastCycle.pigletsWeaned || '--', kpis.avgWeaned.toFixed(2)],
+                        ['Fecha Destete', lastCycle.weaningDate ? format(parseISO(lastCycle.weaningDate), 'dd/MM/yy') : '--', '--'],
+                        ['Peso Promedio', '--', '--'],
+                        ['Intervalo Partos (días)', lastCycle.farrowingInterval || '--', kpis.avgFarrowingInterval.toFixed(0)],
+                        ['Días Gestación', lastCycle.gestationDays || '--', kpis.avgGestation.toFixed(0)],
+                        ['Días Lactancia', lastCycle.lactationDays || '--', kpis.avgLactation.toFixed(0)],
+                        ['Destete a Servicio (días)', lastCycle.weaningToServiceDays ?? '--', kpis.avgWeanToService.toFixed(0)]
+                    ],
+                    startY: finalY,
+                    theme: 'grid',
+                    styles: { fontSize: 6, cellPadding: 1 },
+                    headStyles: { fillColor: '#e2e8f0', textColor: '#000', fontStyle: 'bold' },
+                    columnStyles: { 1: { halign: 'center' }, 2: { halign: 'center' } }
+                });
+                finalY = (doc as any).lastAutoTable.finalY + 5;
+            };
+
+            const addServiceTable = () => {
+                const lastServiceDate = lastService?.date;
+                autoTable(doc, {
+                    body: [
+                        [
+                            {content: 'Machos', styles: {fontStyle: 'bold'}}, 
+                            lastService?.boarId || '--',
+                            {content: 'Servicio', styles: {fontStyle: 'bold'}}, 
+                            lastServiceDate ? format(parseISO(lastServiceDate), 'dd/MM/yy') : '--',
+                            {content: 'Servicio + 21 Días', styles: {fontStyle: 'bold', halign: 'center'}},
+                            lastServiceDate ? format(addDays(parseISO(lastServiceDate), 21), 'dd/MM/yy') : '--',
+                        ],
+                        [
+                             {content: 'Control Celo', styles: {fontStyle: 'bold'}}, '',
+                             {content: 'Diag. Gestación', styles: {fontStyle: 'bold'}}, '',
+                             {content: 'Servicio + 35 Días', styles: {fontStyle: 'bold', halign: 'center'}},
+                             lastServiceDate ? format(addDays(parseISO(lastServiceDate), 35), 'dd/MM/yy') : '--',
+                        ],
+                        [
+                           {content: ''}, 
+                           {content: 'F. Estimada Parto', colSpan: 2, styles: {fontStyle: 'bold', halign: 'center'}},
+                           {content: lastServiceDate ? format(addDays(parseISO(lastServiceDate), 114), 'dd/MM/yy') : '--', colSpan: 3, styles: {halign: 'center'}},
+                        ],
+                         [
+                           {content: 'Fecha Parto: ___________', colSpan: 2, styles: {fontStyle: 'bold'}}, 
+                           {content: 'Vivos: ____', styles: {fontStyle: 'bold'}},
+                           {content: 'Ubicación: ____________', colSpan: 2, styles: {fontStyle: 'bold'}}, 
+                           {content: 'Causa de Muerte: ____________', colSpan: 2, styles: {fontStyle: 'bold'}}, 
+                        ]
+                    ],
+                    startY: finalY,
+                    theme: 'grid',
+                    styles: { fontSize: 6, cellPadding: 1 },
+                });
+                finalY = (doc as any).lastAutoTable.finalY + 5;
+            };
+
+            const addBottomTables = () => {
+                const tableHeaders = ["MUERTE LECHONES", "CAUSAS MUERTE", "CUBRICIONES", "ADOPCIONES", "NOTAS", "DESTETES (PARCIALES)"];
+                const startY = finalY;
+
+                for(let i = 0; i < 2; i++) {
+                    let currentX = 20;
+                    let maxHeight = 0;
+                    for(let j = 0; j < 3; j++) {
+                        const index = i * 3 + j;
+                        if(index < tableHeaders.length) {
+                             autoTable(doc, {
+                                head: [[tableHeaders[index]]],
+                                body: [[' '],[' '],[' '],[' ']],
+                                startY: startY,
+                                margin: {left: currentX},
+                                tableWidth: 120,
+                                theme: 'grid',
+                                styles: { fontSize: 6, cellPadding: 1, minCellHeight: 8 },
+                                headStyles: { fillColor: '#e2e8f0', textColor: '#000', fontStyle: 'bold', halign: 'center' }
+                            });
+                             maxHeight = Math.max(maxHeight, (doc as any).lastAutoTable.finalY);
+                             currentX += 130;
+                        }
+                    }
+                    finalY = maxHeight + 5;
+                }
+            }
+            
+            addHeader();
+            addMainTable();
+            addServiceTable();
+            addBottomTables();
+
+            doc.save(`ficha_vida_${selectedSow.id}.pdf`);
         }
 
         if (formatType === 'xlsx') {
-             const sowInfo = [
+            const sowInfo = [
                 { "Métrica": "ID", "Valor": selectedSow.id },
                 { "Métrica": "Raza", "Valor": selectedSow.breed },
                 { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') },
@@ -155,13 +295,13 @@ export default function SowCardPage() {
             ];
             const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
 
-            const kpiDataForSheet = Object.entries(sowData.kpis).map(([key, value]) => {
-                 const kpiLabels: Record<string, string> = {
+            const kpiDataForSheet = Object.entries(kpis).map(([key, value]) => {
+                const kpiLabels: Record<string, string> = {
                     totalFarrowings: 'Total de Partos',
                     avgTotalBorn: 'Prom. Total Nacidos',
                     avgLiveBorn: 'Prom. Nacidos Vivos',
                     avgStillborn: 'Prom. Mortinatos',
-                    avgMummified: 'Prom. Momificados',
+                    avgMummified: 'Prom. Momias',
                     avgWeaned: 'Prom. Destetados',
                     avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
                     avgGestation: 'Prom. Días Gestación',
@@ -169,10 +309,10 @@ export default function SowCardPage() {
                     avgWeanToService: 'Prom. Destete-Servicio (días)'
                 };
                 return { Métrica: kpiLabels[key] || key, Valor: typeof value === 'number' ? value.toFixed(2) : value };
-             });
+            });
             const kpiSheet = XLSX.utils.json_to_sheet(kpiDataForSheet);
 
-            const cycleDataForSheet = sowData.cycles.map(c => ({
+            const cycleDataForSheet = cycles.map(c => ({
                 'Ciclo': c.cycle,
                 'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
                 'Nacidos Vivos': c.liveBorn,
@@ -197,7 +337,7 @@ export default function SowCardPage() {
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+                <div id="printable-header" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
                     <div className="flex items-center gap-4">
                         <UserSearch className="h-8 w-8 text-primary" />
                         <h1 className="text-3xl font-bold tracking-tight">Ficha de la Madre</h1>
@@ -271,7 +411,7 @@ export default function SowCardPage() {
                 
                 <div id="printable-content">
                     {!selectedSow ? (
-                            <Card className="flex items-center justify-center min-h-[400px] border-dashed print:hidden">
+                        <Card className="flex items-center justify-center min-h-[400px] border-dashed print:hidden">
                             <div className="text-center text-muted-foreground">
                                 <UserSearch className="h-16 w-16 mx-auto mb-4" />
                                 <h3 className="text-lg font-semibold">Seleccione una madre</h3>
@@ -279,15 +419,13 @@ export default function SowCardPage() {
                             </div>
                         </Card>
                     ) : (
-                        <>
-                            <div className={cn(activeTab !== 'sow-card' && 'hidden', 'print:block')}>
-                                <SowProfileCard sow={selectedSow} />
-                            </div>
-                            <div className={cn(activeTab !== 'farrowing-form' && 'hidden', 'print:block')}>
-                                <FarrowingRecordForm />
-                            </div>
-                        </>
+                       <div className={cn(activeTab === 'sow-card' ? 'block' : 'hidden print:block')}>
+                           {sowData && <SowProfileCard sow={selectedSow} />}
+                       </div>
                     )}
+                </div>
+                <div className={cn(activeTab === 'farrowing-form' ? 'block' : 'hidden print:block')}>
+                   <FarrowingRecordForm />
                 </div>
             </div>
         </AppLayout>
