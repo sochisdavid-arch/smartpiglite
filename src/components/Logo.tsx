@@ -4,150 +4,20 @@ import { cn } from '@/lib/utils';
 export function Logo({ className, ...props }: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
       className={cn(className)}
       {...props}
     >
-      <rect width="256" height="256" fill="none" />
-      <path
-        d="M208,208H48a24,24,0,0,1-24-24V72A24,24,0,0,1,48,48H208a24,24,0,0,1,24,24V184A24,24,0,0,1,208,208Z"
-        fill="#469b89"
-      />
-      <path
-        d="M165.2,204.1c-19.3,0-35-11.8-37.2-22.3-2.2-10.4,5.9-22.1,19.2-22.1,13.6,0,19.9,13.2,19.9,23.3S179.9,204.1,165.2,204.1Z"
-        fill="#f3a5b8"
-      />
-      <path
-        d="M90.8,204.1c19.3,0,35-11.8,37.2-22.3,2.2-10.4-5.9-22.1-19.2-22.1-13.6,0-19.9,13.2-19.9,23.3S76.1,204.1,90.8,204.1Z"
-        fill="#f3a5b8"
-      />
-      <path
-        d="M165.2,204.1c-19.3,0-35-11.8-37.2-22.3-2.2-10.4,5.9-22.1,19.2-22.1,13.6,0,19.9,13.2,19.9,23.3S179.9,204.1,165.2,204.1Z"
-        fill="none"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M90.8,204.1c19.3,0,35-11.8,37.2-22.3,2.2-10.4-5.9-22.1-19.2-22.1-13.6,0-19.9,13.2-19.9,23.3S76.1,204.1,90.8,204.1Z"
-        fill="none"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M188,111.4c0,33.1-26.9,60-60,60s-60-26.9-60-60c0-25.5,15.9-47.5,38.2-56.1"
-        fill="#f3a5b8"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M172.4,94.9c1.9-6.3,2.9-12.9,2.9-19.8,0-10.5-8.5-19-19-19h-56.5c-10.5,0-19,8.5-19,19,0,6.9,1,13.5,2.9,19.8"
-        fill="#f3a5b8"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M98.3,75.1c0,10.5-8.5,19-19,19s-19-8.5-19-19"
-        fill="#f3a5b8"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M176.6,75.1c0,10.5,8.5,19,19,19s19-8.5,19-19"
-        fill="#f3a5b8"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M94.6,83.9a16.5,16.5,0,0,1-33.1,0"
-        fill="#e17b8f"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M195,83.9a16.5,16.5,0,0,0-33.1,0"
-        fill="#e17b8f"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <ellipse
-        cx="128"
-        cy="119.5"
-        rx="22.2"
-        ry="20.7"
-        fill="#e17b8f"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <ellipse cx="120.4" cy="116.7" rx="3.7" ry="5.2" fill="#1e2221" />
-      <ellipse cx="135.6" cy="116.7" rx="3.7" ry="5.2" fill="#1e2221" />
-      <circle cx="106.3" cy="99.7" r="5.2" fill="#1e2221" />
-      <circle cx="149.7" cy="99.7" r="5.2" fill="#1e2221" />
-      <path
-        d="M110.1,146.4a23.1,23.1,0,0,0,35.8,0"
-        fill="none"
-        stroke="#1e2221"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M172.5,91.8,128,40.1,83.5,91.8"
-        fill="none"
-        stroke="#333333"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <path
-        d="M192.5,95.5H63.5a4.8,4.8,0,0,0-4.8,4.8v6.7a4.8,4.8,0,0,0,4.8,4.8h129a4.8,4.8,0,0,0,4.8-4.8v-6.7A4.8,4.8,0,0,0,192.5,95.5Z"
-        fill="#333333"
-        stroke="#333333"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <line
-        x1="172.5"
-        y1="91.8"
-        x2="172.5"
-        y2="66.5"
-        fill="none"
-        stroke="#333333"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
-      <rect
-        x="167.3"
-        y="58.9"
-        width="10.4"
-        height="15.6"
-        rx="3"
-        fill="#333333"
-        stroke="#333333"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="6"
-      />
+      <rect width="100" height="100" fill="none" />
+      <path d="M 25,40 C 10,30 15,10 30,20 Z" fill="#f9a8d4" />
+      <path d="M 75,40 C 90,30 85,10 70,20 Z" fill="#f9a8d4" />
+      <circle cx="50" cy="55" r="35" fill="#fbcfe8" />
+      <ellipse cx="50" cy="65" rx="18" ry="12" fill="#f472b6" />
+      <circle cx="44" cy="65" r="3" fill="#ec4899" />
+      <circle cx="56" cy="65" r="3" fill="#ec4899" />
+      <circle cx="38" cy="50" r="4" fill="#1e293b" />
+      <circle cx="62" cy="50" r="4" fill="#1e293b" />
     </svg>
   );
 }
