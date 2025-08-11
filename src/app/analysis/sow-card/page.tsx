@@ -15,10 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { format, parseISO, addDays, isValid } from 'date-fns';
-
+import { format, parseISO, isValid } from 'date-fns';
 
 interface Pig {
     id: string;
@@ -112,7 +109,6 @@ export default function SowCardPage() {
     const [activeTab, setActiveTab] = React.useState("sow-card");
     const [sowData, setSowData] = React.useState<SowData | null>(null);
 
-
     React.useEffect(() => {
         const pigsFromStorage = localStorage.getItem('pigs');
         const allPigs: Pig[] = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
@@ -122,8 +118,9 @@ export default function SowCardPage() {
         if (sowIdFromQuery) {
             const sowToSelect = femalePigs.find(s => s.id === sowIdFromQuery);
             if(sowToSelect) {
+                const processedData = processSowHistory(sowToSelect);
                 setSelectedSow(sowToSelect);
-                setSowData(processSowHistory(sowToSelect));
+                setSowData(processedData);
             }
         }
     }, [sowIdFromQuery]);
@@ -141,59 +138,12 @@ export default function SowCardPage() {
         window.print();
     };
     
-    const handleExport = async (formatType: 'pdf' | 'xlsx') => {
+    const handleExport = (formatType: 'pdf' | 'xlsx') => {
         if (!selectedSow || !sowData) return;
-
-        const { kpis, cycles, lastService } = sowData;
-        const lastCycle = cycles[0] || {};
         
         if (formatType === 'pdf') {
-            const doc = new jsPDF({
-                orientation: 'landscape',
-                unit: 'pt',
-                format: 'letter'
-            });
-
-            doc.setFontSize(8);
-
-            // Header section
-            const headerData = [
-                [{content: `CÓDIGO:`, styles: {fontStyle: 'bold'}}, selectedSow.id, '', {content: `GRANJA:`, styles: {fontStyle: 'bold'}}, "Granja Demo"],
-                [{content: `ID:`, styles: {fontStyle: 'bold'}}, selectedSow.id, '', {content: `ESTADO:`, styles: {fontStyle: 'bold'}}, selectedSow.status],
-                [{content: `FECHA NACIMIENTO:`, styles: {fontStyle: 'bold'}}, isValid(parseISO(selectedSow.birthDate)) ? format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') : '--', '', {content: `Nº PARTOS:`, styles: {fontStyle: 'bold'}}, kpis.totalFarrowings],
-                [{content: `GENÉTICA:`, styles: {fontStyle: 'bold'}}, selectedSow.breed, '', {content: `UBICACIÓN:`, styles: {fontStyle: 'bold'}}, selectedSow.location || '--']
-            ];
-            
-            autoTable(doc, {
-                body: headerData,
-                theme: 'plain',
-                startY: 20,
-                styles: { fontSize: 8, cellPadding: 1 },
-                columnStyles: {
-                    0: { cellWidth: 90 },
-                    1: { cellWidth: 120 },
-                    2: { cellWidth: 60 },
-                    3: { cellWidth: 60 },
-                    4: { cellWidth: 'auto' }
-                }
-            });
-
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(`${window.location.origin}/analysis/sow-card?sowId=${selectedSow.id}`)}`;
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = qrCodeUrl;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0);
-                const dataURL = canvas.toDataURL('image/png');
-                doc.addImage(dataURL, 'PNG', 320, 25, 40, 40);
-                doc.save(`ficha_vida_${selectedSow.id}.pdf`);
-            };
-            // Return here because the save is async in the onload
-            return; 
+            handlePrint();
+            return;
         }
 
         if (formatType === 'xlsx') {
@@ -312,33 +262,33 @@ export default function SowCardPage() {
                     </div>
                 </div>
                 
-                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 print:hidden">
+                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
                         <TabsTrigger value="farrowing-form">Formulario de Parto</TabsTrigger>
                     </TabsList>
-                    
-                     <div id="printable-content" className="mt-4">
-                        {!selectedSow ? (
-                             <Card className="flex items-center justify-center min-h-[400px] border-dashed">
-                                <div className="text-center text-muted-foreground">
-                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
-                                    <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
-                                </div>
-                            </Card>
-                        ) : (
-                           <>
-                                <div id="printable-sow-card" className={cn(activeTab !== 'sow-card' && 'hidden', 'print:block')}>
-                                    {selectedSow && <SowProfileCard sow={selectedSow} />}
-                                </div>
-                                <div id="printable-farrowing-form" className={cn(activeTab !== 'farrowing-form' && 'hidden', activeTab === 'farrowing-form' && 'block', 'print:block')}>
-                                    <FarrowingRecordForm />
-                                </div>
-                           </>
-                        )}
-                    </div>
                 </Tabs>
+                
+                <div id="printable-content">
+                    {!selectedSow ? (
+                            <Card className="flex items-center justify-center min-h-[400px] border-dashed print:hidden">
+                            <div className="text-center text-muted-foreground">
+                                <UserSearch className="h-16 w-16 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold">Seleccione una madre</h3>
+                                <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
+                            </div>
+                        </Card>
+                    ) : (
+                        <>
+                            <div className={cn(activeTab !== 'sow-card' && 'hidden', 'print:block')}>
+                                <SowProfileCard sow={selectedSow} />
+                            </div>
+                            <div className={cn(activeTab !== 'farrowing-form' && 'hidden', 'print:block')}>
+                                <FarrowingRecordForm />
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </AppLayout>
     );
