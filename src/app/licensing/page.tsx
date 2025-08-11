@@ -10,7 +10,7 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { setLicense } from '@/lib/license';
+import { getLicenseInfo, setLicense } from '@/lib/license';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -34,6 +34,14 @@ export default function LicensingPage() {
     const router = useRouter();
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[3].id);
+    const [licenseExists, setLicenseExists] = React.useState(false);
+
+    React.useEffect(() => {
+        const license = getLicenseInfo();
+        if (license) {
+            setLicenseExists(true);
+        }
+    }, []);
 
     const selectedTier = React.useMemo(() => tiers.find(t => t.id === selectedTierId)!, [selectedTierId]);
     const selectedCycle = React.useMemo(() => billingCycles.find(c => c.id === selectedCycleId)!, [selectedCycleId]);
@@ -66,7 +74,11 @@ export default function LicensingPage() {
                 <div className="text-center mb-10">
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
-                    <p className="mt-3 text-lg text-gray-600">Comienza con una prueba gratuita de 30 días. Sin compromisos, cancela cuando quieras.</p>
+                    <p className="mt-3 text-lg text-gray-600">
+                        {licenseExists 
+                            ? "Actualiza tu plan o cambia tu ciclo de facturación."
+                            : "Comienza con una prueba gratuita de 30 días. Sin compromisos, cancela cuando quieras."}
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -144,9 +156,11 @@ export default function LicensingPage() {
                                     <Button size="lg" className="w-full" onClick={handlePayment}>
                                         Proceder al Pago
                                     </Button>
-                                    <Button size="lg" variant="outline" className="w-full" onClick={handleStartTrial}>
-                                        Comenzar Prueba Gratuita de 30 Días
-                                    </Button>
+                                    {!licenseExists && (
+                                        <Button size="lg" variant="outline" className="w-full" onClick={handleStartTrial}>
+                                            Comenzar Prueba Gratuita de 30 Días
+                                        </Button>
+                                    )}
                                 </div>
                                 <p className="text-xs text-center text-gray-500 mt-4">
                                     Después de la prueba, se te cobrará {formatCurrency(pricing.finalPrice)} cada {selectedCycle.months} mes{selectedCycle.months > 1 ? 'es' : ''}.
