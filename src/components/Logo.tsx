@@ -6,17 +6,25 @@ export function Logo({ className, ...props }: React.SVGProps<SVGSVGElement>) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       className={cn('text-primary', className)}
       {...props}
     >
-      <path d="M15.14,13.25a1,1,0,0,0-1.28,0,5.76,5.76,0,0,1-7.72,0A1,1,0,0,0,5,14.41a7.71,7.71,0,0,0,10.28,0,1,1,0,0,0-.14-1.16Z" />
-      <path d="M11.14 10.24a.5.5 0 10-.5.5.5.5 0 00.5-.5zM14.36 10.24a.5.5 0 10-.5.5.5.5 0 00.5-.5z" />
-      <path d="M15.5,2A8.5,8.5,0,0,0,7,10.5c0,4.89-4.8,3.5-4.8,3.5A1.2,1.2,0,0,0,1,15.19V17.5a2.5,2.5,0,0,0,2.5,2.5h17A2.5,2.5,0,0,0,23,17.5V15.19A1.2,1.2,0,0,0,21.8,14S17,15.39,17,10.5A8.5,8.5,0,0,0,15.5,2Z" />
+      <g fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        {/* Pig Face */}
+        <path d="M15.33,21.67a7.8,7.8,0,0,1-6.66,0" fill="hsl(var(--primary-foreground))"/>
+        <path d="M15.83,18.42a8,8,0,0,1-7.66,0c-2.42-1.1-4.17-3.36-4.17-6V11.2a8,8,0,0,1,8-8h0a8,8,0,0,1,8,8v1.2C19.83,15.06,18.25,17.32,15.83,18.42Z" fill="hsl(var(--primary-foreground))"/>
+        <path d="M18,10.42a1,1,0,0,1-2,0,4,4,0,0,0-8,0,1,1,0,0,1-2,0,6,6,0,0,1,12,0Z" fill="hsl(var(--secondary))" stroke="hsl(var(--secondary-foreground))" />
+        <circle cx="9" cy="9.42" r="0.5" fill="hsl(var(--foreground))" stroke="none" />
+        <circle cx="15" cy="9.42" r="0.5" fill="hsl(var(--foreground))" stroke="none" />
+        <path d="M12,13.42a3,3,0,0,1,3-3h0a3,3,0,0,1,3,3v2a3,3,0,0,1-3,3h0a3,3,0,0,1-3-3Z" fill="hsl(var(--secondary))" stroke="hsl(var(--secondary-foreground))" />
+        <circle cx="11" cy="13.92" r="0.5" fill="hsl(var(--foreground))" stroke="none" />
+        <circle cx="13" cy="13.92" r="0.5" fill="hsl(var(--foreground))" stroke="none" />
+        <path d="M10,19.42a2,2,0,0,1,4,0" />
+
+        {/* Graduation Cap */}
+        <path d="M5,10.5l7-4,7,4L12,14.5Z" fill="hsl(var(--foreground))" stroke="hsl(var(--foreground))"/>
+        <path d="M18.5,10.5v2.67a0.5,0.5,0,0,1-1,0V11" stroke="hsl(var(--foreground))"/>
+      </g>
     </svg>
   );
 }
