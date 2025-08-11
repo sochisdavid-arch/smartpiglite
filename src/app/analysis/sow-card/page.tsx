@@ -183,10 +183,21 @@ export default function SowCardPage() {
                 img.src = qrCodeUrl;
                 img.onload = () => {
                     doc.addImage(img, 'PNG', 155, 25, 30, 30);
+                    finalY = (doc as any).lastAutoTable.finalY + 5;
+                    addMainTable();
+                    addServiceTable();
+                    addBottomTables();
+                    doc.save(`ficha_vida_${selectedSow.id}.pdf`);
                 }
-                finalY = (doc as any).lastAutoTable.finalY + 5;
+                img.onerror = () => {
+                     finalY = (doc as any).lastAutoTable.finalY + 5;
+                    addMainTable();
+                    addServiceTable();
+                    addBottomTables();
+                    doc.save(`ficha_vida_${selectedSow.id}.pdf`);
+                }
             };
-
+            
             const addMainTable = () => {
                  autoTable(doc, {
                     head: [['PARTOS', 'ÚLTIMO', 'PROMEDIO']],
@@ -252,7 +263,7 @@ export default function SowCardPage() {
 
             const addBottomTables = () => {
                 const tableHeaders = ["MUERTE LECHONES", "CAUSAS MUERTE", "CUBRICIONES", "ADOPCIONES", "NOTAS", "DESTETES (PARCIALES)"];
-                const startY = finalY;
+                let currentY = finalY;
 
                 for(let i = 0; i < 2; i++) {
                     let currentX = 20;
@@ -263,7 +274,7 @@ export default function SowCardPage() {
                              autoTable(doc, {
                                 head: [[tableHeaders[index]]],
                                 body: [[' '],[' '],[' '],[' ']],
-                                startY: startY,
+                                startY: currentY,
                                 margin: {left: currentX},
                                 tableWidth: 120,
                                 theme: 'grid',
@@ -274,16 +285,13 @@ export default function SowCardPage() {
                              currentX += 130;
                         }
                     }
-                    finalY = maxHeight + 5;
+                    currentY = maxHeight + 5;
                 }
             }
             
             addHeader();
-            addMainTable();
-            addServiceTable();
-            addBottomTables();
-
-            doc.save(`ficha_vida_${selectedSow.id}.pdf`);
+            // We call the rest inside the image onload/onerror to ensure QR is placed first
+            return;
         }
 
         if (formatType === 'xlsx') {
