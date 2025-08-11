@@ -36,6 +36,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { deductFromStock, getInventory } from '@/lib/inventory';
+import { checkLicense, getLicenseInfo } from '@/lib/license';
+
 
 type EventType = "Celo" | "Celo no Servido" | "Inseminación" | "Parto" | "Aborto" | "Tratamiento" | "Vacunación" | "Venta" | "Descarte" | "Muerte" | "Destete";
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
@@ -238,6 +240,16 @@ export default function GestationPage() {
 
 
   const openAddDialog = () => {
+    const licenseCheck = checkLicense(pigs.filter(p => p.gender === 'Hembra').length);
+    if (!licenseCheck.canAdd) {
+        toast({
+            variant: "destructive",
+            title: "Límite de Licencia Alcanzado",
+            description: licenseCheck.message,
+            action: <Button onClick={() => router.push('/licensing')}>Actualizar Plan</Button>,
+        });
+        return;
+    }
     setEditingPig(null);
     setIsFormOpen(true);
   };

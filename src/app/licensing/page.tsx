@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -9,12 +10,13 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { setLicense } from '@/lib/license';
 
 const tiers = [
-    { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5 },
-    { id: 'tier-b', label: '51 - 100 Madres', basePrice: 10 },
-    { id: 'tier-c', label: '101 - 200 Madres', basePrice: 18 },
-    { id: 'tier-d', label: '201+ Madres', basePrice: 30 },
+    { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
+    { id: 'tier-b', label: '51 - 100 Madres', basePrice: 10, sowLimit: 100 },
+    { id: 'tier-c', label: '101 - 200 Madres', basePrice: 18, sowLimit: 200 },
+    { id: 'tier-d', label: '201+ Madres', basePrice: 30, sowLimit: Infinity },
 ];
 
 const billingCycles = [
@@ -47,6 +49,16 @@ export default function LicensingPage() {
             effectiveMonthly,
         };
     }, [selectedTier, selectedCycle]);
+    
+    const handleStartTrial = () => {
+        setLicense('demo');
+        router.push('/farm-setup');
+    }
+    
+    const handlePayment = () => {
+        setLicense(selectedTierId, selectedCycle.months);
+        router.push('https://buy.stripe.com/test_eVa3d24AL4B4gPKeUU');
+    }
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -129,10 +141,10 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <Button size="lg" className="w-full" onClick={() => router.push('https://buy.stripe.com/test_eVa3d24AL4B4gPKeUU')}>
+                                    <Button size="lg" className="w-full" onClick={handlePayment}>
                                         Proceder al Pago
                                     </Button>
-                                    <Button size="lg" variant="outline" className="w-full" onClick={() => router.push('/dashboard')}>
+                                    <Button size="lg" variant="outline" className="w-full" onClick={handleStartTrial}>
                                         Comenzar Prueba Gratuita de 30 Días
                                     </Button>
                                 </div>
