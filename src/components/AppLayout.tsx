@@ -99,7 +99,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/ceba', label: 'Ceba', icon: Warehouse },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
-    // { href: '/finance', label: 'Financiero', icon: Landmark },
+    { href: '/licensing', label: 'Licencia', icon: Landmark },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
   ];
