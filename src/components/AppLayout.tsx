@@ -64,6 +64,7 @@ import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { LittlePigIcon } from './icons/little-pig-icon';
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -94,7 +95,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/gestation', label: 'Gestación', icon: SpermIcon },
     { href: '/lactation', label: 'Lactancia', icon: BabyBottleIcon },
     { href: '/verracos', label: 'Verracos', icon: TestTube },
-    { href: '/precebo', label: 'Precebo', icon: Beef },
+    { href: '/precebo', label: 'Precebo', icon: LittlePigIcon },
     { href: '/ceba', label: 'Ceba', icon: Warehouse },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
