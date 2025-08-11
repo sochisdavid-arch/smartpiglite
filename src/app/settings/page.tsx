@@ -13,11 +13,15 @@ export default function SettingsPage() {
     const { toast } = useToast();
     const [isDarkMode, setIsDarkMode] = React.useState(false);
     const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
+    const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
 
     React.useEffect(() => {
         const darkMode = localStorage.getItem('darkMode') === 'true';
         setIsDarkMode(darkMode);
         document.documentElement.classList.toggle('dark', darkMode);
+        
+        const emailNotifications = localStorage.getItem('emailNotificationsEnabled') === 'true';
+        setEmailNotificationsEnabled(emailNotifications);
 
         if ('Notification' in window) {
             if (Notification.permission === 'granted') {
@@ -32,6 +36,12 @@ export default function SettingsPage() {
         document.documentElement.classList.toggle('dark', checked);
         toast({ title: `Modo ${checked ? 'Oscuro' : 'Claro'} Activado` });
     };
+
+    const handleEmailNotificationsToggle = (checked: boolean) => {
+        setEmailNotificationsEnabled(checked);
+        localStorage.setItem('emailNotificationsEnabled', String(checked));
+        toast({ title: `Notificaciones por correo ${checked ? 'activadas' : 'desactivadas'}` });
+    }
 
     const handlePushNotificationsToggle = async (checked: boolean) => {
         if (!('Notification' in window)) {
@@ -72,7 +82,11 @@ export default function SettingsPage() {
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="email-notifications">Notificaciones por correo electrónico</Label>
-                                <Switch id="email-notifications" disabled/>
+                                <Switch 
+                                    id="email-notifications" 
+                                    checked={emailNotificationsEnabled}
+                                    onCheckedChange={handleEmailNotificationsToggle}
+                                />
                             </div>
                              <div className="flex items-center justify-between">
                                 <Label htmlFor="push-notifications">Notificaciones push</Label>
@@ -100,7 +114,7 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <Button>Guardar Preferencias</Button>
+                    <Button onClick={() => toast({title: "Preferencias guardadas"})}>Guardar Preferencias</Button>
                 </div>
             </div>
         </AppLayout>
