@@ -48,6 +48,7 @@ import {
   TestTube,
   Warehouse,
 } from 'lucide-react';
+import { SpermIcon } from '@/components/icons/sperm-icon';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -90,7 +91,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const menuItems = [
     { href: '/dashboard', label: 'Panel de Control', icon: LayoutDashboard },
-    { href: '/gestation', label: 'Gestación', icon: HeartPulse },
+    { href: '/gestation', label: 'Gestación', icon: SpermIcon },
     { href: '/lactation', label: 'Lactancia', icon: Baby },
     { href: '/verracos', label: 'Verracos', icon: TestTube },
     { href: '/precebo', label: 'Precebo', icon: GanttChartSquare },
