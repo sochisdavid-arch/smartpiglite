@@ -16,8 +16,9 @@ export function SpermIcon({ className, ...props }: React.SVGProps<SVGSVGElement>
       className={cn(className)}
       {...props}
     >
-      <circle cx="6" cy="6" r="4" />
-      <path d="M6 10v4c0 4.418 3.582 8 8 8s8-3.582 8-8v-4" />
+      <path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+      <path d="M10 9v1.8c0 2.2-1.8 4-4 4s-4-1.8-4-4V9" />
+      <path d="M2 9h1" />
     </svg>
   );
 }
