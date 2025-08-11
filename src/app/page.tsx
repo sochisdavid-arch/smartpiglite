@@ -81,7 +81,7 @@ export default function LoginPage() {
         await sendPasswordResetEmail(auth, resetEmail);
         toast({
             title: 'Correo Enviado',
-            description: 'Se ha enviado un enlace para restablecer tu contraseña a tu correo electrónico.',
+            description: 'Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña.',
         });
         setIsResetDialogOpen(false);
         setResetEmail('');
