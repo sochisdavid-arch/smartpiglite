@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { getLicenseInfo, setLicense } from '@/lib/license';
+import Link from 'next/link';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -71,6 +72,16 @@ export default function LicensingPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
             <main className="w-full max-w-4xl mx-auto">
+                 {licenseExists && (
+                    <div className="mb-6">
+                        <Button variant="outline" asChild>
+                            <Link href="/dashboard">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Volver al Panel de Control
+                            </Link>
+                        </Button>
+                    </div>
+                )}
                 <div className="text-center mb-10">
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
