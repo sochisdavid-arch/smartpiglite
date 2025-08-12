@@ -132,6 +132,7 @@ export default function LicensingPage() {
                                             {cycle.tag && <div className="absolute -top-3 right-3 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">{cycle.tag}</div>}
                                             <span className="font-bold text-lg">{cycle.label}</span>
                                             <span className="text-sm text-gray-500">{cycle.months} mes{cycle.months > 1 ? 'es' : ''}</span>
+                                            <RadioGroupItem value={cycle.id} id={cycle.id} className="sr-only" />
                                         </Label>
                                     ))}
                                 </RadioGroup>
