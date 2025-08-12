@@ -65,8 +65,8 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
-        setLicense(selectedTierId, selectedCycle.months);
-        router.push('https://buy.stripe.com/test_eVa3d24AL4B4gPKeUU');
+        setLicense(selectedTier.id, selectedCycle.months);
+        router.push('/farm-setup');
     }
 
     return (
@@ -130,9 +130,13 @@ export default function LicensingPage() {
                                             selectedCycleId === cycle.id ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:bg-gray-50"
                                         )}>
                                             {cycle.tag && <div className="absolute -top-3 right-3 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">{cycle.tag}</div>}
-                                            <span className="font-bold text-lg">{cycle.label}</span>
-                                            <span className="text-sm text-gray-500">{cycle.months} mes{cycle.months > 1 ? 'es' : ''}</span>
-                                            <RadioGroupItem value={cycle.id} id={cycle.id} className="sr-only" />
+                                            <div className="flex justify-between items-center w-full">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-lg">{cycle.label}</span>
+                                                    <span className="text-sm text-gray-500">{cycle.months} mes{cycle.months > 1 ? 'es' : ''}</span>
+                                                </div>
+                                                <RadioGroupItem value={cycle.id} id={cycle.id} />
+                                            </div>
                                         </Label>
                                     ))}
                                 </RadioGroup>
