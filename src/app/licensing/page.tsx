@@ -53,7 +53,7 @@ const payuLinks: Record<string, Record<string, string>> = {
     },
     'tier-d': {
         'monthly': 'https://biz.payulatam.com/L0faca4CD3678C2',
-        'quarterly': 'https://biz.payulatam.com/L0faca4CD3678C2', // Fallback, can be updated
+        'quarterly': 'https://biz.payulatam.com/L0faca43738E952',
         'semiannual': 'https://biz.payulatam.com/L0faca4CD3678C2', // Fallback, can be updated
         'annual': 'https://biz.payulatam.com/L0faca4CD3678C2', // Fallback, can be updated
     },
