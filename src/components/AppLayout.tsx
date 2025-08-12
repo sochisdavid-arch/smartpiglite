@@ -103,7 +103,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
-    { href: '/licensing', label: 'Licencia', icon: Landmark },
   ];
   
   const gestationAnalysisMenuItems = [
@@ -128,9 +127,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
        { href: '/analysis/liquidated-batches', label: 'Lotes Liquidados' },
   ];
 
+  const licenseMenuItems = [
+      { href: '/licensing', label: 'Comprar Licencia' },
+      { href: '/payment-confirmation', label: 'Verificar y Activar Licencia' },
+  ];
+
   const isGestationAnalysisActive = gestationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isLactationAnalysisActive = lactationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isProductionAnalysisActive = productionAnalysisMenuItems.some(item => pathname.startsWith(item.href));
+  const isLicenseMenuActive = licenseMenuItems.some(item => pathname.startsWith(item.href));
 
   return (
     <SidebarProvider>
@@ -231,6 +236,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleContent>
                         <SidebarMenuSub>
                             {productionAnalysisMenuItems.map((item) => (
+                                <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
+                                        <Link href={item.href}>{item.label}</Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
+                    </CollapsibleContent>
+                </Collapsible>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                 <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            className="justify-between"
+                            variant={isLicenseMenuActive ? "default" : "ghost"}
+                            isActive={isLicenseMenuActive}
+                            >
+                            <div className="flex items-center gap-2">
+                                <Landmark />
+                                <span>Licencia</span>
+                            </div>
+                            <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenuSub>
+                            {licenseMenuItems.map((item) => (
                                 <SidebarMenuSubItem key={item.href}>
                                     <SidebarMenuSubButton asChild isActive={pathname === item.href}>
                                         <Link href={item.href}>{item.label}</Link>

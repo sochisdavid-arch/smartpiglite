@@ -4,6 +4,7 @@
 import { addMonths, isAfter } from 'date-fns';
 
 const LICENSE_INFO_KEY = 'userLicenseInfo';
+const PENDING_LICENSE_KEY = 'pendingLicensePlan';
 
 interface LicenseInfo {
     tierId: 'demo' | 'tier-a' | 'tier-b' | 'tier-c' | 'tier-d';
@@ -19,6 +20,24 @@ const tiers = {
     'tier-c': { name: 'Plan 101-200 Madres', sowLimit: 200 },
     'tier-d': { name: 'Plan 201+ Madres', sowLimit: Infinity },
 };
+
+export const savePlanForActivation = (tierId: string, durationInMonths: number) => {
+    localStorage.setItem(PENDING_LICENSE_KEY, JSON.stringify({ tierId, durationInMonths }));
+};
+
+export const getSavedPlan = (): { tierId: string, durationInMonths: number } | null => {
+    const savedPlan = localStorage.getItem(PENDING_LICENSE_KEY);
+    return savedPlan ? JSON.parse(savedPlan) : null;
+};
+
+export const activateLicense = (): boolean => {
+    const savedPlan = getSavedPlan();
+    if (!savedPlan) return false;
+
+    setLicense(savedPlan.tierId, savedPlan.durationInMonths);
+    localStorage.removeItem(PENDING_LICENSE_KEY);
+    return true;
+}
 
 
 export const setLicense = (tierId: string, durationInMonths: number) => {

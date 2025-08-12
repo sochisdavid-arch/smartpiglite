@@ -10,7 +10,7 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { getLicenseInfo, setLicense } from '@/lib/license';
+import { getLicenseInfo, savePlanForActivation } from '@/lib/license';
 import Link from 'next/link';
 
 const tiers = [
@@ -68,8 +68,8 @@ export default function LicensingPage() {
     }, [selectedTier, selectedCycle]);
     
     const handlePaymentClick = () => {
-        // Activate the license immediately
-        setLicense(selectedTier.id, selectedCycle.months);
+        // Save the plan details so the confirmation page knows what to activate
+        savePlanForActivation(selectedTier.id, selectedCycle.months);
 
         // Get the correct payment URL
         const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
@@ -77,8 +77,9 @@ export default function LicensingPage() {
         // Open payment in a new tab
         window.open(paymentUrl, '_blank');
         
-        // Redirect user to the next step
-        router.push('/farm-setup');
+        // You could redirect the user to the payment confirmation page,
+        // or just let them navigate there from the sidebar.
+        // For now, we'll let them navigate manually.
     };
 
 
@@ -99,7 +100,7 @@ export default function LicensingPage() {
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
                     <p className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto">
-                        Selecciona tu plan y ciclo de pago. Serás redirigido a PayU para completar tu compra de forma segura.
+                        Selecciona tu plan y ciclo de pago. Serás redirigido a PayU para completar tu compra de forma segura. Luego, activa tu licencia con el código de la transacción.
                     </p>
                 </div>
 
