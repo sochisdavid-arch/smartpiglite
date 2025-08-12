@@ -11,8 +11,6 @@ import { activateLicense, getSavedPlan } from '@/lib/license';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-const STATIC_ACTIVATION_KEY = '1310051012Ab*';
-
 export default function PaymentConfirmationPage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -21,17 +19,8 @@ export default function PaymentConfirmationPage() {
 
     const handleActivation = async () => {
         setIsLoading(true);
-        if (activationKey.trim() !== STATIC_ACTIVATION_KEY) {
-            toast({
-                variant: 'destructive',
-                title: 'Error de Activación',
-                description: 'El código de activación es incorrecto. Por favor, verifícalo e inténtalo de nuevo.',
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        const success = activateLicense();
+        
+        const success = activateLicense(activationKey.trim());
 
         if (success) {
             toast({
@@ -43,7 +32,7 @@ export default function PaymentConfirmationPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error de Activación',
-                description: 'No se encontró un plan pendiente para activar. Por favor, selecciona un plan en la página de licencias primero.',
+                description: 'El código de activación es incorrecto para el plan seleccionado o no has seleccionado un plan. Por favor, verifica el código e inténtalo de nuevo.',
             });
         }
         setIsLoading(false);

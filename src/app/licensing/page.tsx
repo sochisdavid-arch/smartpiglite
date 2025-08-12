@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { getLicenseInfo, savePlanForActivation } from '@/lib/license';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -36,7 +35,6 @@ const formatCurrency = (value: number) => {
 
 export default function LicensingPage() {
     const router = useRouter();
-    const { toast } = useToast();
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
@@ -62,7 +60,7 @@ export default function LicensingPage() {
     
     const handlePaymentClick = () => {
         // Step 1: Save the selected plan so the activation page knows what to activate.
-        savePlanForActivation(selectedTier.id, selectedCycle.months);
+        savePlanForActivation(selectedTier.id, selectedCycle.id);
 
         // Step 2: Open the PayU link in a new tab.
         const payuLink = 'https://biz.payulatam.com/L0faca4D7ABAB27';

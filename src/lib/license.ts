@@ -21,24 +21,50 @@ const tiers = {
     'tier-d': { name: 'Plan 201+ Madres', sowLimit: Infinity },
 };
 
-export const savePlanForActivation = (tierId: string, durationInMonths: number) => {
-    localStorage.setItem(PENDING_LICENSE_KEY, JSON.stringify({ tierId, durationInMonths }));
+const billingCycles = {
+    'monthly': { months: 1 },
+    'quarterly': { months: 3 },
+    'semiannual': { months: 6 },
+    'annual': { months: 12 },
 };
 
-export const getSavedPlan = (): { tierId: string, durationInMonths: number } | null => {
+const getActivationKeyForPlan = (tierId: string, cycleId: string): string => {
+    const tierCodeMap: Record<string, string> = { 'tier-a': 'A', 'tier-b': 'B', 'tier-c': 'C', 'tier-d': 'D' };
+    const cycleCodeMap: Record<string, string> = { 'monthly': 'b', 'quarterly': 'c', 'semiannual': 'd', 'annual': 'e' };
+
+    const tierCode = tierCodeMap[tierId];
+    const cycleCode = cycleCodeMap[cycleId];
+
+    if (!tierCode || !cycleCode) {
+        return ''; // Invalid plan details
+    }
+
+    return `1310051012${tierCode}${cycleCode}*`;
+}
+
+export const savePlanForActivation = (tierId: string, cycleId: string) => {
+    localStorage.setItem(PENDING_LICENSE_KEY, JSON.stringify({ tierId, cycleId }));
+};
+
+export const getSavedPlan = (): { tierId: string, cycleId: string } | null => {
     const savedPlan = localStorage.getItem(PENDING_LICENSE_KEY);
     return savedPlan ? JSON.parse(savedPlan) : null;
 };
 
-export const activateLicense = (): boolean => {
+export const activateLicense = (activationKey: string): boolean => {
     const savedPlan = getSavedPlan();
     if (!savedPlan) return false;
 
-    setLicense(savedPlan.tierId, savedPlan.durationInMonths);
+    const expectedKey = getActivationKeyForPlan(savedPlan.tierId, savedPlan.cycleId);
+    if (activationKey !== expectedKey) {
+        return false;
+    }
+
+    const durationInMonths = billingCycles[savedPlan.cycleId as keyof typeof billingCycles].months;
+    setLicense(savedPlan.tierId, durationInMonths);
     localStorage.removeItem(PENDING_LICENSE_KEY);
     return true;
 }
-
 
 export const setLicense = (tierId: string, durationInMonths: number) => {
     const tier = tiers[tierId as keyof typeof tiers];
