@@ -267,6 +267,7 @@ export default function FarrowingRatePage() {
 
         const title = "Análisis de Tasa de Parición - Listado de Madres";
         const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+        const fileName = `tasa_paricion_listado_${new Date().toISOString().split('T')[0]}`;
 
         if (formatType === 'pdf') {
             const doc = new jsPDF({ orientation: 'portrait' });
@@ -280,7 +281,7 @@ export default function FarrowingRatePage() {
                 theme: 'grid',
                 headStyles: { fillColor: '#e07a5f' },
             });
-            doc.save(`tasa_paricion_listado_${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`${fileName}.pdf`);
         }
 
         if (formatType === 'csv' || formatType === 'xlsx') {
@@ -288,7 +289,15 @@ export default function FarrowingRatePage() {
             const ws = XLSX.utils.aoa_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Tasa Parición");
-            XLSX.writeFile(wb, `tasa_paricion_listado_${new Date().toISOString().split('T')[0]}.${formatType}`);
+            const wbout = XLSX.write(wb, { bookType: formatType, type: 'array' });
+            const blob = new Blob([wbout], {type: 'application/octet-stream'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${fileName}.${formatType}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     };
     
@@ -470,7 +479,3 @@ export default function FarrowingRatePage() {
             </div>
         </AppLayout>
     );
-
-    
-
-    

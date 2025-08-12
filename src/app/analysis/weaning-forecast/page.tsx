@@ -180,6 +180,7 @@ export default function WeaningForecastPage() {
 
         const title = "Previsión de Destete";
         const dateRange = `Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+        const fileName = `prevision_destete_${new Date().toISOString().split('T')[0]}`;
 
         if (formatType === 'pdf') {
             const doc = new jsPDF({ orientation: 'landscape' });
@@ -193,7 +194,7 @@ export default function WeaningForecastPage() {
                 theme: 'grid',
                 headStyles: { fillColor: '#e07a5f' },
             });
-            doc.save(`prevision_destete_${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`${fileName}.pdf`);
         }
 
         if (formatType === 'csv' || formatType === 'xlsx') {
@@ -201,7 +202,15 @@ export default function WeaningForecastPage() {
             const ws = XLSX.utils.aoa_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Prevision Destete");
-            XLSX.writeFile(wb, `prevision_destete_${new Date().toISOString().split('T')[0]}.${formatType}`);
+            const wbout = XLSX.write(wb, { bookType: formatType, type: 'array' });
+            const blob = new Blob([wbout], {type: 'application/octet-stream'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${fileName}.${formatType}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     };
     

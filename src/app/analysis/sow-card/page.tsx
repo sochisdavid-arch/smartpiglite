@@ -152,61 +152,63 @@ export default function SowCardPage() {
         window.print();
     };
 
-    const handleExport = async (formatType: 'pdf' | 'xlsx') => {
+    const handleExport = async (formatType: 'xlsx') => {
         if (!selectedSow || !sowData) return;
 
-        if (formatType === 'pdf') {
-            window.print();
-            return;
-        }
+        const { cycles, kpis } = sowData;
+        const sowInfo = [
+            { "Métrica": "ID", "Valor": selectedSow.id },
+            { "Métrica": "Raza", "Valor": selectedSow.breed },
+            { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') },
+            { "Métrica": "Estado", "Valor": selectedSow.status },
+        ];
+        const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
 
-        if (formatType === 'xlsx') {
-            const { cycles, kpis } = sowData;
-            const sowInfo = [
-                { "Métrica": "ID", "Valor": selectedSow.id },
-                { "Métrica": "Raza", "Valor": selectedSow.breed },
-                { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') },
-                { "Métrica": "Estado", "Valor": selectedSow.status },
-            ];
-            const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
+        const kpiDataForSheet = Object.entries(kpis).map(([key, value]) => {
+            const kpiLabels: Record<string, string> = {
+                totalFarrowings: 'Total de Partos',
+                avgTotalBorn: 'Prom. Total Nacidos',
+                avgLiveBorn: 'Prom. Nacidos Vivos',
+                avgStillborn: 'Prom. Mortinatos',
+                avgMummified: 'Prom. Momias',
+                avgWeaned: 'Prom. Destetados',
+                avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
+                avgGestation: 'Prom. Días Gestación',
+                avgLactation: 'Prom. Días Lactancia',
+                avgWeanToService: 'Prom. Destete-Servicio (días)'
+            };
+            return { Métrica: kpiLabels[key] || key, Valor: typeof value === 'number' ? value.toFixed(2) : value };
+        });
+        const kpiSheet = XLSX.utils.json_to_sheet(kpiDataForSheet);
 
-            const kpiDataForSheet = Object.entries(kpis).map(([key, value]) => {
-                const kpiLabels: Record<string, string> = {
-                    totalFarrowings: 'Total de Partos',
-                    avgTotalBorn: 'Prom. Total Nacidos',
-                    avgLiveBorn: 'Prom. Nacidos Vivos',
-                    avgStillborn: 'Prom. Mortinatos',
-                    avgMummified: 'Prom. Momias',
-                    avgWeaned: 'Prom. Destetados',
-                    avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
-                    avgGestation: 'Prom. Días Gestación',
-                    avgLactation: 'Prom. Días Lactancia',
-                    avgWeanToService: 'Prom. Destete-Servicio (días)'
-                };
-                return { Métrica: kpiLabels[key] || key, Valor: typeof value === 'number' ? value.toFixed(2) : value };
-            });
-            const kpiSheet = XLSX.utils.json_to_sheet(kpiDataForSheet);
+        const cycleDataForSheet = cycles.map(c => ({
+            'Ciclo': c.cycle,
+            'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
+            'Nacidos Vivos': c.liveBorn,
+            'Mortinatos': c.stillborn,
+            'Momias': c.mummified,
+            'Destetados': c.pigletsWeaned,
+            'Dias Gestacion': c.gestationDays,
+            'Dias Lactancia': c.lactationDays,
+            'Intervalo Partos': c.farrowingInterval,
+            'Dias Destete-Servicio': c.weaningToServiceDays
+        }));
+        const cycleSheet = XLSX.utils.json_to_sheet(cycleDataForSheet);
 
-            const cycleDataForSheet = cycles.map(c => ({
-                'Ciclo': c.cycle,
-                'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
-                'Nacidos Vivos': c.liveBorn,
-                'Mortinatos': c.stillborn,
-                'Momias': c.mummified,
-                'Destetados': c.pigletsWeaned,
-                'Dias Gestacion': c.gestationDays,
-                'Dias Lactancia': c.lactationDays,
-                'Intervalo Partos': c.farrowingInterval,
-                'Dias Destete-Servicio': c.weaningToServiceDays
-            }));
-            const cycleSheet = XLSX.utils.json_to_sheet(cycleDataForSheet);
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, sowInfoSheet, "Info Cerda");
-            XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
-            XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
-            XLSX.writeFile(wb, `ficha_vida_${selectedSow.id}.xlsx`);
-        }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sowInfoSheet, "Info Cerda");
+        XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
+        XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
+        
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], {type: 'application/octet-stream'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `ficha_vida_${selectedSow.id}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
@@ -270,7 +272,7 @@ export default function SowCardPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handleExport('pdf')}>Exportar a PDF</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handlePrint()}>Exportar a PDF</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
