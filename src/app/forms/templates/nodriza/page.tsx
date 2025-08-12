@@ -29,45 +29,47 @@ export default function NodrizaForm() {
                 Imprimir o Guardar como PDF
             </Button>
         </div>
-        <div className="p-8 sm:p-12">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <Logo className="h-16 w-16 text-primary" />
-                    <div>
-                        <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
-                        <p className="text-muted-foreground">Granja Demo</p>
+        <div id="printable-content">
+            <div className="p-8 sm:p-12">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <Logo className="h-16 w-16 text-primary" />
+                        <div>
+                            <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
+                            <p className="text-muted-foreground">Granja Demo</p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <h2 className="text-2xl font-bold uppercase">Registro de Nodrizas</h2>
                     </div>
                 </div>
-                 <div className="text-right">
-                    <h2 className="text-2xl font-bold uppercase">Registro de Nodrizas</h2>
-                </div>
+            <Card className="w-full border-none shadow-none">
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>ID Madre Nodriza</TableHead>
+                            <TableHead>Fecha Inicio</TableHead>
+                            <TableHead>ID Madre Original</TableHead>
+                            <TableHead>Nº Lechones</TableHead>
+                            <TableHead>Observaciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 15 }).map((_, index) => (
+                            <TableRow key={index}>
+                                <TableCell className="h-12"></TableCell>
+                                <TableCell></TableCell>
+                                <TableCell></TableCell>
+                                <TableCell></TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
             </div>
-          <Card className="w-full border-none shadow-none">
-            <CardContent>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>ID Madre Nodriza</TableHead>
-                          <TableHead>Fecha Inicio</TableHead>
-                          <TableHead>ID Madre Original</TableHead>
-                          <TableHead>Nº Lechones</TableHead>
-                          <TableHead>Observaciones</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {Array.from({ length: 15 }).map((_, index) => (
-                          <TableRow key={index}>
-                              <TableCell className="h-12"></TableCell>
-                              <TableCell></TableCell>
-                              <TableCell></TableCell>
-                              <TableCell></TableCell>
-                              <TableCell></TableCell>
-                          </TableRow>
-                      ))}
-                  </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

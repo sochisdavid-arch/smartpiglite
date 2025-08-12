@@ -90,19 +90,18 @@ body {
 
 @media print {
   body {
-    background-color: white;
+    background-color: white !important;
   }
-  body > :not(#printable-content) {
-    display: none;
+  .print-container, .print-container * {
+    visibility: visible;
   }
-  #printable-content {
-    display: block !important;
+  .print-container {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    height: 100%;
-    padding: 0;
-    margin: 0;
+  }
+  body > :not(.print-container) {
+    display: none !important;
   }
 }
