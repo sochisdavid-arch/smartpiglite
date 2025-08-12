@@ -2,21 +2,16 @@
 "use client";
 
 import { addMonths, isAfter } from 'date-fns';
+import { db } from './firebase';
+import { ref, set, get } from "firebase/database";
 
 const LICENSE_INFO_KEY = 'userLicenseInfo';
-const SELECTED_PLAN_KEY = 'selectedPlanInfo';
-
 
 interface LicenseInfo {
     tierId: 'demo' | 'tier-a' | 'tier-b' | 'tier-c' | 'tier-d';
     tierName: string;
     sowLimit: number;
     expirationDate: string;
-}
-
-interface SelectedPlan {
-    tierId: string;
-    durationInMonths: number;
 }
 
 const tiers = {
@@ -27,38 +22,44 @@ const tiers = {
     'tier-d': { name: 'Plan 201+ Madres', sowLimit: Infinity },
 };
 
-export const setSelectedPlan = (tierId: string, durationInMonths: number) => {
-    const plan: SelectedPlan = { tierId, durationInMonths };
-    localStorage.setItem(SELECTED_PLAN_KEY, JSON.stringify(plan));
+// Generates a random session ID and saves the plan details under it in Firebase
+export const saveVerificationSession = async (tierId: string, durationInMonths: number): Promise<string> => {
+    const sessionId = `sid_${Math.random().toString(36).substring(2, 12)}`;
+    const sessionRef = ref(db, `verificationSessions/${sessionId}`);
+    await set(sessionRef, {
+        tierId,
+        durationInMonths,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    });
+    return sessionId;
 };
 
-export const getSelectedPlan = (): SelectedPlan | null => {
-    const storedPlan = localStorage.getItem(SELECTED_PLAN_KEY);
-    if (!storedPlan) return null;
-    try {
-        return JSON.parse(storedPlan);
-    } catch {
-        return null;
+// This function will be used by the mobile verification page
+export const submitTransactionCode = async (sessionId: string, transactionCode: string): Promise<{ success: boolean; message: string }> => {
+    const sessionRef = ref(db, `verificationSessions/${sessionId}`);
+    const snapshot = await get(sessionRef);
+
+    if (!snapshot.exists()) {
+        return { success: false, message: 'La sesión de verificación es inválida o ha expirado.' };
     }
+    
+    await set(sessionRef, {
+        ...snapshot.val(),
+        status: 'completed',
+        transactionCode: transactionCode,
+        completedAt: new Date().toISOString()
+    });
+
+    return { success: true, message: '¡Verificación completada! Puedes cerrar esta ventana.' };
 };
 
-export const clearSelectedPlan = () => {
-    localStorage.removeItem(SELECTED_PLAN_KEY);
-};
 
-
-export const setLicense = (tierId: string, durationInMonths?: number) => {
+export const setLicense = (tierId: string, durationInMonths: number) => {
     const tier = tiers[tierId as keyof typeof tiers];
     if (!tier) return;
 
-    let expirationDate;
-    if (tierId === 'demo') {
-        expirationDate = addMonths(new Date(), 1); // 30-day trial approx
-    } else if (durationInMonths) {
-        expirationDate = addMonths(new Date(), durationInMonths);
-    } else {
-        return; // Invalid arguments for paid tier
-    }
+    const expirationDate = addMonths(new Date(), durationInMonths);
     
     const licenseInfo: LicenseInfo = {
         tierId: tierId as LicenseInfo['tierId'],
@@ -88,7 +89,8 @@ export const checkLicense = (currentSowCount: number): { isValid: boolean, canAd
     const license = getLicenseInfo();
 
     if (!license) {
-        return { isValid: false, canAdd: false, message: 'No se encontró una licencia válida. Por favor, adquiere un plan.' };
+        setLicense('demo'); // Set a demo license if none exists
+        return { isValid: true, canAdd: true, message: 'Licencia de demostración activada.' };
     }
 
     const isExpired = isAfter(new Date(), new Date(license.expirationDate));

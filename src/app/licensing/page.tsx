@@ -10,8 +10,9 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { getLicenseInfo, setSelectedPlan } from '@/lib/license';
+import { getLicenseInfo, saveVerificationSession } from '@/lib/license';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -31,33 +32,16 @@ const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
-// Objeto para almacenar los links de pago
 const paymentLinks: Record<string, Record<string, string>> = {
     'tier-a': {
         'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        // TODO: Reemplazar con los links de pago reales de PayU para cada ciclo
         'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
     },
-    'tier-b': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_M',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_Q',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_S',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_A',
-    },
-    'tier-c': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_M',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_Q',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_S',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_A',
-    },
-    'tier-d': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_M',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_Q',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_S',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_A',
-    },
+    'tier-b': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
+    'tier-c': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
+    'tier-d': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
 };
 
 export default function LicensingPage() {
@@ -65,6 +49,8 @@ export default function LicensingPage() {
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
+    const [verificationCode, setVerificationCode] = React.useState<string | null>(null);
+    const [isPopupOpen, setIsPopupOpen] = React.useState(false);
 
     React.useEffect(() => {
         const license = getLicenseInfo();
@@ -81,21 +67,40 @@ export default function LicensingPage() {
         const totalDiscount = baseTotal * selectedCycle.discount;
         const finalPrice = baseTotal - totalDiscount;
         const effectiveMonthly = finalPrice / selectedCycle.months;
-
-        return {
-            finalPrice,
-            effectiveMonthly,
-        };
+        return { finalPrice, effectiveMonthly };
     }, [selectedTier, selectedCycle]);
     
-    const handlePlanSelection = () => {
-        setSelectedPlan(selectedTier.id, selectedCycle.months);
+    const handlePaymentClick = async () => {
+        const code = await saveVerificationSession(selectedTier.id, selectedCycle.months);
+        setVerificationCode(code);
+        setIsPopupOpen(true);
     };
 
-    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
+    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+             <Dialog open={isPopupOpen} onOpenChange={setIsPopupOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>¡Importante! Guarda tu Código de Verificación</DialogTitle>
+                        <DialogDescription>
+                            <p className="my-4">Copia y pega este código en el campo de **"descripción"** o **"comentario"** durante tu pago en PayU. Lo necesitarás para verificar tu licencia.</p>
+                            <div className="bg-muted p-4 rounded-md text-center">
+                                <p className="font-mono text-xl font-bold tracking-widest">{verificationCode}</p>
+                            </div>
+                             <p className="mt-4 text-sm text-muted-foreground">
+                                Una vez completado el pago, ve a la sección "Verificar Licencia" en la aplicación para activarla.
+                            </p>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Button asChild size="lg">
+                        <a href={paymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsPopupOpen(false)}>
+                            Continuar a PayU
+                        </a>
+                    </Button>
+                </DialogContent>
+            </Dialog>
             <main className="w-full max-w-4xl mx-auto">
                  {licenseExists && (
                     <div className="mb-6">
@@ -111,17 +116,15 @@ export default function LicensingPage() {
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
                     <p className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto">
-                        Selecciona tu plan, realiza el pago y luego activa tu licencia usando el código de transacción que recibirás en tu correo.
+                        Selecciona tu plan y ciclo. Serás redirigido a PayU para un pago seguro.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
-                        {/* Tier Selection */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>1. ¿Cuántas madres productivas tienes en tu granja?</CardTitle>
-                                <CardDescription>Selecciona el rango que se ajuste al tamaño de tu operación.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <RadioGroup value={selectedTierId} onValueChange={setSelectedTierId} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -139,11 +142,9 @@ export default function LicensingPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Billing Cycle Selection */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>2. Elige tu ciclo de facturación</CardTitle>
-                                <CardDescription>Ahorra más con planes a largo plazo.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <RadioGroup value={selectedCycleId} onValueChange={setSelectedCycleId} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -156,7 +157,6 @@ export default function LicensingPage() {
                                             <div className="flex justify-between items-center w-full">
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-lg">{cycle.label}</span>
-                                                    <span className="text-sm text-gray-500">{cycle.months} mes{cycle.months > 1 ? 'es' : ''}</span>
                                                 </div>
                                                 <RadioGroupItem value={cycle.id} id={cycle.id} className="sr-only"/>
                                                  {selectedCycleId === cycle.id && <CheckCircle className="h-5 w-5 text-primary" />}
@@ -168,40 +168,22 @@ export default function LicensingPage() {
                         </Card>
                     </div>
 
-                    {/* Pricing Summary */}
                     <div className="lg:col-span-1 sticky top-8">
                         <Card className="shadow-lg">
                             <CardHeader className="bg-gray-50">
                                 <CardTitle className="text-center text-primary">Resumen de tu Suscripción</CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 space-y-4">
-                                <div className="flex justify-between items-baseline">
-                                    <span className="text-gray-600">Plan:</span>
-                                    <span className="font-bold">{selectedTier.label}</span>
-                                </div>
-                                <div className="flex justify-between items-baseline">
-                                    <span className="text-gray-600">Ciclo:</span>
-                                    <span className="font-bold">{selectedCycle.label}</span>
-                                </div>
+                                <div className="flex justify-between items-baseline"><span className="text-gray-600">Plan:</span><span className="font-bold">{selectedTier.label}</span></div>
+                                <div className="flex justify-between items-baseline"><span className="text-gray-600">Ciclo:</span><span className="font-bold">{selectedCycle.label}</span></div>
                                 <div className="border-t pt-4 mt-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Pagas hoy</span>
-                                        <span className="text-2xl font-bold text-gray-900">{formatCurrency(pricing.finalPrice)}</span>
-                                    </div>
-                                    <p className="text-right text-sm text-gray-500">
-                                        Efectivo a {formatCurrency(pricing.effectiveMonthly)} / mes
-                                    </p>
+                                    <div className="flex justify-between items-center"><span className="text-gray-600">Pagas hoy</span><span className="text-2xl font-bold text-gray-900">{formatCurrency(pricing.finalPrice)}</span></div>
+                                    <p className="text-right text-sm text-gray-500">Efectivo a {formatCurrency(pricing.effectiveMonthly)} / mes</p>
                                 </div>
-                                <div className="space-y-4 pt-4">
-                                     <Button size="lg" className="w-full" asChild>
-                                        <Link href={paymentUrl} target="_blank" onClick={handlePlanSelection}>
-                                            Proceder al Pago
-                                        </Link>
-                                    </Button>
-                                </div>
-                                <p className="text-xs text-center text-gray-500 mt-4">
-                                   Serás redirigido a la página segura de PayU para completar tu compra.
-                                </p>
+                                <Button size="lg" className="w-full" onClick={handlePaymentClick}>
+                                    Proceder al Pago
+                                </Button>
+                                <p className="text-xs text-center text-gray-500 mt-4">Serás redirigido a la página segura de PayU.</p>
                             </CardContent>
                         </Card>
                     </div>

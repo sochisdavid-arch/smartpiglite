@@ -48,6 +48,7 @@ import {
   Warehouse,
   Baby,
   KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import { SpermIcon } from '@/components/icons/sperm-icon';
 import { BabyBottleIcon } from '@/components/icons/baby-bottle-icon';
@@ -103,7 +104,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
     { href: '/licensing', label: 'Licencia', icon: Landmark },
-    { href: '/payment-confirmation', label: 'Verificar Licencia', icon: KeyRound },
+    { href: '/payment-confirmation', label: 'Verificar Licencia', icon: ShieldCheck },
   ];
   
   const gestationAnalysisMenuItems = [
