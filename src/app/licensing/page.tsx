@@ -65,15 +65,8 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
-        // En una aplicación real, aquí llamarías a tu backend para crear una sesión de Stripe Checkout.
-        // Como no podemos hacer eso, simularemos la redirección a una página de pago de ejemplo de Stripe.
-        window.location.href = 'https://buy.stripe.com/test_eVa4hE9G1cM15gY5kk';
-        
-        // El código para guardar la licencia se movería a una página de "éxito de pago"
-        // a la que Stripe te redirigiría después de un pago completado.
-        // Por ahora, lo dejamos comentado aquí.
-        // setLicense(selectedTier.id, selectedCycle.months);
-        // router.push('/farm-setup');
+        setLicense(selectedTier.id, selectedCycle.months);
+        router.push('/farm-setup');
     }
 
     return (
