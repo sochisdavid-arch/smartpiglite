@@ -77,7 +77,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     // List of public paths that don't require a license check
-    const publicPaths = ['/licensing', '/payment-confirmation'];
+    const publicPaths = ['/licensing', '/payment-confirmation', '/finance'];
     
     // Check if the current path is one of the public paths
     if (publicPaths.includes(pathname)) {
@@ -129,6 +129,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
+    { href: '/finance', label: 'Análisis Financiero', icon: Landmark },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
   ];
   
@@ -282,7 +283,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             isActive={isLicenseMenuActive}
                             >
                             <div className="flex items-center gap-2">
-                                <Landmark />
+                                <KeyRound />
                                 <span>Licencia</span>
                             </div>
                             <ChevronDown className="size-4 shrink-0 transition-transform ease-in-out group-data-[state=open]:rotate-180" />
