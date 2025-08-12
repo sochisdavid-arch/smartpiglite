@@ -10,7 +10,7 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { getLicenseInfo, setLicense, setSelectedPlan } from '@/lib/license';
+import { getLicenseInfo, setSelectedPlan } from '@/lib/license';
 import Link from 'next/link';
 
 const tiers = [
@@ -34,8 +34,8 @@ const formatCurrency = (value: number) => {
 // Objeto para almacenar los links de pago
 const paymentLinks: Record<string, Record<string, string>> = {
     'tier-a': {
-        // TODO: Reemplazar con los links de pago reales de PayU para cada ciclo
         'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        // TODO: Reemplazar con los links de pago reales de PayU para cada ciclo
         'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
@@ -88,13 +88,7 @@ export default function LicensingPage() {
         };
     }, [selectedTier, selectedCycle]);
     
-    const handleStartTrial = () => {
-        setLicense('demo');
-        router.push('/farm-setup');
-    }
-
     const handlePlanSelection = () => {
-        // Guarda la selección del plan temporalmente para que la página de confirmación sepa qué activar.
         setSelectedPlan(selectedTier.id, selectedCycle.months);
     };
 
@@ -116,10 +110,8 @@ export default function LicensingPage() {
                 <div className="text-center mb-10">
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
-                    <p className="mt-3 text-lg text-gray-600">
-                        {licenseExists 
-                            ? "Actualiza tu plan o cambia tu ciclo de facturación."
-                            : "Comienza con una prueba gratuita de 30 días. Sin compromisos, cancela cuando quieras."}
+                    <p className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto">
+                        Selecciona tu plan, realiza el pago y luego activa tu licencia usando el código de transacción que recibirás en tu correo.
                     </p>
                 </div>
 
@@ -139,7 +131,7 @@ export default function LicensingPage() {
                                             selectedTierId === tier.id ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:bg-gray-50"
                                         )}>
                                             <span className="font-semibold">{tier.label}</span>
-                                            <RadioGroupItem value={tier.id} id={tier.id} />
+                                            <RadioGroupItem value={tier.id} id={tier.id} className="sr-only"/>
                                             {selectedTierId === tier.id && <CheckCircle className="h-5 w-5 text-primary" />}
                                         </Label>
                                     ))}
@@ -166,7 +158,8 @@ export default function LicensingPage() {
                                                     <span className="font-bold text-lg">{cycle.label}</span>
                                                     <span className="text-sm text-gray-500">{cycle.months} mes{cycle.months > 1 ? 'es' : ''}</span>
                                                 </div>
-                                                <RadioGroupItem value={cycle.id} id={cycle.id} />
+                                                <RadioGroupItem value={cycle.id} id={cycle.id} className="sr-only"/>
+                                                 {selectedCycleId === cycle.id && <CheckCircle className="h-5 w-5 text-primary" />}
                                             </div>
                                         </Label>
                                     ))}
@@ -192,7 +185,7 @@ export default function LicensingPage() {
                                 </div>
                                 <div className="border-t pt-4 mt-4">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Pagas hoy (después de la prueba)</span>
+                                        <span className="text-gray-600">Pagas hoy</span>
                                         <span className="text-2xl font-bold text-gray-900">{formatCurrency(pricing.finalPrice)}</span>
                                     </div>
                                     <p className="text-right text-sm text-gray-500">
@@ -200,20 +193,14 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <Button size="lg" className="w-full" asChild>
+                                     <Button size="lg" className="w-full" asChild>
                                         <Link href={paymentUrl} target="_blank" onClick={handlePlanSelection}>
                                             Proceder al Pago
                                         </Link>
                                     </Button>
-
-                                    {!licenseExists && (
-                                        <Button size="lg" variant="outline" className="w-full" onClick={handleStartTrial}>
-                                            Comenzar Prueba Gratuita de 30 Días
-                                        </Button>
-                                    )}
                                 </div>
                                 <p className="text-xs text-center text-gray-500 mt-4">
-                                    Después de la prueba, se te cobrará {formatCurrency(pricing.finalPrice)} cada {selectedCycle.months} mes{selectedCycle.months > 1 ? 'es' : ''}.
+                                   Serás redirigido a la página segura de PayU para completar tu compra.
                                 </p>
                             </CardContent>
                         </Card>
