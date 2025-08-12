@@ -367,7 +367,7 @@ export default function PigHistoryPage() {
                 });
                 router.push(`/lactation/${pig!.id}`);
             }
-        }
+        };
         
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
