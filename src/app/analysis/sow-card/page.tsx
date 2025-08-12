@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, UserSearch, Printer, Download, ArrowLeft } from 'lucide-react';
+import { Check, ChevronsUpDown, UserSearch, Download, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -147,11 +147,53 @@ export default function SowCardPage() {
         setOpen(false);
     };
 
-    const handlePrint = () => {
-        window.print();
+    const handleExportPDF = () => {
+        if (!selectedSow || !sowData) return;
+        const doc = new jsPDF();
+        const { cycles, kpis } = sowData;
+
+        doc.setFontSize(18);
+        doc.text(`Ficha de Vida: ${selectedSow.id}`, 14, 22);
+
+        autoTable(doc, {
+            startY: 30,
+            head: [['Métrica', 'Valor']],
+            body: [
+                ['ID', selectedSow.id],
+                ['Raza', selectedSow.breed],
+                ['Fecha Nacimiento', format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy')],
+                ['Estado', selectedSow.status],
+            ],
+            theme: 'striped'
+        });
+
+        autoTable(doc, {
+            head: [['KPI', 'Valor']],
+            body: Object.entries(kpis).map(([key, value]) => {
+                const kpiLabels: Record<string, string> = {
+                    totalFarrowings: 'Total de Partos', avgTotalBorn: 'Prom. Total Nacidos', avgLiveBorn: 'Prom. Nacidos Vivos',
+                    avgStillborn: 'Prom. Mortinatos', avgMummified: 'Prom. Momias', avgWeaned: 'Prom. Destetados',
+                    avgFarrowingInterval: 'Prom. Intervalo Partos (días)', avgGestation: 'Prom. Días Gestación',
+                    avgLactation: 'Prom. Días Lactancia', avgWeanToService: 'Prom. Destete-Servicio (días)'
+                };
+                return [kpiLabels[key] || key, typeof value === 'number' ? value.toFixed(2) : value];
+            }),
+            theme: 'grid'
+        });
+        
+        autoTable(doc, {
+            head: [['Ciclo', 'Fecha Parto', 'NV', 'NM', 'Mom', 'Dest', 'D. Gest', 'D. Lact', 'Int. Partos', 'D. Dest-Serv']],
+            body: cycles.map(c => [
+                c.cycle, c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yy') : '', c.liveBorn, c.stillborn, c.mummified, c.pigletsWeaned,
+                c.gestationDays, c.lactationDays, c.farrowingInterval, c.weaningToServiceDays
+            ]),
+            theme: 'grid'
+        });
+
+        doc.save(`ficha_vida_${selectedSow.id}.pdf`);
     };
 
-    const handleExport = async (formatType: 'xlsx') => {
+    const handleExportXLSX = () => {
         if (!selectedSow || !sowData) return;
 
         const { cycles, kpis } = sowData;
@@ -267,10 +309,6 @@ export default function SowCardPage() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                         <Button variant="outline" onClick={handlePrint} disabled={!selectedSow}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Guardar como PDF
-                        </Button>
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button disabled={!selectedSow}>
@@ -279,7 +317,8 @@ export default function SowCardPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={handleExportPDF}>Exportar a PDF</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={handleExportXLSX}>Exportar a Excel (XLSX)</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

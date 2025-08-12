@@ -7,27 +7,52 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Logo } from "@/components/Logo";
 import { Download, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 
 export default function ConsumoAlimentoForm() {
-    const handlePrint = () => {
-        window.print();
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(22);
+        doc.text("Registro de Consumo de Alimento", 14, 22);
+        doc.setFontSize(12);
+        doc.text("ID del Lote: ______________", 14, 40);
+        doc.text("Fecha: ______________", 100, 40);
+        doc.text("Fase: ______________", 14, 50);
+        doc.text("Semana N°: ______________", 100, 50);
+
+        autoTable(doc, {
+            startY: 60,
+            head: [['Día', 'Alimento', 'Cantidad (kg)', 'Observaciones']],
+            body: Array.from({ length: 7 }, (_, i) => [`Día ${i + 1}`, '', '', '']),
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 3 },
+            headStyles: { fillColor: [22, 163, 74] },
+            bodyStyles: { minCellHeight: 10 }
+        });
+        
+        let finalY = (doc as any).lastAutoTable.finalY;
+        doc.text("Observaciones Generales de la Semana:", 14, finalY + 10);
+
+        doc.save("formulario_consumo_alimento.pdf");
     };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:p-0 print:bg-white">
-        <header className="max-w-4xl mx-auto flex justify-between items-center py-4 print:hidden">
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
+        <header className="max-w-4xl mx-auto flex justify-between items-center py-4">
             <Button variant="outline" asChild>
                 <Link href="/forms">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver a Formularios
                 </Link>
             </Button>
-            <Button onClick={handlePrint}>
+            <Button onClick={handleExportPDF}>
                 <Download className="mr-2 h-4 w-4" />
                 Guardar como PDF
             </Button>
         </header>
-        <main id="printable-content" className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-lg print:shadow-none">
+        <main id="printable-content" className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-lg">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />

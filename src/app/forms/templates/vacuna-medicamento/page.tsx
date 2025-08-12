@@ -7,27 +7,46 @@ import { Button } from "@/components/ui/button";
 import { Download, ArrowLeft } from "lucide-react";
 import Link from 'next/link';
 import { Logo } from "@/components/Logo";
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 
 export default function VacunaMedicamentoForm() {
-    const handlePrint = () => {
-        window.print();
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text("Registro de Vacuna / Medicamento", 14, 22);
+
+        doc.setFontSize(12);
+        doc.text("ID del Lote: __________________", 14, 40);
+        doc.text("Fecha: __________________", 110, 40);
+
+        autoTable(doc, {
+            startY: 50,
+            head: [['Producto', 'Tipo (Vacuna/Med)', 'Dosis/Animal', 'Nº Animales', 'Motivo']],
+            body: Array.from({ length: 10 }, () => ['','','','','']),
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 3 },
+            headStyles: { fillColor: [22, 163, 74] },
+            bodyStyles: { minCellHeight: 10 }
+        });
+        doc.save("formulario_vacuna_medicamento.pdf");
     };
   
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:p-0 print:bg-white">
-      <header className="max-w-4xl mx-auto flex justify-between items-center py-4 print:hidden">
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-8">
+      <header className="max-w-4xl mx-auto flex justify-between items-center py-4">
           <Button variant="outline" asChild>
               <Link href="/forms">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Volver a Formularios
               </Link>
           </Button>
-          <Button onClick={handlePrint}>
+          <Button onClick={handleExportPDF}>
               <Download className="mr-2 h-4 w-4" />
               Guardar como PDF
           </Button>
       </header>
-      <main id="printable-content" className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-lg print:shadow-none">
+      <main id="printable-content" className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-lg">
           <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                   <Logo className="h-16 w-16 text-primary" />
