@@ -32,6 +32,33 @@ const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
+const payuLinks: Record<string, Record<string, string>> = {
+    'tier-a': {
+        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'quarterly': 'https://biz.payulatam.com/L0faca445C1F166',
+        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+    },
+    'tier-b': {
+        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+    },
+    'tier-c': {
+        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+    },
+    'tier-d': {
+        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+    },
+};
+
 
 export default function LicensingPage() {
     const router = useRouter();
@@ -62,8 +89,8 @@ export default function LicensingPage() {
         // Step 1: Save the selected plan so the activation page knows what to activate.
         savePlanForActivation(selectedTier.id, selectedCycle.id);
 
-        // Step 2: Open the PayU link in a new tab.
-        const payuLink = 'https://biz.payulatam.com/L0faca4D7ABAB27';
+        // Step 2: Open the correct PayU link in a new tab.
+        const payuLink = payuLinks[selectedTier.id]?.[selectedCycle.id] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
         window.open(payuLink, '_blank');
 
         // Step 3: Show the informational dialog with WhatsApp instructions.
