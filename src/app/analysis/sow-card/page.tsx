@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, UserSearch, Printer, Download, ArrowLeft } from 'lucide-react';
@@ -269,7 +269,7 @@ export default function SowCardPage() {
                         </Popover>
                          <Button variant="outline" onClick={handlePrint} disabled={!selectedSow}>
                             <Printer className="mr-2 h-4 w-4" />
-                            Imprimir
+                            Guardar como PDF
                         </Button>
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -279,7 +279,6 @@ export default function SowCardPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handlePrint()}>Exportar a PDF</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleExport('xlsx')}>Exportar a Excel (XLSX)</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -287,7 +286,7 @@ export default function SowCardPage() {
                 </div>
             </header>
 
-            <main className="p-4">
+            <main className="p-4 print:p-0">
                 <div id="printable-content" className="max-w-4xl mx-auto bg-white p-4 shadow-lg print:shadow-none">
                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
                         <TabsList className="grid w-full grid-cols-2">

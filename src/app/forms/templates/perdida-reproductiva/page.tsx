@@ -24,7 +24,7 @@ export default function PerdidaReproductivaForm() {
             </Button>
             <Button onClick={handlePrint}>
                 <Download className="mr-2 h-4 w-4" />
-                Imprimir o Guardar como PDF
+                Guardar como PDF
             </Button>
         </header>
         <main id="printable-content" className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-lg print:shadow-none">
