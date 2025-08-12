@@ -4,12 +4,19 @@
 import { addMonths, isAfter } from 'date-fns';
 
 const LICENSE_INFO_KEY = 'userLicenseInfo';
+const SELECTED_PLAN_KEY = 'selectedPlanInfo';
+
 
 interface LicenseInfo {
     tierId: 'demo' | 'tier-a' | 'tier-b' | 'tier-c' | 'tier-d';
     tierName: string;
     sowLimit: number;
     expirationDate: string;
+}
+
+interface SelectedPlan {
+    tierId: string;
+    durationInMonths: number;
 }
 
 const tiers = {
@@ -19,6 +26,26 @@ const tiers = {
     'tier-c': { name: 'Plan 101-200 Madres', sowLimit: 200 },
     'tier-d': { name: 'Plan 201+ Madres', sowLimit: Infinity },
 };
+
+export const setSelectedPlan = (tierId: string, durationInMonths: number) => {
+    const plan: SelectedPlan = { tierId, durationInMonths };
+    localStorage.setItem(SELECTED_PLAN_KEY, JSON.stringify(plan));
+};
+
+export const getSelectedPlan = (): SelectedPlan | null => {
+    const storedPlan = localStorage.getItem(SELECTED_PLAN_KEY);
+    if (!storedPlan) return null;
+    try {
+        return JSON.parse(storedPlan);
+    } catch {
+        return null;
+    }
+};
+
+export const clearSelectedPlan = () => {
+    localStorage.removeItem(SELECTED_PLAN_KEY);
+};
+
 
 export const setLicense = (tierId: string, durationInMonths?: number) => {
     const tier = tiers[tierId as keyof typeof tiers];

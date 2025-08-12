@@ -10,7 +10,7 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { getLicenseInfo, setLicense } from '@/lib/license';
+import { getLicenseInfo, setLicense, setSelectedPlan } from '@/lib/license';
 import Link from 'next/link';
 
 const tiers = [
@@ -94,18 +94,13 @@ export default function LicensingPage() {
     }
 
     const handleProceedToPaymentClick = () => {
-        // Guarda la licencia seleccionada localmente para que después del pago,
-        // el usuario pueda continuar con el setup de la granja.
-        setLicense(selectedTier.id, selectedCycle.months);
-
-        // Opcional: Redirigir al setup de la granja inmediatamente después de guardar,
-        // asumiendo que el usuario pagará en la nueva pestaña y luego volverá.
-        setTimeout(() => {
-             router.push('/farm-setup');
-        }, 500); // Pequeño delay para asegurar que el link se abra.
+        // Guarda la selección del plan temporalmente para que la página de confirmación sepa qué activar.
+        setSelectedPlan(selectedTier.id, selectedCycle.months);
+        
+        // Redirige al link de pago
+        const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
+        window.location.href = paymentUrl;
     };
-    
-    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
 
 
     return (
@@ -208,10 +203,8 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <Button size="lg" className="w-full" asChild>
-                                        <Link href={paymentUrl} target="_blank" onClick={handleProceedToPaymentClick}>
-                                            Proceder al Pago
-                                        </Link>
+                                    <Button size="lg" className="w-full" onClick={handleProceedToPaymentClick}>
+                                        Proceder al Pago
                                     </Button>
 
                                     {!licenseExists && (
@@ -231,4 +224,3 @@ export default function LicensingPage() {
         </div>
     );
 }
-
