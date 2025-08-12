@@ -87,21 +87,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-@media print {
-  body {
-    background-color: white !important;
-  }
-  .print-container, .print-container * {
-    visibility: visible;
-  }
-  .print-container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  body > :not(.print-container) {
-    display: none !important;
-  }
-}

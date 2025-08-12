@@ -14,8 +14,8 @@ export default function PerdidaReproductivaForm() {
     };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:bg-white print:p-0">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
+    <div className="bg-gray-100 min-h-screen p-4 sm:p-8 print:p-0 print:bg-white">
+      <div id="printable-content" className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
         <div className="flex justify-between items-center p-4 sm:p-8 border-b print:hidden">
             <Button variant="outline" asChild>
                 <Link href="/forms">
@@ -28,45 +28,43 @@ export default function PerdidaReproductivaForm() {
                 Imprimir o Guardar como PDF
             </Button>
         </div>
-        <div id="printable-content">
-            <div className="p-8 sm:p-12">
-            <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                        <Logo className="h-16 w-16 text-primary" />
-                        <div>
-                            <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
-                            <p className="text-muted-foreground">Granja Demo</p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <h2 className="text-2xl font-bold uppercase">Pérdida Reproductiva</h2>
+        <div className="p-8 sm:p-12">
+        <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-primary">SmartPig</h1>
+                        <p className="text-muted-foreground">Granja Demo</p>
                     </div>
                 </div>
-            <Card className="w-full border-none shadow-none">
-                <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>ID Madre</TableHead>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Tipo de Pérdida</TableHead>
-                            <TableHead>Causa / Observación</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {Array.from({ length: 15 }).map((_, index) => (
-                            <TableRow key={index}>
-                                <TableCell className="h-12"></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                </CardContent>
-            </Card>
+                <div className="text-right">
+                    <h2 className="text-2xl font-bold uppercase">Pérdida Reproductiva</h2>
+                </div>
             </div>
+        <Card className="w-full border-none shadow-none">
+            <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>ID Madre</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Tipo de Pérdida</TableHead>
+                        <TableHead>Causa / Observación</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {Array.from({ length: 15 }).map((_, index) => (
+                        <TableRow key={index}>
+                            <TableCell className="h-12"></TableCell>
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+            </CardContent>
+        </Card>
         </div>
       </div>
     </div>
