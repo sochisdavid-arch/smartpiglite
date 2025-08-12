@@ -65,7 +65,20 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
+        // Guarda la licencia seleccionada en el sistema
         setLicense(selectedTier.id, selectedCycle.months);
+        
+        // **IMPORTANTE**: Reemplaza esta URL de ejemplo por tu link de pago real de Mercado Pago, PayU, etc.
+        const paymentLink = "https://www.mercadopago.com.co/link-de-pago"; 
+        
+        // Redirige al usuario a la pasarela de pago
+        // En una implementación real, después del pago exitoso, la pasarela debería redirigir a una
+        // página de confirmación en tu app. Para este prototipo, simulamos que el pago fue exitoso
+        // y lo llevamos a la configuración de la granja.
+        
+        // window.location.href = paymentLink;
+        
+        // Para este prototipo, vamos directo al siguiente paso
         router.push('/farm-setup');
     }
 
@@ -190,4 +203,3 @@ export default function LicensingPage() {
     );
 }
 
-    
