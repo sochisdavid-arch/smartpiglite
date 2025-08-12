@@ -49,8 +49,6 @@ export default function LicensingPage() {
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
-    const [verificationCode, setVerificationCode] = React.useState<string | null>(null);
-    const [isPopupOpen, setIsPopupOpen] = React.useState(false);
 
     React.useEffect(() => {
         const license = getLicenseInfo();
@@ -71,36 +69,19 @@ export default function LicensingPage() {
     }, [selectedTier, selectedCycle]);
     
     const handlePaymentClick = async () => {
-        const code = await saveVerificationSession(selectedTier.id, selectedCycle.months);
-        setVerificationCode(code);
-        setIsPopupOpen(true);
+        // 1. Create the verification session and get the session ID
+        await saveVerificationSession(selectedTier.id, selectedCycle.months);
+
+        // 2. Get the correct payment URL
+        const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
+        
+        // 3. Open the payment URL in a new tab
+        window.open(paymentUrl, '_blank');
     };
 
-    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-             <Dialog open={isPopupOpen} onOpenChange={setIsPopupOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>¡Importante! Guarda tu Código de Verificación</DialogTitle>
-                        <DialogDescription>
-                            <p className="my-4">Copia y pega este código en el campo de **"descripción"** o **"comentario"** durante tu pago en PayU. Lo necesitarás para verificar tu licencia.</p>
-                            <div className="bg-muted p-4 rounded-md text-center">
-                                <p className="font-mono text-xl font-bold tracking-widest">{verificationCode}</p>
-                            </div>
-                             <p className="mt-4 text-sm text-muted-foreground">
-                                Una vez completado el pago, ve a la sección "Verificar Licencia" en la aplicación para activarla.
-                            </p>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Button asChild size="lg">
-                        <a href={paymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsPopupOpen(false)}>
-                            Continuar a PayU
-                        </a>
-                    </Button>
-                </DialogContent>
-            </Dialog>
             <main className="w-full max-w-4xl mx-auto">
                  {licenseExists && (
                     <div className="mb-6">
@@ -116,7 +97,7 @@ export default function LicensingPage() {
                     <Logo className="h-16 w-16 mx-auto mb-4 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-gray-900">Elige tu Plan</h1>
                     <p className="mt-3 text-lg text-gray-600 max-w-2xl mx-auto">
-                        Selecciona tu plan y ciclo. Serás redirigido a PayU para un pago seguro.
+                        Selecciona tu plan y ciclo de pago. Serás redirigido a PayU para completar tu compra de forma segura.
                     </p>
                 </div>
 
