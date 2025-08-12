@@ -67,12 +67,39 @@ import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { checkLicense } from "@/lib/license";
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    // List of public paths that don't require a license check
+    const publicPaths = ['/licensing', '/payment-confirmation'];
+    
+    // Check if the current path is one of the public paths
+    if (publicPaths.includes(pathname)) {
+        return; // Don't run the license check on these pages
+    }
+
+    const pigsFromStorage = localStorage.getItem('pigs');
+    const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
+    const sowCount = allPigs.filter((p: any) => p.gender === 'Hembra').length;
+    
+    const licenseStatus = checkLicense(sowCount);
+
+    if (!licenseStatus.isValid) {
+        toast({
+            variant: "destructive",
+            title: "Licencia Expirada",
+            description: licenseStatus.message,
+            duration: 10000,
+        });
+        router.push('/licensing');
+    }
+  }, [pathname, router, toast]);
 
   const handleSignOut = async () => {
     try {
