@@ -60,65 +60,49 @@ export const updateInventory = (inventory: InventoryItem[]): void => {
 };
 
 export const deductFromStock = (
-    inventory: InventoryItem[],
-    foodConsumptionHistory: FoodConsumptionRecord[],
-    medicalConsumptionHistory: MedicalConsumptionRecord[],
     productId: string, 
     quantityToDeduct: number,
     area?: string,
     consumptionDate?: string
-): { success: boolean, newStock?: number, message?: string, updatedInventory: InventoryItem[], updatedFoodHistory: FoodConsumptionRecord[], updatedMedicalHistory: MedicalConsumptionRecord[] } => {
+): { success: boolean, newStock?: number, message?: string } => {
     
     if (!productId || quantityToDeduct <= 0) {
-        return { success: false, message: 'ID de producto o cantidad inválidos.', updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
+        return { success: false, message: 'ID de producto o cantidad inválidos.' };
     }
 
+    const inventory = getInventory();
     const productIndex = inventory.findIndex(item => item.id === productId);
 
     if (productIndex === -1) {
-        return { success: false, message: `Producto con ID ${productId} no encontrado.`, updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
+        return { success: false, message: `Producto con ID ${productId} no encontrado.` };
     }
 
     const product = inventory[productIndex];
 
     if (product.stock < quantityToDeduct) {
-        return { success: false, message: `No hay suficiente stock de ${product.name}. Stock: ${product.stock}, Necesario: ${quantityToDeduct}.`, updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
+        return { success: false, message: `No hay suficiente stock de ${product.name}. Stock: ${product.stock}, Necesario: ${quantityToDeduct}.` };
     }
 
-    const updatedInventory = [...inventory];
-    updatedInventory[productIndex] = { ...product, stock: product.stock - quantityToDeduct };
-
-    let updatedFoodHistory = [...foodConsumptionHistory];
-    let updatedMedicalHistory = [...medicalConsumptionHistory];
-
-    if (product.category === 'alimento') {
-        const newRecord: FoodConsumptionRecord = {
-            id: `consumo-alim-${Date.now()}-${Math.random()}`,
-            date: consumptionDate || new Date().toISOString(),
-            productId: product.id,
-            productName: product.name,
-            quantity: quantityToDeduct,
-            area: area || 'Área no especificada',
-        };
-        updatedFoodHistory.unshift(newRecord);
-    } else {
-        const newRecord: MedicalConsumptionRecord = {
-            id: `consumo-med-${Date.now()}-${Math.random()}`,
-            date: consumptionDate || new Date().toISOString(),
-            productId: product.id,
-            productName: product.name,
-            category: product.category,
-            quantity: quantityToDeduct,
-            area: area || 'Área no especificada',
-        };
-        updatedMedicalHistory.unshift(newRecord);
-    }
-
-    return { 
-        success: true, 
-        newStock: updatedInventory[productIndex].stock,
-        updatedInventory,
-        updatedFoodHistory,
-        updatedMedicalHistory
+    inventory[productIndex] = { ...product, stock: product.stock - quantityToDeduct };
+    updateInventory(inventory);
+    
+    // Log consumption
+    const consumptionKey = product.category === 'alimento' ? 'foodConsumptionHistory' : 'medicalConsumptionHistory';
+    const history = JSON.parse(localStorage.getItem(consumptionKey) || '[]');
+    
+    const newRecord = {
+        id: `consumo-${product.category}-${Date.now()}`,
+        date: consumptionDate || new Date().toISOString(),
+        productId: product.id,
+        productName: product.name,
+        category: product.category,
+        quantity: quantityToDeduct,
+        area: area || 'Área no especificada',
     };
+
+    history.unshift(newRecord);
+    localStorage.setItem(consumptionKey, JSON.stringify(history));
+
+
+    return { success: true, newStock: inventory[productIndex].stock };
 };

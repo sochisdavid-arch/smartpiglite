@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PreceboReportData } from '@/components/PreceboReport';
-import { deductFromStock, getInventory, InventoryItem, FoodConsumptionRecord, updateInventory } from '@/lib/inventory';
+import { deductFromStock, getInventory, InventoryItem, FoodConsumptionRecord } from '@/lib/inventory';
 
 
 interface NurseryBatch {
@@ -176,10 +176,6 @@ export default function LotePreceboPage() {
 
     const handleConsumptionChange = (weekId: string, dayIndex: number, value: string) => {
         if (!batch) return;
-
-        const currentInventory = getInventory();
-        const foodConsumptionHistory = JSON.parse(localStorage.getItem('foodConsumptionHistory') || '[]');
-
         const updatedHistory = consumptionHistory.map(week => {
             if (week.id === weekId) {
                 const oldConsumptionValue = Number(week.consumption[dayIndex] || 0);
@@ -187,37 +183,19 @@ export default function LotePreceboPage() {
                 const consumptionDifference = newConsumptionValue - oldConsumptionValue;
 
                 if (week.feedType && consumptionDifference !== 0) {
-                    const consumptionDate = addDays(parseISO(week.startDate), dayIndex);
-                    const result = deductFromStock(
-                        currentInventory,
-                        foodConsumptionHistory,
-                        [], // medical history not relevant here
+                     const consumptionDate = addDays(parseISO(week.startDate), dayIndex);
+                    deductFromStock(
                         week.feedType,
                         consumptionDifference,
                         `Lote Precebo ${loteId}`,
                         consumptionDate.toISOString()
                     );
-
-                    if (result.success) {
-                        updateInventory(result.updatedInventory);
-                        localStorage.setItem('foodConsumptionHistory', JSON.stringify(result.updatedFoodHistory));
-                        toast({
-                            title: "Stock Actualizado",
-                            description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${currentInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
-                        });
-                    } else {
-                        toast({
-                            variant: 'destructive',
-                            title: 'Error de Stock',
-                            description: result.message,
-                        });
-                         // Revert the input visually if deduction fails
-                        const inputElement = document.querySelector(`[data-week-id="${weekId}"] [data-day-index="${dayIndex}"]`) as HTMLInputElement;
-                        if(inputElement) inputElement.value = String(oldConsumptionValue);
-                        return week;
-                    }
+                    toast({
+                        title: "Stock Actualizado",
+                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${getInventory().find(i => i.id === week.feedType)?.name || 'alimento'}.`,
+                    });
                 }
-                
+
                 const newConsumption = [...week.consumption];
                 newConsumption[dayIndex] = value;
                 return { ...week, consumption: newConsumption };
@@ -382,9 +360,6 @@ export default function LotePreceboPage() {
                  if (['Tratamiento', 'Vacunación'].includes(newEvent.type) && newEvent.product && newEvent.dose && newEvent.animalCount) {
                     const totalDose = newEvent.dose * newEvent.animalCount;
                     const result = deductFromStock(
-                        getInventory(),
-                        JSON.parse(localStorage.getItem('foodConsumptionHistory') || '[]'),
-                        JSON.parse(localStorage.getItem('medicalConsumptionHistory') || '[]'),
                         newEvent.product,
                         totalDose,
                         `Lote Precebo ${loteId}`,
@@ -392,8 +367,6 @@ export default function LotePreceboPage() {
                     );
 
                     if(result.success) {
-                        updateInventory(result.updatedInventory);
-                        localStorage.setItem('medicalConsumptionHistory', JSON.stringify(result.updatedMedicalHistory));
                         toast({
                             title: "Stock Actualizado",
                             description: `Se descontaron ${totalDose}ml del producto. Stock restante: ${result.newStock?.toFixed(2)}`,
@@ -710,8 +683,6 @@ export default function LotePreceboPage() {
                                             <TableCell key={`${weekData.id}-day-${dayIndex}`}>
                                                 <Input 
                                                     type="number"
-                                                    data-week-id={weekData.id}
-                                                    data-day-index={dayIndex}
                                                     defaultValue={dayConsumption}
                                                     onBlur={(e) => handleConsumptionChange(weekData.id, dayIndex, e.target.value)}
                                                     className="w-20 text-center"
