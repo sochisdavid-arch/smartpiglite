@@ -21,7 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { mockInventory } from '@/lib/mock-data';
 import { deductFromStock, getInventory } from '@/lib/inventory';
 
 // Types specific to Lactation
@@ -369,8 +368,6 @@ export default function LactationHistoryPage() {
             updatedPig.events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             updatedPig.lastEvent = updatedPig.events[0];
             
-            setPig(updatedPig); // Optimistic update of UI
-
             // Main logic for Destete
             if (selectedEventType === 'Destete') {
                 updatedPig.status = 'Destetada';
@@ -390,7 +387,7 @@ export default function LactationHistoryPage() {
                     const avgAge = partoEvent ? differenceInDays(weaningDate, parseISO(partoEvent.date)) : 0;
                     
                     const healthEventsForPiglets = pig!.events
-                        .filter(e => e.target === 'lechones' && e.date >= partoEvent.date && e.date <= eventDate)
+                        .filter(e => e.target === 'lechones' && partoEvent && e.date >= partoEvent.date && e.date <= eventDate)
                         .map(e => ({...e, type: e.type, details: e.details, animalCount: newPigletsCount})); // Carry over health events
 
 
@@ -425,7 +422,8 @@ export default function LactationHistoryPage() {
             const pigsFromStorage = localStorage.getItem('pigs');
             let pigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : initialPigs;
             pigs = pigs.map((p: Pig) => p.id === updatedPig.id ? updatedPig : p);
-localStorage.setItem('pigs', JSON.stringify(pigs));
+            localStorage.setItem('pigs', JSON.stringify(pigs));
+            setPig(updatedPig);
             
             toast({
                 title: `¡Evento ${editingEvent ? 'Actualizado' : 'Registrado'}!`,
@@ -755,3 +753,4 @@ localStorage.setItem('pigs', JSON.stringify(pigs));
         </AppLayout>
     );
 }
+    

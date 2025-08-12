@@ -13,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockInventory } from '@/lib/mock-data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -21,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PreceboReportData } from '@/components/PreceboReport'; 
-import { deductFromStock, getInventory } from '@/lib/inventory';
+import { deductFromStock, getInventory, InventoryItem } from '@/lib/inventory';
 
 
 interface CebaBatch {
@@ -189,7 +188,7 @@ export default function LoteCebaPage() {
                     );
                     toast({
                         title: "Stock Actualizado",
-                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${mockInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
+                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${getInventory().find(i => i.id === week.feedType)?.name || 'alimento'}.`,
                     });
                 }
 
@@ -269,10 +268,11 @@ export default function LoteCebaPage() {
             totalFeedConsumed: totalFeedConsumed,
             dailyAnimalConsumption: finalCount > 0 && daysInCeba > 0 ? (totalFeedConsumed / finalCount) / daysInCeba : 0,
             feedConversion: feedConversion,
+            saleValue: finalEvent.saleValue,
             healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
                 date: e.date,
                 type: e.type,
-                product: mockInventory.find(p => p.id === e.product)?.name || e.product || 'N/A',
+                product: getInventory().find(p => p.id === e.product)?.name || e.product || 'N/A',
                 details: e.details || `Aplicado a ${e.animalCount} animales.`
             })),
         };

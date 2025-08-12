@@ -167,7 +167,7 @@ export function SowProfileCard({ sow, sowData }: { sow: Pig, sowData: SowData })
                     <div className="text-right">
                         <p className="text-lg font-bold">{sow.id}</p>
                         <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${window.location.origin}/analysis/sow-card?sowId=${sow.id}`)}`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://smartpig.web.app/analysis/sow-card?sowId=${sow.id}`)}`}
                             alt="QR Code"
                             width={60}
                             height={60}
@@ -365,4 +365,4 @@ export const exportSowProfilePDF = (sow: Pig, sowData: SowData) => {
 
     doc.save(`ficha_vida_${sow.id}.pdf`);
 };
-
+    

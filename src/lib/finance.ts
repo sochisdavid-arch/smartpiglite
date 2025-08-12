@@ -27,7 +27,7 @@ export const getFinancialSummary = () => {
         const allReports = [...liquidatedPreceboReports, ...liquidatedCebaReports];
 
         allReports.forEach(report => {
-            const saleValue = report.finalEvent?.saleValue || report.saleValue;
+            const saleValue = report.saleValue;
             if (report.liquidationReason === 'Venta de lote' && saleValue > 0) {
                  transactions.push({
                     id: `sale-batch-${report.batchId}`,
@@ -179,3 +179,4 @@ export const getFinancialSummary = () => {
 
     return { transactions, summary, monthlyData, costPerKilo };
 };
+    

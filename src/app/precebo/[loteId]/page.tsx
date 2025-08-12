@@ -13,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockInventory } from '@/lib/mock-data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -193,7 +192,7 @@ export default function LotePreceboPage() {
                     );
                     toast({
                         title: "Stock Actualizado",
-                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${mockInventory.find(i => i.id === week.feedType)?.name || 'alimento'}.`,
+                        description: `Se han ${consumptionDifference > 0 ? 'descontado' : 'retornado'} ${Math.abs(consumptionDifference).toFixed(2)}kg de ${getInventory().find(i => i.id === week.feedType)?.name || 'alimento'}.`,
                     });
                 }
                 
@@ -229,6 +228,91 @@ export default function LotePreceboPage() {
     const openDeleteEventDialog = (event: BatchEvent) => {
         setEventToDelete(event);
         setIsDeleteDialogOpen(true);
+    };
+
+    const generateLiquidationReport = (finalBatch: NurseryBatch, finalEvent: BatchEvent) => {
+        const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
+        const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
+        
+        const finalCount = (finalEvent.animalCount || finalBatch.pigletCount);
+        const daysInPrecebo = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
+        const finalAge = finalBatch.avgAge + daysInPrecebo;
+        const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
+        
+        const finalAvgWeight = finalEvent.avgWeight || 0;
+        const finalTotalWeight = finalAvgWeight * finalCount;
+        const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
+
+        const animalWeightGain = finalCount > 0 ? totalWeightGain / finalCount : 0;
+        const dailyWeightGain = finalCount > 0 && daysInPrecebo > 0 ? (totalWeightGain / finalCount) / daysInPrecebo * 1000 : 0; // in grams
+        const feedConversion = totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0;
+        
+        const report: PreceboReportData = {
+            batchId: finalBatch.id,
+            generationDate: new Date().toISOString(),
+            liquidationReason: finalEvent.type,
+            startDate: finalBatch.creationDate,
+            endDate: finalEvent.date,
+            initialCount: finalBatch.initialPigletCount,
+            finalCount: finalCount,
+            initialAge: finalBatch.avgAge,
+            finalAge: finalAge,
+            daysInPrecebo: daysInPrecebo,
+            weeksOfLife: Math.floor(finalAge / 7),
+            totalDeaths: totalDeaths,
+            mortalityRate: finalBatch.initialPigletCount > 0 ? (totalDeaths / finalBatch.initialPigletCount) * 100 : 0,
+            avgMortalityAge: 0, // Needs logic to be calculated
+            initialTotalWeight: finalBatch.totalWeight,
+            finalTotalWeight: finalTotalWeight,
+            initialAvgWeight: finalBatch.avgWeight,
+            finalAvgWeight: finalAvgWeight,
+            totalWeightGain: totalWeightGain,
+            animalWeightGain: animalWeightGain,
+            dailyWeightGain: dailyWeightGain,
+            totalFeedConsumed: totalFeedConsumed,
+            dailyAnimalConsumption: finalCount > 0 && daysInPrecebo > 0 ? (totalFeedConsumed / finalCount) / daysInPrecebo : 0,
+            feedConversion: feedConversion,
+            saleValue: finalEvent.saleValue,
+            healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
+                date: e.date,
+                type: e.type,
+                product: getInventory().find(p => p.id === e.product)?.name || e.product || 'N/A',
+                details: e.details || `Aplicado a ${e.animalCount} animales.`
+            })),
+        };
+
+        const existingReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
+        existingReports.push(report);
+        localStorage.setItem('liquidatedPreceboReports', JSON.stringify(existingReports));
+    };
+
+    const createCebaBatch = (preceboBatch: NurseryBatch, transferEvent: BatchEvent) => {
+        const cebaBatches = JSON.parse(localStorage.getItem('cebaBatches') || '{}');
+        const newCebaId = preceboBatch.id.replace('PRECEBO', 'CEBA');
+        const daysInPrecebo = differenceInDays(parseISO(transferEvent.date), parseISO(preceboBatch.creationDate));
+
+        const newCebaBatch = {
+            id: newCebaId,
+            creationDate: transferEvent.date,
+            pigletCount: transferEvent.animalCount,
+            initialPigletCount: transferEvent.animalCount,
+            avgWeight: transferEvent.avgWeight,
+            totalWeight: (transferEvent.animalCount || 0) * (transferEvent.avgWeight || 0),
+            avgAge: preceboBatch.avgAge + daysInPrecebo,
+            sows: preceboBatch.sows,
+            status: 'Activo',
+            events: [],
+            originBatchId: preceboBatch.id,
+            module: transferEvent.destination || 'CEBA-01'
+        };
+
+        cebaBatches[newCebaId] = newCebaBatch;
+        localStorage.setItem('cebaBatches', JSON.stringify(cebaBatches));
+
+        toast({
+            title: "¡Lote Transferido a Ceba!",
+            description: `El lote ${newCebaId} ha sido creado en el módulo de ceba.`,
+        });
     };
 
     const EventForm = () => {
@@ -270,8 +354,6 @@ export default function LotePreceboPage() {
             
             let updatedBatch = { ...batch };
             if (editingEvent) {
-                // If editing, you might need to revert the stock of the old event before applying the new one.
-                // This logic can get complex and is omitted for simplicity here.
                 updatedBatch.events = updatedBatch.events.map(ev => ev.id === editingEvent.id ? newEvent : ev);
             } else {
                 updatedBatch.events = [...updatedBatch.events, newEvent];
@@ -439,90 +521,6 @@ export default function LotePreceboPage() {
             </DialogContent>
         )
     }
-
-     const generateLiquidationReport = (finalBatch: NurseryBatch, finalEvent: BatchEvent) => {
-        const deathsEvents = finalBatch.events.filter(e => e.type === 'Muerte en lote');
-        const totalDeaths = deathsEvents.reduce((sum, e) => sum + (e.animalCount || 0), 0);
-        
-        const finalCount = (finalEvent.animalCount || finalBatch.pigletCount);
-        const daysInPrecebo = differenceInDays(parseISO(finalEvent.date), parseISO(finalBatch.creationDate));
-        const finalAge = finalBatch.avgAge + daysInPrecebo;
-        const totalFeedConsumed = consumptionHistory.reduce((sum, week) => sum + week.totalWeek, 0);
-        
-        const finalAvgWeight = finalEvent.avgWeight || 0;
-        const finalTotalWeight = finalAvgWeight * finalCount;
-        const totalWeightGain = finalTotalWeight - finalBatch.totalWeight;
-
-        const animalWeightGain = finalCount > 0 ? totalWeightGain / finalCount : 0;
-        const dailyWeightGain = finalCount > 0 && daysInPrecebo > 0 ? (totalWeightGain / finalCount) / daysInPrecebo * 1000 : 0; // in grams
-        const feedConversion = totalWeightGain > 0 ? totalFeedConsumed / totalWeightGain : 0;
-        
-        const report: PreceboReportData = {
-            batchId: finalBatch.id,
-            generationDate: new Date().toISOString(),
-            liquidationReason: finalEvent.type,
-            startDate: finalBatch.creationDate,
-            endDate: finalEvent.date,
-            initialCount: finalBatch.initialPigletCount,
-            finalCount: finalCount,
-            initialAge: finalBatch.avgAge,
-            finalAge: finalAge,
-            daysInPrecebo: daysInPrecebo,
-            weeksOfLife: Math.floor(finalAge / 7),
-            totalDeaths: totalDeaths,
-            mortalityRate: finalBatch.initialPigletCount > 0 ? (totalDeaths / finalBatch.initialPigletCount) * 100 : 0,
-            avgMortalityAge: 0, // Needs logic to be calculated
-            initialTotalWeight: finalBatch.totalWeight,
-            finalTotalWeight: finalTotalWeight,
-            initialAvgWeight: finalBatch.avgWeight,
-            finalAvgWeight: finalAvgWeight,
-            totalWeightGain: totalWeightGain,
-            animalWeightGain: animalWeightGain,
-            dailyWeightGain: dailyWeightGain,
-            totalFeedConsumed: totalFeedConsumed,
-            dailyAnimalConsumption: finalCount > 0 && daysInPrecebo > 0 ? (totalFeedConsumed / finalCount) / daysInPrecebo : 0,
-            feedConversion: feedConversion,
-            healthRecords: finalBatch.events.filter(e => e.type === 'Tratamiento' || e.type === 'Vacunación').map(e => ({
-                date: e.date,
-                type: e.type,
-                product: mockInventory.find(p => p.id === e.product)?.name || e.product || 'N/A',
-                details: e.details || `Aplicado a ${e.animalCount} animales.`
-            })),
-        };
-
-        const existingReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
-        existingReports.push(report);
-        localStorage.setItem('liquidatedPreceboReports', JSON.stringify(existingReports));
-    };
-
-    const createCebaBatch = (preceboBatch: NurseryBatch, transferEvent: BatchEvent) => {
-        const cebaBatches = JSON.parse(localStorage.getItem('cebaBatches') || '{}');
-        const newCebaId = preceboBatch.id.replace('PRECEBO', 'CEBA');
-        const daysInPrecebo = differenceInDays(parseISO(transferEvent.date), parseISO(preceboBatch.creationDate));
-
-        const newCebaBatch = {
-            id: newCebaId,
-            creationDate: transferEvent.date,
-            pigletCount: transferEvent.animalCount,
-            initialPigletCount: transferEvent.animalCount,
-            avgWeight: transferEvent.avgWeight,
-            totalWeight: (transferEvent.animalCount || 0) * (transferEvent.avgWeight || 0),
-            avgAge: preceboBatch.avgAge + daysInPrecebo,
-            sows: preceboBatch.sows,
-            status: 'Activo',
-            events: [],
-            originBatchId: preceboBatch.id,
-            module: transferEvent.destination || 'CEBA-01'
-        };
-
-        cebaBatches[newCebaId] = newCebaBatch;
-        localStorage.setItem('cebaBatches', JSON.stringify(cebaBatches));
-
-        toast({
-            title: "¡Lote Transferido a Ceba!",
-            description: `El lote ${newCebaId} ha sido creado en el módulo de ceba.`,
-        });
-    };
 
     const handleDeleteEvent = () => {
         if (!eventToDelete || !batch) return;
@@ -771,3 +769,4 @@ export default function LotePreceboPage() {
         </AppLayout>
     );
 }
+    
