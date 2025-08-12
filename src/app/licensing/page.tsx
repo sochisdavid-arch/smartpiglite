@@ -93,15 +93,12 @@ export default function LicensingPage() {
         router.push('/farm-setup');
     }
 
-    const handleProceedToPaymentClick = () => {
+    const handlePlanSelection = () => {
         // Guarda la selección del plan temporalmente para que la página de confirmación sepa qué activar.
         setSelectedPlan(selectedTier.id, selectedCycle.months);
-        
-        // Redirige al link de pago
-        const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
-        window.location.href = paymentUrl;
     };
 
+    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -203,8 +200,10 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <Button size="lg" className="w-full" onClick={handleProceedToPaymentClick}>
-                                        Proceder al Pago
+                                    <Button size="lg" className="w-full" asChild>
+                                        <Link href={paymentUrl} target="_blank" onClick={handlePlanSelection}>
+                                            Proceder al Pago
+                                        </Link>
                                     </Button>
 
                                     {!licenseExists && (
