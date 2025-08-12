@@ -9,7 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, UserSearch, Download, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
+import { SowProfileCard, type SowData, processSowHistory, exportSowProfilePDF } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -34,7 +34,7 @@ interface Pig {
 }
 
 const FarrowingRecordForm = () => (
-    <div className="bg-white py-8">
+    <div className="bg-white py-8" id="farrowing-form-printable">
       <div className="flex items-center justify-between mb-6 px-8 print:px-0">
           <div className="flex items-center gap-4">
               <Logo className="h-12 w-12 text-primary" />
@@ -150,6 +150,14 @@ export default function SowCardPage() {
         }
         setOpen(false);
     };
+    
+    const handleExport = () => {
+        if(activeTab === 'farrowing-form') {
+            window.print();
+        } else if (sowData && selectedSow) {
+            exportSowProfilePDF(selectedSow, sowData);
+        }
+    }
 
     return (
         <div className="bg-gray-100 min-h-screen">
@@ -208,7 +216,7 @@ export default function SowCardPage() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                         <Button onClick={() => window.print()} disabled={!selectedSow}>
+                         <Button onClick={handleExport} disabled={!selectedSow}>
                             <Download className="mr-2 h-4 w-4" />
                             Guardar como PDF
                         </Button>
@@ -217,7 +225,7 @@ export default function SowCardPage() {
             </header>
 
             <main className="p-4 print:p-0">
-                <div className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
+                <div className="max-w-5xl mx-auto bg-white shadow-lg print:shadow-none">
                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
@@ -236,8 +244,8 @@ export default function SowCardPage() {
                             </Card>
                         ) : (
                            <div id="printable-content">
-                             {activeTab === 'sow-card' && sowData && <SowProfileCard sow={selectedSow} />}
-                             {activeTab === 'farrowing-form' && <FarrowingRecordForm />}
+                                {activeTab === 'sow-card' && sowData && <SowProfileCard sow={selectedSow} sowData={sowData} />}
+                                {activeTab === 'farrowing-form' && <FarrowingRecordForm />}
                            </div>
                         )}
                     </div>
@@ -246,3 +254,4 @@ export default function SowCardPage() {
         </div>
     );
 }
+
