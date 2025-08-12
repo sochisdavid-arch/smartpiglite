@@ -35,7 +35,7 @@ const formatCurrency = (value: number) => {
 const paymentLinks = {
     'tier-a': {
         // TODO: Reemplazar con los links de pago reales de PayU
-        'monthly': 'https://biz.payulatam.com/B0faca477D40C14',
+        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_Q',
         'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_S',
         'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_A',
@@ -65,7 +65,6 @@ export default function LicensingPage() {
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
-    const formRef = React.useRef<HTMLFormElement>(null);
 
     React.useEffect(() => {
         const license = getLicenseInfo();
@@ -95,18 +94,10 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
-        // Guarda la licencia seleccionada en el sistema
         setLicense(selectedTier.id, selectedCycle.months);
-        
-        if (formRef.current) {
-            // El action del formulario se establecerá dinámicamente si es necesario,
-            // pero para un botón de pago simple, la URL completa ya está en el action.
-            // Aún así, podemos simular el llenado de otros campos si fuera necesario.
-            formRef.current.submit();
-        }
+        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
+        window.location.href = paymentUrl;
     }
-
-    const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -208,11 +199,6 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    {/* Formulario oculto para enviar a PayU */}
-                                    <form ref={formRef} action={paymentUrl} method="post" className="hidden">
-                                        {/* PayU puede requerir campos adicionales aquí, pero para un botón simple, el action es suficiente */}
-                                    </form>
-
                                     <Button size="lg" className="w-full" onClick={handlePayment}>
                                         Proceder al Pago
                                     </Button>
