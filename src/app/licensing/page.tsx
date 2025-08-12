@@ -46,7 +46,7 @@ const payuLinks: Record<string, Record<string, string>> = {
         'annual': 'https://biz.payulatam.com/L0faca479339D10',
     },
     'tier-c': {
-        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'monthly': 'https://biz.payulatam.com/L0faca417C297DC',
         'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
