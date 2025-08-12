@@ -3,22 +3,21 @@
 
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, UserSearch, Printer, Download } from 'lucide-react';
+import { Check, ChevronsUpDown, UserSearch, Printer, Download, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import * as XLSX from 'xlsx';
-import { format, parseISO, isValid, addDays } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { Logo } from '@/components/Logo';
+import Link from 'next/link';
 
 interface Pig {
     id: string;
@@ -212,12 +211,20 @@ export default function SowCardPage() {
     };
 
     return (
-        <AppLayout>
-            <div className="flex flex-col gap-6">
-                <div id="no-print-header" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+        <div className="bg-gray-100 min-h-screen">
+            <header className="bg-background p-4 border-b print:hidden">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-7xl mx-auto">
                     <div className="flex items-center gap-4">
-                        <UserSearch className="h-8 w-8 text-primary" />
-                        <h1 className="text-3xl font-bold tracking-tight">Ficha de la Madre</h1>
+                        <Button variant="outline" asChild>
+                            <Link href="/analysis/reproductive-loss-analysis">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Volver a Análisis
+                            </Link>
+                        </Button>
+                        <div className="flex items-center gap-2">
+                             <UserSearch className="h-6 w-6 text-primary" />
+                             <h1 className="text-xl font-bold tracking-tight">Ficha de la Madre</h1>
+                        </div>
                     </div>
                      <div className="flex flex-wrap items-center gap-2">
                         <Popover open={open} onOpenChange={setOpen}>
@@ -278,33 +285,37 @@ export default function SowCardPage() {
                         </DropdownMenu>
                     </div>
                 </div>
-                
-                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
-                        <TabsTrigger value="farrowing-form">Formulario de Parto</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                
-                <div id="printable-content">
-                    {!selectedSow ? (
-                        <Card className="flex items-center justify-center min-h-[400px] border-dashed print:hidden">
-                            <div className="text-center text-muted-foreground">
-                                <UserSearch className="h-16 w-16 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold">Seleccione una madre</h3>
-                                <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
-                            </div>
-                        </Card>
-                    ) : (
-                       <div className={cn(activeTab === 'sow-card' ? 'block' : 'hidden print:block')}>
-                           {sowData && <SowProfileCard sow={selectedSow} />}
-                       </div>
-                    )}
+            </header>
+
+            <main className="p-4">
+                <div id="printable-content" className="max-w-4xl mx-auto bg-white p-4 shadow-lg print:shadow-none">
+                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
+                            <TabsTrigger value="farrowing-form">Formulario de Parto</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    
+                    <div className="mt-4">
+                        {!selectedSow ? (
+                            <Card className="flex items-center justify-center min-h-[400px] border-dashed print:hidden">
+                                <div className="text-center text-muted-foreground">
+                                    <UserSearch className="h-16 w-16 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold">Seleccione una madre</h3>
+                                    <p>Elija una madre de la lista para ver su hoja de vida completa.</p>
+                                </div>
+                            </Card>
+                        ) : (
+                           <div className={cn(activeTab === 'sow-card' ? 'block' : 'hidden print:block')}>
+                               {sowData && <SowProfileCard sow={selectedSow} />}
+                           </div>
+                        )}
+                         <div className={cn(activeTab === 'farrowing-form' ? 'block' : 'hidden print:block')}>
+                           <FarrowingRecordForm />
+                        </div>
+                    </div>
                 </div>
-                <div className={cn(activeTab === 'farrowing-form' ? 'block' : 'hidden print:block')}>
-                   <FarrowingRecordForm />
-                </div>
-            </div>
-        </AppLayout>
+            </main>
+        </div>
     );
 }
