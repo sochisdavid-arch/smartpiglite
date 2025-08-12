@@ -61,12 +61,15 @@ export default function LicensingPage() {
     }, [selectedTier, selectedCycle]);
     
     const handlePaymentClick = () => {
+        // Step 1: Save the selected plan so the activation page knows what to activate.
         savePlanForActivation(selectedTier.id, selectedCycle.months);
+
+        // Step 2: Open the PayU link in a new tab.
+        const payuLink = 'https://biz.payulatam.com/L0faca4D7ABAB27';
+        window.open(payuLink, '_blank');
+
+        // Step 3: Show the informational dialog with WhatsApp instructions.
         setIsPaymentInfoOpen(true);
-        toast({
-            title: "Plan seleccionado guardado",
-            description: "Tu plan ha sido guardado. Completa el pago para recibir tu código de activación.",
-        });
     };
 
 
