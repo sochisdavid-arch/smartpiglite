@@ -65,8 +65,15 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
-        setLicense(selectedTier.id, selectedCycle.months);
-        router.push('/farm-setup');
+        // En una aplicación real, aquí llamarías a tu backend para crear una sesión de Stripe Checkout.
+        // Como no podemos hacer eso, simularemos la redirección a una página de pago de ejemplo de Stripe.
+        window.location.href = 'https://buy.stripe.com/test_eVa4hE9G1cM15gY5kk';
+        
+        // El código para guardar la licencia se movería a una página de "éxito de pago"
+        // a la que Stripe te redirigiría después de un pago completado.
+        // Por ahora, lo dejamos comentado aquí.
+        // setLicense(selectedTier.id, selectedCycle.months);
+        // router.push('/farm-setup');
     }
 
     return (
@@ -108,7 +115,7 @@ export default function LicensingPage() {
                                             selectedTierId === tier.id ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:bg-gray-50"
                                         )}>
                                             <span className="font-semibold">{tier.label}</span>
-                                            <RadioGroupItem value={tier.id} id={tier.id} className="sr-only" />
+                                            <RadioGroupItem value={tier.id} id={tier.id} />
                                             {selectedTierId === tier.id && <CheckCircle className="h-5 w-5 text-primary" />}
                                         </Label>
                                     ))}
@@ -189,3 +196,5 @@ export default function LicensingPage() {
         </div>
     );
 }
+
+    
