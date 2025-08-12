@@ -11,13 +11,6 @@ import { Check, ChevronsUpDown, UserSearch, Download, ArrowLeft } from 'lucide-r
 import { cn } from '@/lib/utils';
 import { SowProfileCard, type SowData, processSowHistory } from '@/components/SowProfileCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import * as XLSX from 'xlsx';
-import { format, parseISO, isValid } from 'date-fns';
-import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
-import { Logo } from '@/components/Logo';
-import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -26,6 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 
 
 interface Pig {
@@ -39,7 +34,7 @@ interface Pig {
 }
 
 const FarrowingRecordForm = () => (
-    <div className="bg-white py-8 print:p-4">
+    <div className="bg-white py-8">
       <div className="flex items-center justify-between mb-6 px-8 print:px-0">
           <div className="flex items-center gap-4">
               <Logo className="h-12 w-12 text-primary" />
@@ -156,111 +151,6 @@ export default function SowCardPage() {
         setOpen(false);
     };
 
-    const handleExportPDF = () => {
-        if (!selectedSow || !sowData) return;
-        const doc = new jsPDF();
-        const { cycles, kpis } = sowData;
-
-        doc.setFontSize(18);
-        doc.text(`Ficha de Vida: ${selectedSow.id}`, 14, 22);
-
-        autoTable(doc, {
-            startY: 30,
-            head: [['Métrica', 'Valor']],
-            body: [
-                ['ID', selectedSow.id],
-                ['Raza', selectedSow.breed],
-                ['Fecha Nacimiento', format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy')],
-                ['Estado', selectedSow.status],
-            ],
-            theme: 'striped'
-        });
-
-        autoTable(doc, {
-            head: [['KPI', 'Valor']],
-            body: Object.entries(kpis).map(([key, value]) => {
-                const kpiLabels: Record<string, string> = {
-                    totalFarrowings: 'Total de Partos', avgTotalBorn: 'Prom. Total Nacidos', avgLiveBorn: 'Prom. Nacidos Vivos',
-                    avgStillborn: 'Prom. Mortinatos', avgMummified: 'Prom. Momias', avgWeaned: 'Prom. Destetados',
-                    avgFarrowingInterval: 'Prom. Intervalo Partos (días)', avgGestation: 'Prom. Días Gestación',
-                    avgLactation: 'Prom. Días Lactancia', avgWeanToService: 'Prom. Destete-Servicio (días)'
-                };
-                return [kpiLabels[key] || key, typeof value === 'number' ? value.toFixed(2) : value];
-            }),
-            theme: 'grid'
-        });
-        
-        autoTable(doc, {
-            head: [['Ciclo', 'Fecha Parto', 'NV', 'NM', 'Mom', 'Dest', 'D. Gest', 'D. Lact', 'Int. Partos', 'D. Dest-Serv']],
-            body: cycles.map(c => [
-                c.cycle, c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yy') : '', c.liveBorn, c.stillborn, c.mummified, c.pigletsWeaned,
-                c.gestationDays, c.lactationDays, c.farrowingInterval, c.weaningToServiceDays
-            ]),
-            theme: 'grid'
-        });
-
-        doc.save(`ficha_vida_${selectedSow.id}.pdf`);
-    };
-
-    const handleExportXLSX = () => {
-        if (!selectedSow || !sowData) return;
-
-        const { cycles, kpis } = sowData;
-        const sowInfo = [
-            { "Métrica": "ID", "Valor": selectedSow.id },
-            { "Métrica": "Raza", "Valor": selectedSow.breed },
-            { "Métrica": "Fecha Nacimiento", "Valor": format(parseISO(selectedSow.birthDate), 'dd/MM/yyyy') },
-            { "Métrica": "Estado", "Valor": selectedSow.status },
-        ];
-        const sowInfoSheet = XLSX.utils.json_to_sheet(sowInfo);
-
-        const kpiDataForSheet = Object.entries(kpis).map(([key, value]) => {
-            const kpiLabels: Record<string, string> = {
-                totalFarrowings: 'Total de Partos',
-                avgTotalBorn: 'Prom. Total Nacidos',
-                avgLiveBorn: 'Prom. Nacidos Vivos',
-                avgStillborn: 'Prom. Mortinatos',
-                avgMummified: 'Prom. Momias',
-                avgWeaned: 'Prom. Destetados',
-                avgFarrowingInterval: 'Prom. Intervalo Partos (días)',
-                avgGestation: 'Prom. Días Gestación',
-                avgLactation: 'Prom. Días Lactancia',
-                avgWeanToService: 'Prom. Destete-Servicio (días)'
-            };
-            return { Métrica: kpiLabels[key] || key, Valor: typeof value === 'number' ? value.toFixed(2) : value };
-        });
-        const kpiSheet = XLSX.utils.json_to_sheet(kpiDataForSheet);
-
-        const cycleDataForSheet = cycles.map(c => ({
-            'Ciclo': c.cycle,
-            'Fecha Parto': c.farrowingDate ? format(parseISO(c.farrowingDate), 'dd/MM/yyyy') : '',
-            'Nacidos Vivos': c.liveBorn,
-            'Mortinatos': c.stillborn,
-            'Momias': c.mummified,
-            'Destetados': c.pigletsWeaned,
-            'Dias Gestacion': c.gestationDays,
-            'Dias Lactancia': c.lactationDays,
-            'Intervalo Partos': c.farrowingInterval,
-            'Dias Destete-Servicio': c.weaningToServiceDays
-        }));
-        const cycleSheet = XLSX.utils.json_to_sheet(cycleDataForSheet);
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, sowInfoSheet, "Info Cerda");
-        XLSX.utils.book_append_sheet(wb, kpiSheet, "KPIs");
-        XLSX.utils.book_append_sheet(wb, cycleSheet, "Historial de Ciclos");
-        
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([wbout], {type: 'application/octet-stream'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `ficha_vida_${selectedSow.id}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     return (
         <div className="bg-gray-100 min-h-screen">
             <header className="bg-background p-4 border-b print:hidden">
@@ -318,24 +208,16 @@ export default function SowCardPage() {
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button disabled={!selectedSow}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Exportar
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={handleExportPDF}>Exportar a PDF</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={handleExportXLSX}>Exportar a Excel (XLSX)</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                         <Button onClick={() => window.print()} disabled={!selectedSow}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Guardar como PDF
+                        </Button>
                     </div>
                 </div>
             </header>
 
             <main className="p-4 print:p-0">
-                <div id="printable-content" className="max-w-4xl mx-auto bg-white p-4 shadow-lg print:shadow-none">
+                <div className="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:hidden">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="sow-card">Ficha de Vida</TabsTrigger>
@@ -353,13 +235,11 @@ export default function SowCardPage() {
                                 </div>
                             </Card>
                         ) : (
-                           <div className={cn(activeTab === 'sow-card' ? 'block' : 'hidden print:block')}>
-                               {sowData && <SowProfileCard sow={selectedSow} />}
+                           <div id="printable-content">
+                             {activeTab === 'sow-card' && sowData && <SowProfileCard sow={selectedSow} />}
+                             {activeTab === 'farrowing-form' && <FarrowingRecordForm />}
                            </div>
                         )}
-                         <div className={cn(activeTab === 'farrowing-form' ? 'block' : 'hidden print:block')}>
-                           <FarrowingRecordForm />
-                        </div>
                     </div>
                 </div>
             </main>
