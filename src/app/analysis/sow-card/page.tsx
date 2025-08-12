@@ -18,6 +18,15 @@ import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { Logo } from '@/components/Logo';
 import Link from 'next/link';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 
 interface Pig {
     id: string;
