@@ -34,11 +34,11 @@ const formatCurrency = (value: number) => {
 // Objeto para almacenar los links de pago
 const paymentLinks = {
     'tier-a': {
-        // TODO: Reemplazar con los links de pago reales de PayU
         'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_Q',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_S',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_A',
+        // TODO: Reemplazar con los links de pago reales de PayU
+        'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
+        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
     },
     'tier-b': {
         'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_M',
@@ -94,9 +94,24 @@ export default function LicensingPage() {
     }
     
     const handlePayment = () => {
+        // Primero, guarda la licencia seleccionada.
         setLicense(selectedTier.id, selectedCycle.months);
-        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
-        window.location.href = paymentUrl;
+
+        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks]?.[selectedCycleId as keyof typeof paymentLinks['tier-a']];
+
+        if (paymentUrl) {
+             const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = paymentUrl;
+
+            document.body.appendChild(form);
+            form.submit();
+        } else {
+            // Fallback o alerta si no hay un link definido
+            alert('Link de pago no configurado para esta opción.');
+             // Como fallback, redirigimos al setup de la granja para no bloquear al usuario
+            router.push('/farm-setup');
+        }
     }
 
     return (
