@@ -10,9 +10,8 @@ import { Logo } from '@/components/Logo';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { getLicenseInfo, saveVerificationSession } from '@/lib/license';
+import { getLicenseInfo, setLicense } from '@/lib/license';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -68,15 +67,18 @@ export default function LicensingPage() {
         return { finalPrice, effectiveMonthly };
     }, [selectedTier, selectedCycle]);
     
-    const handlePaymentClick = async () => {
-        // 1. Create the verification session and get the session ID
-        await saveVerificationSession(selectedTier.id, selectedCycle.months);
+    const handlePaymentClick = () => {
+        // Activate the license immediately
+        setLicense(selectedTier.id, selectedCycle.months);
 
-        // 2. Get the correct payment URL
+        // Get the correct payment URL
         const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
         
-        // 3. Open the payment URL in a new tab
+        // Open payment in a new tab
         window.open(paymentUrl, '_blank');
+        
+        // Redirect user to the next step
+        router.push('/farm-setup');
     };
 
 

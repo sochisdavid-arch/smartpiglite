@@ -104,7 +104,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
     { href: '/licensing', label: 'Licencia', icon: Landmark },
-    { href: '/payment-confirmation', label: 'Verificar Licencia', icon: ShieldCheck },
   ];
   
   const gestationAnalysisMenuItems = [
