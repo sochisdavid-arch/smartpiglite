@@ -34,29 +34,29 @@ const formatCurrency = (value: number) => {
 // Objeto para almacenar los links de pago
 const paymentLinks = {
     'tier-a': {
-        'monthly': 'https://biz.payulatam.com/B0faca477D40C14',
         // TODO: Reemplazar con los links de pago reales de PayU
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'monthly': 'https://biz.payulatam.com/B0faca477D40C14',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_Q',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_S',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_A_A',
     },
     'tier-b': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_M',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_Q',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_S',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_B_A',
     },
     'tier-c': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_M',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_Q',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_S',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_C_A',
     },
     'tier-d': {
-        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
-        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_M',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_Q',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_S',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo_D_A',
     },
 };
 
@@ -65,6 +65,7 @@ export default function LicensingPage() {
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
+    const formRef = React.useRef<HTMLFormElement>(null);
 
     React.useEffect(() => {
         const license = getLicenseInfo();
@@ -97,18 +98,15 @@ export default function LicensingPage() {
         // Guarda la licencia seleccionada en el sistema
         setLicense(selectedTier.id, selectedCycle.months);
         
-        // Obtiene el link de pago correcto
-        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
-        
-        // Redirige al usuario a la pasarela de pago
-        window.location.href = paymentUrl;
-        
-        // Para este prototipo, si la URL es de ejemplo, simulamos que el pago fue exitoso y lo llevamos al siguiente paso.
-        // En una implementación real, la pasarela de pago se encargaría de redirigir al usuario de vuelta.
-        if (paymentUrl.includes('ejemplo')) {
-             setTimeout(() => router.push('/farm-setup'), 1000);
+        if (formRef.current) {
+            // El action del formulario se establecerá dinámicamente si es necesario,
+            // pero para un botón de pago simple, la URL completa ya está en el action.
+            // Aún así, podemos simular el llenado de otros campos si fuera necesario.
+            formRef.current.submit();
         }
     }
+
+    const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -210,9 +208,15 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
+                                    {/* Formulario oculto para enviar a PayU */}
+                                    <form ref={formRef} action={paymentUrl} method="post" className="hidden">
+                                        {/* PayU puede requerir campos adicionales aquí, pero para un botón simple, el action es suficiente */}
+                                    </form>
+
                                     <Button size="lg" className="w-full" onClick={handlePayment}>
                                         Proceder al Pago
                                     </Button>
+
                                     {!licenseExists && (
                                         <Button size="lg" variant="outline" className="w-full" onClick={handleStartTrial}>
                                             Comenzar Prueba Gratuita de 30 Días
@@ -230,4 +234,3 @@ export default function LicensingPage() {
         </div>
     );
 }
-
