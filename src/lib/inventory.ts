@@ -30,20 +30,16 @@ export interface MedicalConsumptionRecord {
 }
 
 
-const INVENTORY_STORAGE_KEY = 'farmInventory';
-const FOOD_CONSUMPTION_HISTORY_KEY = 'foodConsumptionHistory';
-const MEDICAL_CONSUMPTION_HISTORY_KEY = 'medicalConsumptionHistory';
-
-
-// Function to get the current inventory
 export const getInventory = (): InventoryItem[] => {
     try {
-        const storedInventory = localStorage.getItem(INVENTORY_STORAGE_KEY);
+        const storedInventory = typeof window !== 'undefined' ? localStorage.getItem('farmInventory') : null;
         if (storedInventory) {
             return JSON.parse(storedInventory);
         } else {
             // Initialize with mock data if nothing is in storage
-            localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(mockInventory));
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('farmInventory', JSON.stringify(mockInventory));
+            }
             return mockInventory;
         }
     } catch (error) {
@@ -52,79 +48,77 @@ export const getInventory = (): InventoryItem[] => {
     }
 };
 
-// Function to update the entire inventory
 export const updateInventory = (inventory: InventoryItem[]): void => {
     try {
-        localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventory));
-        // Dispatch a storage event to notify other tabs/windows
-        window.dispatchEvent(new Event('storage'));
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('farmInventory', JSON.stringify(inventory));
+            window.dispatchEvent(new Event('storage'));
+        }
     } catch (error) {
         console.error("Failed to write inventory to localStorage", error);
     }
 };
 
-// Function to deduct a quantity from the stock of a specific product
 export const deductFromStock = (
+    inventory: InventoryItem[],
+    foodConsumptionHistory: FoodConsumptionRecord[],
+    medicalConsumptionHistory: MedicalConsumptionRecord[],
     productId: string, 
     quantityToDeduct: number,
     area?: string,
     consumptionDate?: string
-): { success: boolean, newStock?: number, message?: string } => {
-    if (!productId) {
-        return { success: false, message: 'Invalid product ID or quantity.' };
-    }
-     if (quantityToDeduct <= 0 && quantityToDeduct !== 0) { // allow 0 for edits
-        return { success: false, message: 'La cantidad debe ser un número positivo.' };
+): { success: boolean, newStock?: number, message?: string, updatedInventory: InventoryItem[], updatedFoodHistory: FoodConsumptionRecord[], updatedMedicalHistory: MedicalConsumptionRecord[] } => {
+    
+    if (!productId || quantityToDeduct <= 0) {
+        return { success: false, message: 'ID de producto o cantidad inválidos.', updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
     }
 
-
-    const inventory = getInventory();
     const productIndex = inventory.findIndex(item => item.id === productId);
 
     if (productIndex === -1) {
-        return { success: false, message: `Product with ID ${productId} not found in inventory.` };
+        return { success: false, message: `Producto con ID ${productId} no encontrado.`, updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
     }
 
     const product = inventory[productIndex];
 
     if (product.stock < quantityToDeduct) {
-        return { success: false, message: `No hay suficiente stock de ${product.name}. Stock actual: ${product.stock}, se necesitan: ${quantityToDeduct}.` };
+        return { success: false, message: `No hay suficiente stock de ${product.name}. Stock: ${product.stock}, Necesario: ${quantityToDeduct}.`, updatedInventory: inventory, updatedFoodHistory: foodConsumptionHistory, updatedMedicalHistory: medicalConsumptionHistory };
     }
 
-    inventory[productIndex].stock -= quantityToDeduct;
+    const updatedInventory = [...inventory];
+    updatedInventory[productIndex] = { ...product, stock: product.stock - quantityToDeduct };
 
-    // Record consumption if quantity is positive
-    if (quantityToDeduct > 0) {
-        if (product.category === 'alimento') {
-            const consumptionHistory: FoodConsumptionRecord[] = JSON.parse(localStorage.getItem(FOOD_CONSUMPTION_HISTORY_KEY) || '[]');
-            const newRecord: FoodConsumptionRecord = {
-                id: `consumo-alim-${Date.now()}-${Math.random()}`,
-                date: consumptionDate || new Date().toISOString(),
-                productId: product.id,
-                productName: product.name,
-                quantity: quantityToDeduct,
-                area: area || 'Área no especificada',
-            };
-            consumptionHistory.unshift(newRecord); // Add to the beginning
-            localStorage.setItem(FOOD_CONSUMPTION_HISTORY_KEY, JSON.stringify(consumptionHistory));
-        } else if (product.category === 'medicamento' || product.category === 'vacuna') {
-             const consumptionHistory: MedicalConsumptionRecord[] = JSON.parse(localStorage.getItem(MEDICAL_CONSUMPTION_HISTORY_KEY) || '[]');
-             const newRecord: MedicalConsumptionRecord = {
-                id: `consumo-med-${Date.now()}-${Math.random()}`,
-                date: consumptionDate || new Date().toISOString(),
-                productId: product.id,
-                productName: product.name,
-                category: product.category,
-                quantity: quantityToDeduct,
-                area: area || 'Área no especificada',
-             };
-             consumptionHistory.unshift(newRecord);
-             localStorage.setItem(MEDICAL_CONSUMPTION_HISTORY_KEY, JSON.stringify(consumptionHistory));
-        }
+    let updatedFoodHistory = [...foodConsumptionHistory];
+    let updatedMedicalHistory = [...medicalConsumptionHistory];
+
+    if (product.category === 'alimento') {
+        const newRecord: FoodConsumptionRecord = {
+            id: `consumo-alim-${Date.now()}-${Math.random()}`,
+            date: consumptionDate || new Date().toISOString(),
+            productId: product.id,
+            productName: product.name,
+            quantity: quantityToDeduct,
+            area: area || 'Área no especificada',
+        };
+        updatedFoodHistory.unshift(newRecord);
+    } else {
+        const newRecord: MedicalConsumptionRecord = {
+            id: `consumo-med-${Date.now()}-${Math.random()}`,
+            date: consumptionDate || new Date().toISOString(),
+            productId: product.id,
+            productName: product.name,
+            category: product.category,
+            quantity: quantityToDeduct,
+            area: area || 'Área no especificada',
+        };
+        updatedMedicalHistory.unshift(newRecord);
     }
 
-
-    updateInventory(inventory);
-
-    return { success: true, newStock: inventory[productIndex].stock };
+    return { 
+        success: true, 
+        newStock: updatedInventory[productIndex].stock,
+        updatedInventory,
+        updatedFoodHistory,
+        updatedMedicalHistory
+    };
 };

@@ -167,7 +167,7 @@ export function SowProfileCard({ sow, sowData }: { sow: Pig, sowData: SowData })
                     <div className="text-right">
                         <p className="text-lg font-bold">{sow.id}</p>
                         <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://smartpig.web.app/analysis/sow-card?sowId=${sow.id}`)}`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`https://smartpig-lite.web.app/analysis/sow-card?sowId=${sow.id}`)}`}
                             alt="QR Code"
                             width={60}
                             height={60}
@@ -278,7 +278,7 @@ export function SowProfileCard({ sow, sowData }: { sow: Pig, sowData: SowData })
                            <ul className="space-y-1 text-sm">
                                 {generalEvents.slice(0, 5).map(event => (
                                     <li key={event.id}>
-                                        <span className="font-semibold">{format(parseISO(event.date), 'dd/MM/yy')}</span> - {event.type}: {event.details}
+                                        <span className="font-semibold">{isValid(parseISO(event.date)) ? format(parseISO(event.date), 'dd/MM/yy') : '--'}</span> - {event.type}: {event.details}
                                     </li>
                                 ))}
                                 {generalEvents.length === 0 && <li className="text-muted-foreground">No hay eventos generales.</li>}
@@ -365,4 +365,3 @@ export const exportSowProfilePDF = (sow: Pig, sowData: SowData) => {
 
     doc.save(`ficha_vida_${sow.id}.pdf`);
 };
-    

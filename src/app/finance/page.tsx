@@ -37,7 +37,27 @@ export default function FinancePage() {
     const { toast } = useToast();
 
     const loadFinancialData = React.useCallback(() => {
-        const { transactions: allTransactions, summary: financialSummary, monthlyData: financialMonthlyData, costPerKilo: calculatedCostPerKilo } = getFinancialSummary();
+        const liquidatedPreceboReports = JSON.parse(localStorage.getItem('liquidatedPreceboReports') || '[]');
+        const liquidatedCebaReports = JSON.parse(localStorage.getItem('liquidatedCebaReports') || '[]');
+        const pigs = JSON.parse(localStorage.getItem('pigs') || '[]');
+        const foodPurchases = JSON.parse(localStorage.getItem('foodPurchaseHistory') || '[]');
+        const personnel = JSON.parse(localStorage.getItem('personnelList') || '[]');
+        const manualTransactions = JSON.parse(localStorage.getItem('manualTransactions') || '[]');
+
+        const { 
+            transactions: allTransactions, 
+            summary: financialSummary, 
+            monthlyData: financialMonthlyData, 
+            costPerKilo: calculatedCostPerKilo 
+        } = getFinancialSummary(
+            liquidatedPreceboReports,
+            liquidatedCebaReports,
+            pigs,
+            foodPurchases,
+            personnel,
+            manualTransactions
+        );
+        
         setTransactions(allTransactions);
         setFilteredTransactions(allTransactions);
         setSummary(financialSummary);
@@ -71,9 +91,9 @@ export default function FinancePage() {
             return;
         }
 
-        const newTransaction: FinancialTransaction = {
+        const newTransaction = {
             id: `manual-${Date.now()}`,
-            date: parseISO(date),
+            date,
             description,
             type,
             category,
@@ -298,5 +318,3 @@ export default function FinancePage() {
         </AppLayout>
     );
 }
-
-    

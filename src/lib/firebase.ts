@@ -2,13 +2,12 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
-import 'dotenv/config'
 
 const firebaseConfig = {
     apiKey: "AIzaSyD3TdAFwymZzevFIIKopTd4FMQ4ZXcjDiU",
     authDomain: "smartpig-lite.firebaseapp.com",
     projectId: "smartpig-lite",
-    storageBucket: "smartpig-lite.firebasestorage.app",
+    storageBucket: "smartpig-lite.appspot.com",
     messagingSenderId: "487539621018",
     appId: "1:487539621018:web:e483d82354ac0d9eea3323",
     measurementId: ""
