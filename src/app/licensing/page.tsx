@@ -32,10 +32,10 @@ const formatCurrency = (value: number) => {
 };
 
 // Objeto para almacenar los links de pago
-const paymentLinks = {
+const paymentLinks: Record<string, Record<string, string>> = {
     'tier-a': {
+        // TODO: Reemplazar con los links de pago reales de PayU para cada ciclo
         'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        // TODO: Reemplazar con los links de pago reales de PayU
         'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
         'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
@@ -92,27 +92,21 @@ export default function LicensingPage() {
         setLicense('demo');
         router.push('/farm-setup');
     }
-    
-    const handlePayment = () => {
-        // Primero, guarda la licencia seleccionada.
+
+    const handleProceedToPaymentClick = () => {
+        // Guarda la licencia seleccionada localmente para que después del pago,
+        // el usuario pueda continuar con el setup de la granja.
         setLicense(selectedTier.id, selectedCycle.months);
 
-        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks]?.[selectedCycleId as keyof typeof paymentLinks['tier-a']];
+        // Opcional: Redirigir al setup de la granja inmediatamente después de guardar,
+        // asumiendo que el usuario pagará en la nueva pestaña y luego volverá.
+        setTimeout(() => {
+             router.push('/farm-setup');
+        }, 500); // Pequeño delay para asegurar que el link se abra.
+    };
+    
+    const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://payu.com';
 
-        if (paymentUrl) {
-             const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = paymentUrl;
-
-            document.body.appendChild(form);
-            form.submit();
-        } else {
-            // Fallback o alerta si no hay un link definido
-            alert('Link de pago no configurado para esta opción.');
-             // Como fallback, redirigimos al setup de la granja para no bloquear al usuario
-            router.push('/farm-setup');
-        }
-    }
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -214,8 +208,10 @@ export default function LicensingPage() {
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <Button size="lg" className="w-full" onClick={handlePayment}>
-                                        Proceder al Pago
+                                    <Button size="lg" className="w-full" asChild>
+                                        <Link href={paymentUrl} target="_blank" onClick={handleProceedToPaymentClick}>
+                                            Proceder al Pago
+                                        </Link>
                                     </Button>
 
                                     {!licenseExists && (
@@ -235,3 +231,4 @@ export default function LicensingPage() {
         </div>
     );
 }
+
