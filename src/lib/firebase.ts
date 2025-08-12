@@ -9,7 +9,6 @@ const firebaseConfig = {
   "storageBucket": "smartpig-lite.firebasestorage.app",
   "apiKey": "AIzaSyD3TdAFwymZzevFIIKopTd4FMQ4ZXcjDiU",
   "authDomain": "smartpig-lite.firebaseapp.com",
-  "databaseURL": "https://smartpig-lite-default-rtdb.firebaseio.com",
   "measurementId": "",
   "messagingSenderId": "487539621018"
 };
