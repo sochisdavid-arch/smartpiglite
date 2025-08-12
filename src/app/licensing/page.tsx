@@ -31,10 +31,39 @@ const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
+// Objeto para almacenar los links de pago
+const paymentLinks = {
+    'tier-a': {
+        'monthly': 'https://biz.payulatam.com/B0faca477D40C14',
+        // TODO: Reemplazar con los links de pago reales de PayU
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+    },
+    'tier-b': {
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+    },
+    'tier-c': {
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+    },
+    'tier-d': {
+        'monthly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'quarterly': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'semiannual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+        'annual': 'https://biz.payulatam.com/link_de_pago_ejemplo',
+    },
+};
+
 export default function LicensingPage() {
     const router = useRouter();
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
-    const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[3].id);
+    const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
 
     React.useEffect(() => {
@@ -68,18 +97,17 @@ export default function LicensingPage() {
         // Guarda la licencia seleccionada en el sistema
         setLicense(selectedTier.id, selectedCycle.months);
         
-        // **IMPORTANTE**: Reemplaza esta URL de ejemplo por tu link de pago real de Mercado Pago, PayU, etc.
-        const paymentLink = "https://www.mercadopago.com.co/link-de-pago"; 
+        // Obtiene el link de pago correcto
+        const paymentUrl = paymentLinks[selectedTierId as keyof typeof paymentLinks][selectedCycleId as keyof typeof paymentLinks['tier-a']];
         
         // Redirige al usuario a la pasarela de pago
-        // En una implementación real, después del pago exitoso, la pasarela debería redirigir a una
-        // página de confirmación en tu app. Para este prototipo, simulamos que el pago fue exitoso
-        // y lo llevamos a la configuración de la granja.
+        window.location.href = paymentUrl;
         
-        // window.location.href = paymentLink;
-        
-        // Para este prototipo, vamos directo al siguiente paso
-        router.push('/farm-setup');
+        // Para este prototipo, si la URL es de ejemplo, simulamos que el pago fue exitoso y lo llevamos al siguiente paso.
+        // En una implementación real, la pasarela de pago se encargaría de redirigir al usuario de vuelta.
+        if (paymentUrl.includes('ejemplo')) {
+             setTimeout(() => router.push('/farm-setup'), 1000);
+        }
     }
 
     return (
