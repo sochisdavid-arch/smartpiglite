@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
-import { CheckCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle, ArrowLeft, MessageSquareQuote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { getLicenseInfo, savePlanForActivation } from '@/lib/license';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const tiers = [
     { id: 'tier-a', label: '1 - 50 Madres', basePrice: 5, sowLimit: 50 },
@@ -31,23 +33,14 @@ const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
-const paymentLinks: Record<string, Record<string, string>> = {
-    'tier-a': {
-        'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        'quarterly': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        'semiannual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-        'annual': 'https://biz.payulatam.com/L0faca4D7ABAB27',
-    },
-    'tier-b': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
-    'tier-c': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
-    'tier-d': { 'monthly': 'https://biz.payulatam.com/L0faca4D7ABAB27' },
-};
 
 export default function LicensingPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [selectedTierId, setSelectedTierId] = React.useState(tiers[0].id);
     const [selectedCycleId, setSelectedCycleId] = React.useState(billingCycles[0].id);
     const [licenseExists, setLicenseExists] = React.useState(false);
+    const [isPaymentInfoOpen, setIsPaymentInfoOpen] = React.useState(false);
 
     React.useEffect(() => {
         const license = getLicenseInfo();
@@ -68,18 +61,12 @@ export default function LicensingPage() {
     }, [selectedTier, selectedCycle]);
     
     const handlePaymentClick = () => {
-        // Save the plan details so the confirmation page knows what to activate
         savePlanForActivation(selectedTier.id, selectedCycle.months);
-
-        // Get the correct payment URL
-        const paymentUrl = paymentLinks[selectedTierId]?.[selectedCycleId] || 'https://biz.payulatam.com/L0faca4D7ABAB27';
-        
-        // Open payment in a new tab
-        window.open(paymentUrl, '_blank');
-        
-        // You could redirect the user to the payment confirmation page,
-        // or just let them navigate there from the sidebar.
-        // For now, we'll let them navigate manually.
+        setIsPaymentInfoOpen(true);
+        toast({
+            title: "Plan seleccionado guardado",
+            description: "Tu plan ha sido guardado. Completa el pago para recibir tu código de activación.",
+        });
     };
 
 
@@ -167,12 +154,34 @@ export default function LicensingPage() {
                                 <Button size="lg" className="w-full" onClick={handlePaymentClick}>
                                     Proceder al Pago
                                 </Button>
-                                <p className="text-xs text-center text-gray-500 mt-4">Serás redirigido a la página segura de PayU.</p>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
             </main>
+            <Dialog open={isPaymentInfoOpen} onOpenChange={setIsPaymentInfoOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                           <MessageSquareQuote className="h-6 w-6 text-primary"/>
+                           Instrucciones de Pago y Activación
+                        </DialogTitle>
+                         <DialogDescription>
+                            Sigue estos pasos para activar tu licencia de SmartPig.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <p>Para finalizar tu compra, por favor envía el comprobante de pago al siguiente número de WhatsApp para recibir tu código de activación:</p>
+                        <p className="text-center text-lg font-bold bg-green-100 text-green-800 p-3 rounded-md">
+                           +57 316 955 7978
+                        </p>
+                        <p>Una vez que recibas tu código, ve a la sección de <strong className="text-primary">Verificar y Activar Licencia</strong> para activar tu plan.</p>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => setIsPaymentInfoOpen(false)}>Entendido</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

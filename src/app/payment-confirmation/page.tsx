@@ -6,33 +6,31 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, KeyRound, Loader2, ScanLine } from 'lucide-react';
+import { ShieldCheck, KeyRound, Loader2 } from 'lucide-react';
 import { activateLicense, getSavedPlan } from '@/lib/license';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+const STATIC_ACTIVATION_KEY = '1310051012Ab*';
 
 export default function PaymentConfirmationPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [transactionCode, setTransactionCode] = React.useState('');
+    const [activationKey, setActivationKey] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false);
 
     const handleActivation = async () => {
         setIsLoading(true);
-        if (!transactionCode.trim()) {
+        if (activationKey.trim() !== STATIC_ACTIVATION_KEY) {
             toast({
                 variant: 'destructive',
-                title: 'Error',
-                description: 'Por favor, introduce el código de transacción de PayU.',
+                title: 'Error de Activación',
+                description: 'El código de activación es incorrecto. Por favor, verifícalo e inténtalo de nuevo.',
             });
             setIsLoading(false);
             return;
         }
 
-        // Simulate a check
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         const success = activateLicense();
 
         if (success) {
@@ -45,7 +43,7 @@ export default function PaymentConfirmationPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error de Activación',
-                description: 'No se encontró un plan pendiente para activar. Por favor, primero selecciona un plan.',
+                description: 'No se encontró un plan pendiente para activar. Por favor, selecciona un plan en la página de licencias primero.',
             });
         }
         setIsLoading(false);
@@ -60,17 +58,17 @@ export default function PaymentConfirmationPage() {
                     </div>
                     <CardTitle className="text-2xl font-bold mt-4">Verificar y Activar Licencia</CardTitle>
                     <CardDescription>
-                       Introduce el código de la transacción que recibiste en tu correo de PayU para activar tu licencia.
+                       Introduce el código de activación que recibiste por WhatsApp para activar tu licencia.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="text-left space-y-2">
-                        <Label htmlFor="transaction-code">Código de Transacción de PayU</Label>
+                        <Label htmlFor="activation-key">Código de Activación</Label>
                         <Input 
-                            id="transaction-code"
-                            placeholder="Ej: a1b2c3d4e5f6"
-                            value={transactionCode}
-                            onChange={(e) => setTransactionCode(e.target.value)}
+                            id="activation-key"
+                            placeholder="Introduce tu código de activación"
+                            value={activationKey}
+                            onChange={(e) => setActivationKey(e.target.value)}
                         />
                     </div>
                     <Button onClick={handleActivation} disabled={isLoading} className="w-full">
