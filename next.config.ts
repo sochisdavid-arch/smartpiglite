@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -23,9 +24,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  env: {
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  }
 };
 
 export default nextConfig;
