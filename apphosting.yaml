@@ -9,8 +9,9 @@ runConfig:
   # available at build time and in your backend's runtime environment.
   # https://firebase.google.com/docs/app-hosting/configure#environment-variables
   environmentVariables:
-    NAME: "world"
+    GEMINI_API_KEY: "AIzaSyD3TdAFwymZzevFIIKopTd4FMQ4ZXcjDiU"
   # You can also specify secrets, which are a safer way to store sensitive
   # information such as API keys.
   # https://firebase.google.com/docs/app-hosting/configure#secrets
-  secrets: [GEMINI_API_KEY]
+  secrets: []
+
