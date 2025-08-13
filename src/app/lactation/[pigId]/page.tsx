@@ -440,7 +440,7 @@ export default function LactationHistoryPage() {
                 });
                 router.push('/gestation');
             }
-        }
+        };
         
         return (
             <DialogContent className="max-h-[90vh] flex flex-col">
@@ -593,7 +593,7 @@ export default function LactationHistoryPage() {
                 </DialogFooter>
             </DialogContent>
         )
-      }
+    }
     
     const handleDeleteEvent = () => {
         if (!eventToDelete || !pig) return;
@@ -753,4 +753,3 @@ export default function LactationHistoryPage() {
         </AppLayout>
     );
 }
-    
