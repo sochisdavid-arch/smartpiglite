@@ -306,7 +306,7 @@ export default function LoteCebaPage() {
             const formData = new FormData(e.target as HTMLFormElement);
 
             const newEvent: BatchEvent = {
-                id: editingEvent ? editingEvent.id : `evt-ceba-${Date.now()}`,
+                id: editingEvent ? editingEvent.id : `evt-ceba-${new Date().getTime()}`,
                 type: selectedEventType,
                 date: formData.get('eventDate') as string,
                 details: formData.get('eventNotes') as string || undefined,
@@ -721,4 +721,6 @@ export default function LoteCebaPage() {
         </AppLayout>
     );
 }
+    
+
     

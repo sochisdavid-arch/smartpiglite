@@ -96,7 +96,7 @@ export default function BoarHistoryPage() {
         const formData = new FormData(e.target as HTMLFormElement);
         
         const newEvent: BoarEvent = {
-            id: `evt-${Date.now()}`,
+            id: `evt-${new Date().getTime()}`,
             type: selectedEventType,
             date: formData.get('eventDate') as string,
             details: formData.get('details') as string || undefined,
@@ -300,3 +300,5 @@ export default function BoarHistoryPage() {
         </AppLayout>
     );
 }
+
+    

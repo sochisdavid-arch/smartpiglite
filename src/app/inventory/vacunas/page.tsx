@@ -105,7 +105,7 @@ export default function VacunasPage() {
             if (existingProductByName) {
                 productId = existingProductByName.id;
             } else {
-                productId = `VAC-${Date.now()}`;
+                productId = `VAC-${new Date().getTime()}`;
                 isNewProductCreation = true;
             }
         }
@@ -129,7 +129,7 @@ export default function VacunasPage() {
         updateInventory(updatedInventory);
 
         const newPurchase: MedicalPurchaseRecord = {
-            id: `vac-purchase-${Date.now()}`,
+            id: `vac-purchase-${new Date().getTime()}`,
             productId,
             productName,
             purchaseDate,
@@ -372,3 +372,5 @@ export default function VacunasPage() {
         </AppLayout>
     );
 }
+
+    

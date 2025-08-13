@@ -105,7 +105,7 @@ export default function MedicamentosPage() {
             if (existingProductByName) {
                 productId = existingProductByName.id;
             } else {
-                productId = `MED-${Date.now()}`;
+                productId = `MED-${new Date().getTime()}`;
                 isNewProductCreation = true;
             }
         }
@@ -129,7 +129,7 @@ export default function MedicamentosPage() {
         updateInventory(updatedInventory);
 
         const newPurchase: MedicalPurchaseRecord = {
-            id: `med-purchase-${Date.now()}`,
+            id: `med-purchase-${new Date().getTime()}`,
             productId,
             productName,
             purchaseDate,
@@ -372,3 +372,5 @@ export default function MedicamentosPage() {
         </AppLayout>
     );
 }
+
+    
