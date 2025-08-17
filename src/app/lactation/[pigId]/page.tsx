@@ -186,7 +186,7 @@ export default function LactationHistoryPage() {
             }
 
             const newRecord: ConsumptionRecord = {
-                id: new Date().toISOString(),
+                id: `cons-${Date.now()}`,
                 date: consumptionDate,
                 quantity: quantityNumber,
                 feedType: foundFeed.name,
