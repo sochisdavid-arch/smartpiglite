@@ -356,37 +356,73 @@ export default function FarrowingRatePage() {
                         <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Tasa de parición (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/><Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="farrowingRate" name="Tasa de Parición" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} /></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/>
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="farrowingRate" name="Tasa de Parición" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                          <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Aborto (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="abortionRate" name="Tasa de Abortos" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} /></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> 
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="abortionRate" name="Tasa de Abortos" fill="hsl(var(--chart-2))" radius={[4,4,0,0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Repetición de celo (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="repeatRate" name="Tasa de Repetición" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} /></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> 
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="repeatRate" name="Tasa de Repetición" fill="hsl(var(--chart-5))" radius={[4,4,0,0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Detectada vacía (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="emptyRate" name="Tasa de Vacías" fill="hsl(var(--chart-4))" radius={[4,4,0,0]} /></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> 
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="emptyRate" name="Tasa de Vacías" fill="hsl(var(--chart-4))" radius={[4,4,0,0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                          <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Descarte (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="cullRate" name="Tasa de Descarte" fill="hsl(var(--chart-1))" radius={[4,4,0,0]} /></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> 
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="cullRate" name="Tasa de Descarte" fill="hsl(var(--chart-1))" radius={[4,4,0,0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div>
                             <h3 className="font-semibold text-md mb-2 text-center">Muerte (%)</h3>
                             <ResponsiveContainer width="100%" height={150}>
-                                <BarChart data={metricsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} /><Bar dataKey="deathRate" name="Tasa de Muertes" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} style={{fill: 'purple'}}/></BarChart>
+                                <BarChart data={metricsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} unit="%"/> 
+                                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
+                                    <Bar dataKey="deathRate" name="Tasa de Muertes" fill="hsl(var(--chart-3))" radius={[4,4,0,0]} style={{fill: 'purple'}}/>
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>
@@ -479,3 +515,5 @@ export default function FarrowingRatePage() {
             </div>
         </AppLayout>
     );
+
+    
