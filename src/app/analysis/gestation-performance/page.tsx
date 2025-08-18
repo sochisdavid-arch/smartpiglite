@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Filter, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { FontStyle } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 import { differenceInDays, parseISO, format, getYear, getMonth, getWeek, startOfDay, endOfDay, eachYearOfInterval, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, add, sub } from 'date-fns';
@@ -416,10 +416,9 @@ export default function GestationPerformancePage() {
             doc.text(dateRange, 14, 22);
             autoTable(doc, {
                 head: [head],
-                body: body.map(row => {
-                    if (row!.isHeader) return [{ content: row!.label, colSpan: head.length, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } }];
-                    return [row!.label, row!.goal, ...row!.values, row!.average, row!.total];
-                }),
+                body: body.map((row) => {
+ if (row!.isHeader) return [{ content: row!.label, colSpan: head.length, styles: { fontStyle: 'bold' as FontStyle, fillColor: '#f0f0f0' } }]; return [{ content: row!.label }, { content: row!.goal }, ...(row!.values || []).map(v => ({ content: v })), { content: formatValue(row!.average as number | undefined) }, { content: formatValue(row!.total as number | undefined) }];
+                }).filter(Boolean), // Added filter(Boolean) here as well
                 startY: 28,
                 theme: 'grid',
                 headStyles: { fillColor: '#e07a5f' },
@@ -431,7 +430,7 @@ export default function GestationPerformancePage() {
             const dataToExport = body.map(row => {
                  if (row!.isHeader) return { 'Métricas de Desempeño': row!.label };
                  const rowData: {[key:string]: any} = { 'Métricas de Desempeño': row!.label, 'Metas': row!.goal };
-                 head.slice(2, -2).forEach((h, i) => rowData[h] = row!.values[i]);
+                 head.slice(2, -2).forEach((h, i) => rowData[h] = (row!.values || [])[i]); // Added || []
                  rowData['Media'] = row!.average;
                  rowData['Total'] = row!.total;
                  return rowData;

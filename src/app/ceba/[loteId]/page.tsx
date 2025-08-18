@@ -148,7 +148,7 @@ export default function LoteCebaPage() {
         const currentAnimalCount = currentBatch.initialPigletCount - deaths;
 
         const calculatedHistory = history.map(week => {
-            const weeklyConsumption = week.consumption.reduce((sum, val) => sum + Number(val || 0), 0);
+            const weeklyConsumption = week.consumption.reduce((sum: number, val) => sum + Number(val || 0), 0);
             accumulatedFeed += weeklyConsumption;
             
             const accumulatedPerPig = currentAnimalCount > 0 ? accumulatedFeed / currentAnimalCount : 0;

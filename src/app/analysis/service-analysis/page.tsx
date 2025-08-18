@@ -24,7 +24,7 @@ interface Event {
     id: string;
     type: string;
     date: string;
-    details?: string;
+    details?: { mounts?: number; employee?: string; };
     [key: string]: any;
 }
 
