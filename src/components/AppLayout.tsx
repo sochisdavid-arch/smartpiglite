@@ -45,7 +45,6 @@ import {
   Baby,
   KeyRound,
   Building,
-  ChevronsUpDown
 } from 'lucide-react';
 import { SpermIcon } from '@/components/icons/sperm-icon';
 import { BabyBottleIcon } from '@/components/icons/baby-bottle-icon';
@@ -64,31 +63,27 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { checkLicense } from "@/lib/license";
-import { useFarms } from "@/context/FarmContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const { activeFarm, farms, switchFarm } = useFarms();
 
   React.useEffect(() => {
-    const publicPaths = ['/licensing', '/payment-confirmation', '/finance', '/farm-management'];
+    const publicPaths = ['/licensing', '/payment-confirmation', '/farm-setup'];
     
     if (publicPaths.includes(pathname)) {
         return; 
     }
 
-    if (farms.length > 0 && !activeFarm) {
-        switchFarm(farms[0].id);
-    } else if (farms.length === 0 && pathname !== '/farm-management') {
-        toast({
-            title: "Crea tu primera granja",
-            description: "Para empezar, necesitas registrar al menos una granja.",
-            duration: 10000,
-        });
-        router.push('/farm-management');
-        return;
+    const farmInfo = localStorage.getItem('farmInformation');
+    if (!farmInfo && pathname !== '/farm-setup') {
+      toast({
+        title: "Configuración requerida",
+        description: "Por favor, completa la configuración de tu granja para continuar.",
+      });
+      router.push('/farm-setup');
+      return;
     }
 
     const pigsFromStorage = localStorage.getItem('pigs');
@@ -106,7 +101,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         });
         router.push('/licensing');
     }
-  }, [pathname, router, toast, farms, activeFarm, switchFarm]);
+  }, [pathname, router, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -138,7 +133,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/finance', label: 'Análisis Financiero', icon: Landmark },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
-    { href: '/farm-management', label: 'Gestionar Granjas', icon: Building }
   ];
   
   const gestationAnalysisMenuItems = [
@@ -183,32 +177,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <div className="p-2">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between bg-sidebar-accent hover:bg-sidebar-accent/90 text-sidebar-accent-foreground">
-                        <div className="flex items-center gap-2 truncate">
-                            <Building className="h-4 w-4"/>
-                            <span className="truncate">{activeFarm ? activeFarm.name : "Seleccionar Granja"}</span>
-                        </div>
-                        <ChevronsUpDown className="h-4 w-4 opacity-50"/>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                    <DropdownMenuLabel>Seleccionar Granja</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {farms.map(farm => (
-                        <DropdownMenuItem key={farm.id} onSelect={() => switchFarm(farm.id)}>
-                            {farm.name}
-                        </DropdownMenuItem>
-                    ))}
-                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={() => router.push('/farm-management')}>
-                        Gestionar Granjas
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
