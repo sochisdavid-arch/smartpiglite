@@ -514,7 +514,6 @@ export default function FarrowingRatePage() {
                 </Card>
             </div>
         </AppLayout>
-    )
+    );
 }    
 
-    
