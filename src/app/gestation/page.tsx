@@ -586,16 +586,16 @@ export default function GestationPage() {
                             <TableCell className="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
                                     <span className="sr-only">Abrir menú</span>
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                  <DropdownMenuItem onSelect={() => openEditDialog(pig)}>Editar</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); openEditDialog(pig); }}>Editar</DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem onSelect={() => openDeleteDialog(pig)} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); openDeleteDialog(pig); }} className="text-red-500 focus:text-red-500">Eliminar</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             </TableCell>
