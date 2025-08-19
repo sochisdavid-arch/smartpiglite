@@ -657,7 +657,7 @@ export default function PigHistoryPage() {
                             
                             <div className="space-y-8">
                                 {pig.events.map((event, index) => (
-                                    <div key={event.id} className="flex gap-4 items-start relative">
+                                    <div key={`${event.id}-${index}`} className="flex gap-4 items-start relative">
                                         <div className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-card border shrink-0">
                                             {eventIcons[event.type as GestationEventType] || <Beaker className="h-5 w-5 text-muted-foreground" />}
                                         </div>
@@ -715,5 +715,5 @@ export default function PigHistoryPage() {
         </AppLayout>
     );
 }
-
     
+
