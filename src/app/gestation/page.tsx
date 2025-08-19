@@ -585,8 +585,8 @@ export default function GestationPage() {
                             <TableCell className="text-right">{pig.age}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
                                     <span className="sr-only">Abrir menú</span>
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
@@ -617,8 +617,8 @@ export default function GestationPage() {
                               <CardDescription>{pig.breed}</CardDescription>
                             </div>
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
