@@ -9,32 +9,64 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { Globe, Building, Phone } from 'lucide-react';
+import { Globe, Building, Phone, Loader2 } from 'lucide-react';
+import { auth, db } from '@/lib/firebase';
+import { ref, set } from 'firebase/database';
 
 const FARM_INFO_KEY = 'farmInformation';
 
 export default function FarmSetupPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        const user = auth.currentUser;
+        
+        if (!user) {
+            toast({
+                variant: 'destructive',
+                title: 'Error de autenticación',
+                description: 'Debes estar conectado para configurar tu granja.',
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
         const formData = new FormData(event.currentTarget);
         const farmInfo = {
-            farmName: formData.get('farmName'),
-            location: formData.get('location'),
-            country: formData.get('country'),
-            phone: formData.get('phone'),
+            farmName: formData.get('farmName') as string,
+            location: formData.get('location') as string,
+            country: formData.get('country') as string,
+            phone: formData.get('phone') as string,
+            setupCompleted: true,
+            setupDate: new Date().toISOString(),
         };
 
-        localStorage.setItem(FARM_INFO_KEY, JSON.stringify(farmInfo));
+        try {
+            // Guardar en Firebase para persistencia entre dispositivos
+            await set(ref(db, `users/${user.uid}/farmInfo`), farmInfo);
+            
+            // Guardar en localStorage para acceso rápido sin red
+            localStorage.setItem(FARM_INFO_KEY, JSON.stringify(farmInfo));
 
-        toast({
-            title: '¡Granja Configurada!',
-            description: 'La información de tu granja ha sido guardada. ¡Bienvenido a SmartPig!',
-        });
-        
-        router.push('/dashboard');
+            toast({
+                title: '¡Granja Configurada!',
+                description: 'La información de tu granja ha sido guardada correctamente.',
+            });
+            
+            router.push('/dashboard');
+        } catch (error) {
+            console.error("Error saving farm info:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error al guardar',
+                description: 'No pudimos guardar la información. Por favor, inténtalo de nuevo.',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -74,8 +106,12 @@ export default function FarmSetupPage() {
                                 <Input id="phone" name="phone" type="tel" placeholder="Ej: 3101234567" required className="pl-10" />
                             </div>
                         </div>
-                        <Button type="submit" className="w-full">
-                            Guardar y Empezar a Usar SmartPig
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
+                            ) : (
+                                'Guardar y Empezar a Usar SmartPig'
+                            )}
                         </Button>
                     </form>
                 </CardContent>

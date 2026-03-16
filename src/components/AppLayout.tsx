@@ -45,6 +45,7 @@ import {
   Baby,
   KeyRound,
   Building,
+  Loader2,
 } from 'lucide-react';
 import { SpermIcon } from '@/components/icons/sperm-icon';
 import { BabyBottleIcon } from '@/components/icons/baby-bottle-icon';
@@ -59,8 +60,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/components/Logo';
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import { ref, get } from "firebase/database";
 import { useToast } from "@/hooks/use-toast";
 import { checkLicense } from "@/lib/license";
 
@@ -68,44 +70,77 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [isCheckingSetup, setIsCheckingSetup] = React.useState(true);
 
   React.useEffect(() => {
-    const publicPaths = ['/licensing', '/payment-confirmation', '/farm-setup'];
-    
-    if (publicPaths.includes(pathname)) {
-        return; 
-    }
+    const checkSetupAndLicense = async (user: any) => {
+      const publicPaths = ['/licensing', '/payment-confirmation', '/farm-setup', '/signup', '/'];
+      
+      if (publicPaths.includes(pathname)) {
+          setIsCheckingSetup(false);
+          return; 
+      }
 
-    const farmInfo = localStorage.getItem('farmInformation');
-    if (!farmInfo && pathname !== '/farm-setup') {
-      toast({
-        title: "Configuración requerida",
-        description: "Por favor, completa la configuración de tu granja para continuar.",
-      });
-      router.push('/farm-setup');
-      return;
-    }
+      if (!user) {
+          router.push('/');
+          return;
+      }
 
-    const pigsFromStorage = localStorage.getItem('pigs');
-    const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
-    const sowCount = allPigs.filter((p: any) => p.gender === 'Hembra').length;
-    
-    const licenseStatus = checkLicense(sowCount);
+      // 1. Verificar configuración de granja
+      let farmInfo = localStorage.getItem('farmInformation');
+      
+      // Si no está en localStorage, intentar recuperarlo de Firebase (para usuarios existentes en nuevos dispositivos)
+      if (!farmInfo) {
+          try {
+              const snapshot = await get(ref(db, `users/${user.uid}/farmInfo`));
+              if (snapshot.exists()) {
+                  const data = snapshot.val();
+                  localStorage.setItem('farmInformation', JSON.stringify(data));
+                  farmInfo = JSON.stringify(data);
+              }
+          } catch (error) {
+              console.error("Error fetching farm setup:", error);
+          }
+      }
 
-    if (!licenseStatus.isValid) {
-        toast({
-            variant: "destructive",
-            title: "Licencia Expirada",
-            description: licenseStatus.message,
-            duration: 10000,
-        });
-        router.push('/licensing');
-    }
+      if (!farmInfo && pathname !== '/farm-setup') {
+        router.push('/farm-setup');
+        setIsCheckingSetup(false);
+        return;
+      }
+
+      // 2. Verificar Licencia
+      const pigsFromStorage = localStorage.getItem('pigs');
+      const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
+      const sowCount = allPigs.filter((p: any) => p.gender === 'Hembra').length;
+      
+      const licenseStatus = checkLicense(sowCount);
+
+      if (!licenseStatus.isValid) {
+          toast({
+              variant: "destructive",
+              title: "Licencia Expirada",
+              description: licenseStatus.message,
+              duration: 10000,
+          });
+          router.push('/licensing');
+      }
+      
+      setIsCheckingSetup(false);
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        checkSetupAndLicense(user);
+    });
+
+    return () => unsubscribe();
   }, [pathname, router, toast]);
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      // Opcionalmente limpiar cache local al cerrar sesión si quieres máxima privacidad
+      // localStorage.removeItem('farmInformation');
       router.push('/');
       toast({
         title: "Sesión Cerrada",
@@ -166,6 +201,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isLactationAnalysisActive = lactationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isProductionAnalysisActive = productionAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isLicenseMenuActive = licenseMenuItems.some(item => pathname.startsWith(item.href));
+
+  if (isCheckingSetup && !['/licensing', '/payment-confirmation', '/farm-setup', '/signup', '/'].includes(pathname)) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+              <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  <p className="text-muted-foreground animate-pulse font-medium">Cargando SmartPig...</p>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <SidebarProvider>
@@ -316,7 +362,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                      <div className="group-data-[collapsible=icon]:hidden flex flex-col">
                         <span className="text-sm font-semibold text-sidebar-foreground">Admin de la Granja</span>
-                        <span className="text-xs text-sidebar-foreground/90">admin@smartpig.com</span>
+                        <span className="text-xs text-sidebar-foreground/90">{auth.currentUser?.email || 'admin@smartpig.com'}</span>
                     </div>
                 </div>
               </DropdownMenuTrigger>
@@ -325,7 +371,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">Admin de la Granja</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      admin@smartpig.com
+                      {auth.currentUser?.email || 'admin@smartpig.com'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -348,9 +394,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center gap-4 border-b bg-background/50 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">
-              {/* You can add breadcrumbs or page titles here */}
             </div>
-            {/* Desktop user menu can go here if needed */}
         </header>
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </SidebarInset>
