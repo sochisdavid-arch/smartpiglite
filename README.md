@@ -20,20 +20,24 @@ Abre la **Terminal** en este editor y pega estos comandos uno por uno:
    git add .
    ```
 
-3. **Crear el primer registro:**
+3. **Crear el primer registro local:**
    ```bash
    git commit -m "Versión 1.0: SmartPig Lite lista para la nube"
    ```
 
-4. **Conectar con tu repositorio:**
-   *(Copia la URL de tu repositorio de GitHub, debería terminar en .git)*
+4. **Asegurar que la rama se llame main:**
+   ```bash
+   git branch -M main
+   ```
+
+5. **Conectar con tu repositorio:**
+   *(Reemplaza la URL por la tuya de GitHub)*
    ```bash
    git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
    ```
 
-5. **Subir el código:**
+6. **Subir el código definitivamente:**
    ```bash
-   git branch -M main
    git push -u origin main
    ```
 
@@ -52,7 +56,7 @@ Abre la **Terminal** en este editor y pega estos comandos uno por uno:
 Una vez que Firebase te dé la URL (ej: `https://smartpig-xxx.web.app`):
 1. Ábrela en tu celular.
 2. En Android (Chrome): Toca los 3 puntos y elige **"Instalar aplicación"**.
-3. En iOS (Safari): Toca "Compartir" (cuadrado con flecha) y elige **"Añadir a pantalla de inicio"**.
+3. En iOS (Safari): Toca "Compartir" (cuadrado con flecha) e elige **"Añadir a pantalla de inicio"**.
 
 ## ✨ Características
 - **Base de Datos en la Nube:** Todo se guarda en Google Firestore automáticamente.
