@@ -42,6 +42,7 @@ export interface PreceboReportData {
     totalFeedConsumed: number;
     dailyAnimalConsumption: number;
     feedConversion: number;
+    saleValue?: number; // Propiedad agregada para corregir error de compilación
     healthRecords: HealthRecord[];
 }
 
@@ -133,6 +134,9 @@ export function PreceboReport({ reportData }: { reportData: PreceboReportData })
                                 <ReportMetric label="Fecha Inicio" value={isValid(parseISO(reportData.startDate)) ? format(parseISO(reportData.startDate), 'dd/MM/yyyy') : 'N/A'} />
                                 <ReportMetric label="Fecha Fin" value={isValid(parseISO(reportData.endDate)) ? format(parseISO(reportData.endDate), 'dd/MM/yyyy') : 'N/A'} />
                                 <ReportMetric label={isCeba ? "Días en Ceba" : "Días en Precebo"} value={reportData.daysInPrecebo || 0} unit="días"/>
+                                {reportData.saleValue !== undefined && (
+                                    <ReportMetric label="Valor de Venta" value={reportData.saleValue.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })} />
+                                )}
                             </CardContent>
                         </Card>
                         <Card>
