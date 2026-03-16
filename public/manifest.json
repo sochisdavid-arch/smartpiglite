@@ -1,11 +1,13 @@
+
 {
   "name": "SmartPig Lite",
   "short_name": "SmartPig",
-  "description": "Gestión porcina inteligente para optimizar la producción y la salud.",
+  "description": "Gestión Porcina Profesional en la Nube",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://placehold.co/192x192.png?text=SmartPig",

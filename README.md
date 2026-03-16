@@ -1,39 +1,57 @@
+
 # SmartPig Lite - Gestión Porcina en la Nube
 
 Esta es una aplicación profesional para la gestión de granjas porcinas, construida con Next.js, Tailwind CSS y Firebase (Firestore y Auth).
 
-## 🚀 Guía de Despliegue (Cómo subir a GitHub)
+## 🚀 Guía de Despliegue Final
 
-Como tu asistente IA, he dejado todo listo. Sigue estos 3 pasos simples:
+Sigue estos pasos para poner tu app en internet hoy mismo:
 
-### Paso 1: Crear el repositorio en GitHub
-1. Entra en [GitHub](https://github.com/) e inicia sesión.
-2. Haz clic en el botón verde **"New"** (Nuevo).
-3. Nombre del repositorio: `smartpig-lite`.
-4. Haz clic en **"Create repository"** (No marques ninguna casilla de inicialización).
+### Paso 1: Subir el código a GitHub
+Abre la **Terminal** en este editor y pega estos comandos uno por uno:
 
-### Paso 2: Ejecutar estos comandos
-Abre la terminal en la carpeta de este proyecto y copia/pega esto (uno por uno):
+1. **Inicializar Git:**
+   ```bash
+   git init
+   ```
 
-```bash
-git init
-git add .
-git commit -m "Proyecto SmartPig listo para la nube"
-git branch -M main
-git remote add origin https://github.com/TU_USUARIO/smartpig-lite.git
-git push -u origin main
-```
-*(Nota: Cambia `TU_USUARIO` por tu nombre real de usuario de GitHub en la URL).*
+2. **Preparar archivos:**
+   ```bash
+   git add .
+   ```
 
-### Paso 3: Publicar en Internet (Firebase App Hosting)
+3. **Crear el primer registro:**
+   ```bash
+   git commit -m "Versión 1.0: SmartPig Lite lista para la nube"
+   ```
+
+4. **Conectar con tu repositorio:**
+   *(Copia la URL de tu repositorio de GitHub, debería terminar en .git)*
+   ```bash
+   git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+   ```
+
+5. **Subir el código:**
+   ```bash
+   git branch -M main
+   git push -u origin main
+   ```
+
+### Paso 2: Publicar en Internet (Firebase App Hosting)
 1. Ve a la [Consola de Firebase](https://console.firebase.google.com/).
-2. Entra en tu proyecto y busca la sección **"App Hosting"**.
-3. Haz clic en **"Comenzar"** y conecta tu cuenta de GitHub.
-4. Selecciona el repositorio `smartpig-lite` que acabas de subir.
-5. Firebase hará el resto: compilará y publicará tu app en una URL segura (HTTPS).
+2. Entra en tu proyecto **"smartpig-lite"**.
+3. En el menú lateral, busca **"Build"** -> **"App Hosting"**.
+4. Haz clic en **"Comenzar"** y selecciona tu cuenta de GitHub.
+5. Elige el repositorio que acabas de subir.
+6. Firebase detectará que es Next.js automáticamente. Dale a **"Desplegar"**.
+
+### Paso 3: Instalar en tu Celular (PWA)
+Una vez que Firebase te dé la URL (ej: `https://smartpig-xxx.web.app`):
+1. Ábrela en tu celular.
+2. En Android: Toca los 3 puntos y elige **"Instalar aplicación"**.
+3. En iOS (iPhone): Toca "Compartir" y elige **"Añadir a pantalla de inicio"**.
 
 ## ✨ Características
-- **Base de Datos en la Nube:** Sincronización en tiempo real con Cloud Firestore.
-- **Seguridad:** Autenticación con Google y Email.
-- **PWA:** Instalable en Android e iOS como una aplicación nativa.
-- **IA de Diagnóstico:** Incluye PigDoctor AI para análisis veterinarios presuntivos.
+- **Base de Datos en la Nube:** Todo se guarda en Google Firestore automáticamente.
+- **Modo Offline:** Funciona incluso si pierdes el internet momentáneamente en la granja.
+- **PigDoctor IA:** Diagnósticos veterinarios presuntivos integrados.
