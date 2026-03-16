@@ -3,63 +3,53 @@
 
 Esta es una aplicación profesional para la gestión de granjas porcinas, construida con Next.js, Tailwind CSS y Firebase (Firestore y Auth).
 
-## 🚀 Guía de Despliegue Final
+## 🚀 Guía de Publicación Final (Indispensable)
 
-Sigue estos pasos para poner tu app en internet hoy mismo:
+Debido a que GitHub requiere **tus credenciales personales** (usuario y contraseña), tú debes ejecutar los comandos finales en la terminal. Yo ya preparé todo el código, solo falta este paso:
 
 ### Paso 1: Subir el código a GitHub
-Abre la **Terminal** en este editor y pega estos comandos uno por uno:
+1. Abre la **Terminal** aquí mismo en el editor (está en la pestaña de abajo).
+2. Copia y pega estos comandos uno por uno (presiona Enter después de cada uno):
 
-1. **Inicializar Git:**
-   ```bash
-   git init
-   ```
+```bash
+# 1. Iniciar el sistema de seguimiento
+git init
 
-2. **Preparar archivos:**
-   ```bash
-   git add .
-   ```
+# 2. Preparar todos los archivos del proyecto
+git add .
 
-3. **Crear el primer registro local:**
-   ```bash
-   git commit -m "Versión 1.0: SmartPig Lite lista para la nube"
-   ```
+# 3. Crear el registro de los archivos
+git commit -m "Versión 1.0: SmartPig Lite Completa"
 
-4. **Asegurar que la rama se llame main:**
-   ```bash
-   git branch -M main
-   ```
+# 4. Definir la rama principal como 'main'
+git branch -M main
 
-5. **Conectar con tu repositorio:**
-   *(Reemplaza la URL por la tuya de GitHub)*
-   ```bash
-   git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
-   ```
+# 5. Conectar con TU repositorio (REEMPLAZA LA URL POR LA TUYA)
+git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
 
-6. **Subir el código definitivamente:**
-   ```bash
-   git push -u origin main
-   ```
+# 6. Enviar el código a GitHub
+git push -u origin main
+```
 
-### Paso 2: Publicar en Internet (Firebase App Hosting)
+*Nota: GitHub te pedirá tu usuario y un "Personal Access Token" (que se usa como contraseña). Si no tienes uno, se crea en GitHub -> Settings -> Developer Settings -> Personal Access Tokens.*
+
+### Paso 2: Activar el Hosting en Firebase
+Una vez que el código aparezca en tu página de GitHub:
 1. Ve a la [Consola de Firebase](https://console.firebase.google.com/).
-2. Entra en tu proyecto **"smartpig-lite"**.
-3. En el menú lateral, busca **"Build"** -> **"App Hosting"**.
-4. Haz clic en **"Comenzar"** y selecciona tu cuenta de GitHub.
-5. Elige el repositorio que acabas de subir.
-6. **Configuración de implementación:**
-   - **Rama activa:** Escribe `main`
-   - **Directorio raíz:** Deja `/` (barra diagonal)
-7. Firebase detectará que es Next.js automáticamente. Dale a **"Desplegar"**.
+2. Entra en tu proyecto y busca **"Build"** -> **"App Hosting"**.
+3. Haz clic en **"Comenzar"** y conecta tu GitHub.
+4. Elige el repositorio `smartpig-lite`.
+5. En **Configuración de la implementación**, donde pregunta **Rama activa**, escribe: `main`.
+6. Haz clic en **"Desplegar"**. Firebase te dará tu link público en unos minutos.
 
-### Paso 3: Instalar en tu Celular (PWA)
-Una vez que Firebase te dé la URL (ej: `https://smartpig-xxx.web.app`):
-1. Ábrela en tu celular.
-2. En Android (Chrome): Toca los 3 puntos y elige **"Instalar aplicación"**.
-3. En iOS (Safari): Toca "Compartir" (cuadrado con flecha) e elige **"Añadir a pantalla de inicio"**.
+### Paso 3: Instalar en tu Celular (App Real)
+Abre el link que te dio Firebase en tu celular:
+- **Android:** Toca los 3 puntos y elige **"Instalar aplicación"**.
+- **iOS (iPhone):** Toca el botón central de "Compartir" y elige **"Añadir a pantalla de inicio"**.
 
-## ✨ Características
-- **Base de Datos en la Nube:** Todo se guarda en Google Firestore automáticamente.
-- **Seguridad Profesional:** Acceso privado por usuario y granja.
-- **Modo Offline:** Funciona incluso si pierdes el internet momentáneamente en la granja.
-- **PigDoctor IA:** Diagnósticos veterinarios presuntivos integrados.
+---
+
+## ✨ Beneficios de esta Versión
+- **Sincronización:** Los datos se guardan en Firestore (Nube) y se ven en todos tus dispositivos.
+- **Seguridad:** Acceso protegido por contraseña y granja privada.
+- **IA PigDoctor:** Diagnósticos asistidos por inteligencia artificial.
