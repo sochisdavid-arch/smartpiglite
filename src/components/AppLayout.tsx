@@ -62,7 +62,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/components/Logo';
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import { ref, get } from "firebase/database";
+import { doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { checkLicense } from "@/lib/license";
 
@@ -89,12 +89,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       // 1. Verificar configuración de granja
       let farmInfo = localStorage.getItem('farmInformation');
       
-      // Si no está en localStorage, intentar recuperarlo de Firebase (para usuarios existentes en nuevos dispositivos)
+      // Si no está en localStorage, intentar recuperarlo de Firestore
       if (!farmInfo) {
           try {
-              const snapshot = await get(ref(db, `users/${user.uid}/farmInfo`));
-              if (snapshot.exists()) {
-                  const data = snapshot.val();
+              const docRef = doc(db, 'users', user.uid);
+              const docSnap = await getDoc(docRef);
+              
+              if (docSnap.exists() && docSnap.data().farmInfo) {
+                  const data = docSnap.data().farmInfo;
                   localStorage.setItem('farmInformation', JSON.stringify(data));
                   farmInfo = JSON.stringify(data);
               }
@@ -139,8 +141,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      // Opcionalmente limpiar cache local al cerrar sesión si quieres máxima privacidad
-      // localStorage.removeItem('farmInformation');
       router.push('/');
       toast({
         title: "Sesión Cerrada",

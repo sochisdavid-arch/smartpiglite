@@ -11,7 +11,7 @@ import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { Globe, Building, Phone, Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
-import { ref, set } from 'firebase/database';
+import { doc, setDoc } from 'firebase/firestore';
 
 const FARM_INFO_KEY = 'farmInformation';
 
@@ -45,8 +45,8 @@ export default function FarmSetupPage() {
         };
 
         try {
-            // Guardar en Firebase para persistencia entre dispositivos
-            await set(ref(db, `users/${user.uid}/farmInfo`), farmInfo);
+            // Guardar en Firestore para persistencia segura y controlada por reglas
+            await setDoc(doc(db, 'users', user.uid), { farmInfo }, { merge: true });
             
             // Guardar en localStorage para acceso rápido sin red
             localStorage.setItem(FARM_INFO_KEY, JSON.stringify(farmInfo));
@@ -62,7 +62,7 @@ export default function FarmSetupPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error al guardar',
-                description: 'No pudimos guardar la información. Por favor, inténtalo de nuevo.',
+                description: 'No pudimos guardar la información. Verifica tu conexión e inténtalo de nuevo.',
             });
         } finally {
             setIsSubmitting(false);
