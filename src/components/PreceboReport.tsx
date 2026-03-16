@@ -42,7 +42,7 @@ export interface PreceboReportData {
     totalFeedConsumed: number;
     dailyAnimalConsumption: number;
     feedConversion: number;
-    saleValue?: number; // Propiedad agregada para corregir error de compilación
+    saleValue?: number;
     healthRecords: HealthRecord[];
 }
 
