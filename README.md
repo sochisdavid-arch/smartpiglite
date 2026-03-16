@@ -5,14 +5,14 @@ Esta es una aplicación profesional para la gestión de granjas porcinas, constr
 
 ## 🚀 Guía de Publicación Final (Indispensable)
 
-Debido a que GitHub requiere **tus credenciales personales** (usuario y contraseña), tú debes ejecutar los comandos finales en la terminal. Yo ya preparé todo el código, solo falta este paso:
+Si ves el error `error: remote origin already exists`, usa el comando del **Paso 1.1** en lugar del 1.5.
 
 ### Paso 1: Subir el código a GitHub
 1. Abre la **Terminal** aquí mismo en el editor (está en la pestaña de abajo).
 2. Copia y pega estos comandos uno por uno (presiona Enter después de cada uno):
 
 ```bash
-# 1. Iniciar el sistema de seguimiento
+# 1. Iniciar el sistema de seguimiento (si no se ha hecho)
 git init
 
 # 2. Preparar todos los archivos del proyecto
@@ -24,21 +24,32 @@ git commit -m "Versión 1.0: SmartPig Lite Completa"
 # 4. Definir la rama principal como 'main'
 git branch -M main
 
-# 5. Conectar con TU repositorio (REEMPLAZA LA URL POR LA TUYA)
-git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+# 5. SOLUCIÓN AL ERROR: Conectar con tu repositorio
+# Si te sale el error "remote origin already exists", usa este:
+git remote set-url origin https://github.com/sochisdavid-arch/smartpiglite.git
 
 # 6. Enviar el código a GitHub
 git push -u origin main
 ```
 
-*Nota: GitHub te pedirá tu usuario y un "Personal Access Token" (que se usa como contraseña). Si no tienes uno, se crea en GitHub -> Settings -> Developer Settings -> Personal Access Tokens.*
+### 🔑 NOTA IMPORTANTE SOBRE LA CONTRASEÑA
+Cuando ejecutes `git push`, GitHub te pedirá tu usuario y contraseña. 
+**¡Atención!** GitHub ya no acepta tu contraseña normal en la terminal. Debes usar un **"Personal Access Token" (PAT)**:
+
+1. Ve a tu GitHub -> **Settings** (esquina superior derecha).
+2. Abajo a la izquierda: **Developer Settings**.
+3. **Personal access tokens** -> **Tokens (classic)**.
+4. Genera uno nuevo (**Generate new token**) con permisos de `repo`.
+5. Copia ese código largo. **Esa es tu contraseña para la terminal.**
+
+---
 
 ### Paso 2: Activar el Hosting en Firebase
 Una vez que el código aparezca en tu página de GitHub:
 1. Ve a la [Consola de Firebase](https://console.firebase.google.com/).
 2. Entra en tu proyecto y busca **"Build"** -> **"App Hosting"**.
 3. Haz clic en **"Comenzar"** y conecta tu GitHub.
-4. Elige el repositorio `smartpig-lite`.
+4. Elige el repositorio `smartpiglite`.
 5. En **Configuración de la implementación**, donde pregunta **Rama activa**, escribe: `main`.
 6. Haz clic en **"Desplegar"**. Firebase te dará tu link público en unos minutos.
 
