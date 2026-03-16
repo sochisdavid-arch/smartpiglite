@@ -7,372 +7,106 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getInventory, updateInventory, InventoryItem, MedicalConsumptionRecord } from '@/lib/inventory';
-import { ArrowLeft, PlusCircle, Pill, ArrowDown } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { ArrowLeft, PlusCircle, Pill, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parseISO, isValid } from 'date-fns';
-
-interface MedicalPurchaseRecord {
-    id: string;
-    productId: string;
-    productName: string;
-    purchaseDate: string;
-    vials: number;
-    volumePerVial: number; // Can be ml or doses
-    totalVolume: number;
-    valuePerVial: number;
-    totalValue: number;
-    valuePerUnit: number; // Value per ml or dose
-    lotNumber?: string;
-    icaRegistration?: string;
-    manufacturingDate?: string;
-    expirationDate?: string;
-}
-
-const MEDICAL_PURCHASE_HISTORY_KEY = 'medicalPurchaseHistory';
-const MEDICAL_CONSUMPTION_HISTORY_KEY = 'medicalConsumptionHistory';
+import { useCollection, useUser, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function MedicamentosPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [medicamentos, setMedicamentos] = React.useState<InventoryItem[]>([]);
-    const [purchaseHistory, setPurchaseHistory] = React.useState<MedicalPurchaseRecord[]>([]);
-    const [consumptionHistory, setConsumptionHistory] = React.useState<MedicalConsumptionRecord[]>([]);
-    const [isFormOpen, setIsFormOpen] = React.useState(false);
-
-    // Form states for automatic calculation
-    const [selectedProduct, setSelectedProduct] = React.useState<string>('');
-    const [newProductName, setNewProductName] = React.useState('');
-    const [vials, setVials] = React.useState<number | string>('');
-    const [volumePerVial, setVolumePerVial] = React.useState<number | string>('');
-    const [valuePerVial, setValuePerVial] = React.useState<number | string>('');
-
-    const totalVolume = React.useMemo(() => Number(vials) * Number(volumePerVial), [vials, volumePerVial]);
-    const totalValue = React.useMemo(() => Number(vials) * Number(valuePerVial), [vials, valuePerVial]);
-    const valuePerUnit = React.useMemo(() => totalVolume > 0 ? totalValue / totalVolume : 0, [totalValue, totalVolume]);
-
-    const loadData = React.useCallback(() => {
-        const allInventory = getInventory();
-        setMedicamentos(allInventory.filter(item => item.category === 'medicamento'));
-        
-        const storedPurchases = localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY);
-        if (storedPurchases) {
-            setPurchaseHistory(JSON.parse(storedPurchases).filter((p: any) => allInventory.some(i => i.id === p.productId && i.category === 'medicamento')));
-        }
-        
-        const storedConsumptions = localStorage.getItem(MEDICAL_CONSUMPTION_HISTORY_KEY);
-        if (storedConsumptions) {
-            setConsumptionHistory(JSON.parse(storedConsumptions).filter((c: MedicalConsumptionRecord) => c.category === 'medicamento'));
-        }
-    }, []);
+    const { user } = useUser();
+    const [farmId, setFarmId] = React.useState<string | null>(null);
 
     React.useEffect(() => {
-        loadData();
-    }, [loadData]);
-    
-    const resetFormState = () => {
-        setSelectedProduct('');
-        setNewProductName('');
-        setVials('');
-        setVolumePerVial('');
-        setValuePerVial('');
-    };
+        const stored = localStorage.getItem('farmInformation');
+        if (stored) setFarmId(JSON.parse(stored).id);
+    }, []);
 
-    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const inventoryQuery = useMemoFirebase(() => {
+        if (!db || !farmId) return null;
+        return collection(db, 'farms', farmId, 'inventoryItems');
+    }, [farmId]);
+
+    const { data: inventory, isLoading } = useCollection<any>(inventoryQuery);
+
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+
+    const medicamentos = React.useMemo(() => (inventory || []).filter(item => item.category === 'medicamento'), [inventory]);
+
+    const handleAddSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (!farmId || !user) return;
+
         const formData = new FormData(event.currentTarget);
-        const purchaseDate = formData.get('purchaseDate') as string;
+        const name = formData.get('name') as string;
+        const volume = Number(formData.get('volume'));
         
-        let productId = selectedProduct;
-        let productName = medicamentos.find(m => m.id === selectedProduct)?.name || '';
-        let isNewProductCreation = false;
+        const existing = medicamentos.find(m => m.name.toLowerCase() === name.toLowerCase());
+        const productId = existing?.id || `MED-${Date.now()}`;
 
-        const fullInventory = getInventory();
-
-        if (selectedProduct === 'new') {
-            if (!newProductName) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Debe proporcionar un nombre para el nuevo producto.' });
-                return;
-            }
-            productName = newProductName;
-            const existingProductByName = fullInventory.find(item => item.name.toLowerCase() === newProductName.toLowerCase() && item.category === 'medicamento');
-
-            if (existingProductByName) {
-                productId = existingProductByName.id;
-            } else {
-                productId = `MED-${new Date().getTime()}`;
-                isNewProductCreation = true;
-            }
-        }
-
-        if (!productId || !productName || totalVolume <= 0) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, complete todos los campos de producto y cantidad.' });
-            return;
-        }
-
-        let productInInventory = fullInventory.find(item => item.id === productId);
-        let updatedInventory: InventoryItem[];
-
-        if (productInInventory) {
-            updatedInventory = fullInventory.map(item => 
-                item.id === productId ? { ...item, stock: item.stock + totalVolume } : item
-            );
-        } else {
-            const newProduct: InventoryItem = { id: productId, name: productName, category: 'medicamento', stock: totalVolume };
-            updatedInventory = [...fullInventory, newProduct];
-        }
-        updateInventory(updatedInventory);
-
-        const newPurchase: MedicalPurchaseRecord = {
-            id: `med-purchase-${new Date().getTime()}`,
-            productId,
-            productName,
-            purchaseDate,
-            vials: Number(vials),
-            volumePerVial: Number(volumePerVial),
-            totalVolume,
-            valuePerVial: Number(valuePerVial),
-            totalValue,
-            valuePerUnit,
-            lotNumber: formData.get('lotNumber') as string || undefined,
-            icaRegistration: formData.get('icaRegistration') as string || undefined,
-            manufacturingDate: formData.get('manufacturingDate') as string || undefined,
-            expirationDate: formData.get('expirationDate') as string || undefined,
+        const itemData = {
+            id: productId,
+            name,
+            category: 'medicamento',
+            stock: (existing?.stock || 0) + volume,
+            farmId,
+            members: { [user.uid]: 'owner' }
         };
-        
-        const allPurchases = JSON.parse(localStorage.getItem(MEDICAL_PURCHASE_HISTORY_KEY) || '[]');
-        allPurchases.unshift(newPurchase);
-        localStorage.setItem(MEDICAL_PURCHASE_HISTORY_KEY, JSON.stringify(allPurchases));
 
-        toast({ title: 'Ingreso Registrado', description: `${totalVolume}ml de ${productName} añadidos al inventario.` });
-        
+        setDocumentNonBlocking(doc(db, 'farms', farmId, 'inventoryItems', productId), itemData, { merge: true });
+
+        toast({ title: 'Medicamento Registrado', description: `${name} actualizado en la nube.` });
         setIsFormOpen(false);
-        resetFormState();
-        loadData();
     };
+
+    if (isLoading) return <AppLayout><div className="flex justify-center p-20"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div></AppLayout>;
 
     return (
         <AppLayout>
             <div className="flex flex-col gap-6">
-                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <h1 className="text-3xl font-bold tracking-tight">Inventario de Medicamentos</h1>
+                        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}><ArrowLeft className="h-4 w-4" /></Button>
+                        <h1 className="text-3xl font-bold tracking-tight">Inventario de Medicamentos (Nube)</h1>
                     </div>
-                     <Button onClick={() => setIsFormOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Registrar Compra
-                    </Button>
+                    <Button onClick={() => setIsFormOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Registrar Compra</Button>
                 </div>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Pill className="text-red-500"/>Stock de Medicamentos</CardTitle>
-                        <CardDescription>Inventario disponible de cada producto farmacéutico.</CardDescription>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Pill className="text-red-500"/>Stock de Medicamentos</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>Producto</TableHead>
-                                    <TableHead className="text-right">Stock (ml/ud)</TableHead>
-                                </TableRow>
+                                <TableRow><TableHead>Producto</TableHead><TableHead className="text-right">Stock (ml)</TableHead></TableRow>
                             </TableHeader>
                             <TableBody>
-                                {medicamentos.length > 0 ? medicamentos.map(item => (
+                                {medicamentos.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell className="text-right font-semibold">{item.stock.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{item.stock.toFixed(2)} ml</TableCell>
                                     </TableRow>
-                                )) : (
-                                     <TableRow>
-                                        <TableCell colSpan={2} className="h-24 text-center">No hay medicamentos en el inventario.</TableCell>
-                                    </TableRow>
-                                )}
+                                ))}
                             </TableBody>
                         </Table>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Historial de Compras</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead>Producto</TableHead>
-                                    <TableHead className="text-right">Frascos</TableHead>
-                                    <TableHead className="text-right">Volumen Total</TableHead>
-                                    <TableHead className="text-right">Costo Total</TableHead>
-                                    <TableHead className="text-right">Costo/ml</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {purchaseHistory.length > 0 ? purchaseHistory.map(p => (
-                                    <TableRow key={p.id}>
-                                        <TableCell>{isValid(parseISO(p.purchaseDate)) ? format(parseISO(p.purchaseDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                        <TableCell className="font-medium">{p.productName}</TableCell>
-                                        <TableCell className="text-right">{p.vials}</TableCell>
-                                        <TableCell className="text-right">{p.totalVolume.toFixed(2)} ml</TableCell>
-                                        <TableCell className="text-right">{p.totalValue.toLocaleString('es-CO', {style: 'currency', currency: 'COP'})}</TableCell>
-                                        <TableCell className="text-right">{p.valuePerUnit.toLocaleString('es-CO', {style: 'currency', currency: 'COP'})}</TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">No hay compras registradas.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ArrowDown className="text-red-500"/>Historial de Salidas</CardTitle>
-                        <CardDescription>Consumos registrados automáticamente desde las fases productivas.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead>Lote/Animal Destino</TableHead>
-                                    <TableHead>Producto</TableHead>
-                                    <TableHead className="text-right">Cantidad Consumida (ml)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {consumptionHistory.length > 0 ? consumptionHistory.map(item => (
-                                    <TableRow key={item.id}>
-                                        <TableCell>{isValid(parseISO(item.date)) ? format(parseISO(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                        <TableCell className="font-medium">{item.area}</TableCell>
-                                        <TableCell>{item.productName}</TableCell>
-                                        <TableCell className="text-right">{item.quantity.toFixed(2)} ml</TableCell>
-                                    </TableRow>
-                                )) : (
-                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">No hay salidas de medicamentos registradas.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
-                 <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if(!isOpen) resetFormState(); setIsFormOpen(isOpen); }}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                        <DialogHeader>
-                            <DialogTitle>Registrar Compra de Medicamento</DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 overflow-y-auto -mx-6 px-6">
-                            <form onSubmit={handleFormSubmit} id="add-item-form" className="space-y-4 py-4 pr-6">
-                                <Card>
-                                    <CardHeader><CardTitle className="text-base">Producto y Fecha</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="product">Producto</Label>
-                                            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                                                <SelectTrigger><SelectValue placeholder="Seleccionar producto..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    {medicamentos.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                                                    <SelectItem value="new">-- Crear nuevo producto --</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="purchaseDate">Fecha de Compra</Label>
-                                            <Input id="purchaseDate" name="purchaseDate" type="date" required defaultValue={new Date().toISOString().substring(0, 10)}/>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                                
-                                {selectedProduct === 'new' && (
-                                     <Card>
-                                        <CardHeader><CardTitle className="text-base">Datos del Nuevo Producto</CardTitle></CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="newProductName">Nombre del Producto</Label>
-                                                <Input id="newProductName" value={newProductName} onChange={e => setNewProductName(e.target.value)} placeholder="Ej: Ivermectina 3.15%"/>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                <Card>
-                                     <CardHeader><CardTitle className="text-base">Cantidad y Costo</CardTitle></CardHeader>
-                                     <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="vials">Nº de Frascos</Label>
-                                            <Input id="vials" name="vials" type="number" required value={vials} onChange={e => setVials(e.target.value)}/>
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="volumePerVial">Volumen/Frasco (ml)</Label>
-                                            <Input id="volumePerVial" name="volumePerVial" type="number" step="0.1" required value={volumePerVial} onChange={e => setVolumePerVial(e.target.value)}/>
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="valuePerVial">Valor/Frasco ($)</Label>
-                                            <Input id="valuePerVial" name="valuePerVial" type="number" step="0.01" required value={valuePerVial} onChange={e => setValuePerVial(e.target.value)}/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Volumen Total (ml)</Label>
-                                            <Input value={totalVolume.toFixed(2)} readOnly className="bg-muted"/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Valor Total ($)</Label>
-                                            <Input value={totalValue.toLocaleString('es-CO')} readOnly className="bg-muted"/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Valor/ml ($)</Label>
-                                            <Input value={valuePerUnit.toLocaleString('es-CO', {minimumFractionDigits: 2})} readOnly className="bg-muted"/>
-                                        </div>
-                                     </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader><CardTitle className="text-base">Trazabilidad</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="lotNumber">Nº de Lote</Label>
-                                            <Input id="lotNumber" name="lotNumber" type="text" placeholder="Lote del fabricante"/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="icaRegistration">Registro ICA</Label>
-                                            <Input id="icaRegistration" name="icaRegistration" type="text" placeholder="Registro Sanitario"/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="manufacturingDate">Fecha de Fabricación</Label>
-                                            <Input id="manufacturingDate" name="manufacturingDate" type="date" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="expirationDate">Fecha de Vencimiento</Label>
-                                            <Input id="expirationDate" name="expirationDate" type="date" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </form>
-                        </ScrollArea>
-                        <DialogFooter className="flex-shrink-0 pt-4 border-t bg-background -mx-6 px-6">
-                            <Button type="button" variant="ghost" onClick={() => { setIsFormOpen(false); resetFormState(); }}>Cancelar</Button>
-                            <Button type="submit" form="add-item-form">Guardar Compra</Button>
-                        </DialogFooter>
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>Registrar Compra</DialogTitle></DialogHeader>
+                        <form onSubmit={handleAddSubmit} className="space-y-4 py-4">
+                            <div className="space-y-2"><Label>Nombre</Label><Input name="name" required /></div>
+                            <div className="space-y-2"><Label>Cantidad (ml)</Label><Input name="volume" type="number" step="0.1" required /></div>
+                            <DialogFooter><Button type="submit">Guardar</Button></DialogFooter>
+                        </form>
                     </DialogContent>
                 </Dialog>
             </div>
         </AppLayout>
     );
 }
-
-    
-
-    

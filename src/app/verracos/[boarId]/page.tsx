@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, PlusCircle, Droplet, MoreHorizontal, Syringe, XCircle, HeartPulse } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Droplet, MoreHorizontal, Syringe, XCircle, HeartPulse, Loader2 } from 'lucide-react';
 import { format, parseISO, isValid, differenceInWeeks } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -15,39 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useDoc, useUser, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 type BoarEventType = 'Ingreso' | 'Eyaculado' | 'Monta Natural' | 'Tratamiento' | 'Vacunación' | 'Venta' | 'Muerte';
-
-interface BoarEvent {
-    id: string;
-    type: BoarEventType;
-    date: string;
-    details?: string;
-    // Eyaculación specific
-    doses?: number;
-    dilutedVolume?: number;
-    concentration?: number;
-    motility?: number;
-    // Monta Natural specific
-    sowId?: string;
-    mounts?: number;
-    // Tratamiento/Vacunación specific
-    product?: string;
-    dose?: number;
-}
-
-interface Boar {
-    id: string;
-    breed: string;
-    birthDate: string;
-    arrivalDate: string;
-    status: 'Activo' | 'Inactivo' | 'Vendido';
-    weight: number;
-    purchaseValue?: number;
-    events: BoarEvent[];
-}
-
-const BOAR_STORAGE_KEY = 'boarCollection';
 
 const eventIcons: { [key in BoarEventType]: React.ReactElement } = {
     "Ingreso": <PlusCircle className="h-5 w-5 text-green-500" />,
@@ -65,24 +37,24 @@ export default function BoarHistoryPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
+    const { user } = useUser();
     const boarId = params.boarId as string;
     
-    const [boar, setBoar] = React.useState<Boar | null>(null);
+    const [farmId, setFarmId] = React.useState<string | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = React.useState(false);
     const [selectedEventType, setSelectedEventType] = React.useState<BoarEventType | null>(null);
 
-    const loadData = React.useCallback(() => {
-        const storedBoars = localStorage.getItem(BOAR_STORAGE_KEY);
-        const boars: Boar[] = storedBoars ? JSON.parse(storedBoars) : [];
-        const foundBoar = boars.find((b: Boar) => b.id === boarId);
-        if (foundBoar) {
-            setBoar(foundBoar);
-        }
-    }, [boarId]);
-
     React.useEffect(() => {
-        loadData();
-    }, [loadData]);
+        const stored = localStorage.getItem('farmInformation');
+        if (stored) setFarmId(JSON.parse(stored).id);
+    }, []);
+
+    const boarRef = useMemoFirebase(() => {
+        if (!db || !farmId || !boarId) return null;
+        return doc(db, 'farms', farmId, 'boars', boarId);
+    }, [farmId, boarId]);
+
+    const { data: boar, isLoading } = useDoc<any>(boarRef);
 
     const openEventDialog = (eventType: BoarEventType) => {
         setSelectedEventType(eventType);
@@ -91,52 +63,40 @@ export default function BoarHistoryPage() {
 
     const handleEventSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!boar || !selectedEventType) return;
+        if (!boar || !selectedEventType || !farmId) return;
 
         const formData = new FormData(e.target as HTMLFormElement);
         
-        const newEvent: BoarEvent = {
+        const newEvent = {
             id: `evt-${new Date().getTime()}`,
             type: selectedEventType,
             date: formData.get('eventDate') as string,
-            details: formData.get('details') as string || undefined,
-            doses: Number(formData.get('doses')) || undefined,
-            dilutedVolume: Number(formData.get('dilutedVolume')) || undefined,
-            concentration: Number(formData.get('concentration')) || undefined,
-            motility: Number(formData.get('motility')) || undefined,
-            sowId: formData.get('sowId') as string || undefined,
-            mounts: Number(formData.get('mounts')) || undefined,
-            product: formData.get('product') as string || undefined,
-            dose: Number(formData.get('dose')) || undefined,
+            details: formData.get('details') as string || '',
+            doses: Number(formData.get('doses')) || 0,
+            dilutedVolume: Number(formData.get('dilutedVolume')) || 0,
+            concentration: Number(formData.get('concentration')) || 0,
+            motility: Number(formData.get('motility')) || 0,
+            sowId: formData.get('sowId') as string || '',
+            mounts: Number(formData.get('mounts')) || 0,
+            product: formData.get('product') as string || '',
+            dose: Number(formData.get('dose')) || 0,
         };
-        
-        // Custom details based on type
-        if(selectedEventType === 'Monta Natural' && newEvent.sowId) {
-            newEvent.details = `Monta a cerda: ${newEvent.sowId}`;
-        }
-        if(['Tratamiento', 'Vacunación'].includes(selectedEventType) && newEvent.product) {
-             newEvent.details = `${newEvent.product} - Dosis: ${newEvent.dose}ml. Motivo: ${formData.get('details')}`;
-        }
 
-        const updatedBoar = { ...boar, events: [newEvent, ...boar.events] };
+        const updatedEvents = [newEvent, ...(boar.events || [])];
+        const updateData: any = { events: updatedEvents };
         
         if (['Venta', 'Muerte'].includes(selectedEventType)) {
-            updatedBoar.status = selectedEventType === 'Venta' ? 'Vendido' : 'Inactivo';
+            updateData.status = selectedEventType === 'Venta' ? 'Vendido' : 'Inactivo';
         }
         
-        setBoar(updatedBoar);
+        updateDocumentNonBlocking(boarRef!, updateData);
 
-        const allBoars: Boar[] = JSON.parse(localStorage.getItem(BOAR_STORAGE_KEY) || '[]');
-        const updatedBoars = allBoars.map(b => b.id === boar.id ? updatedBoar : b);
-        localStorage.setItem(BOAR_STORAGE_KEY, JSON.stringify(updatedBoars));
-
-        toast({ title: "Evento Registrado", description: `Se ha añadido el evento "${selectedEventType}" al historial.` });
+        toast({ title: "Evento Registrado", description: "Historial actualizado en la nube." });
         setIsEventFormOpen(false);
     };
     
-    if (!boar) {
-        return <AppLayout><div className="flex justify-center items-center h-full"><p>Cargando datos del verraco...</p></div></AppLayout>;
-    }
+    if (isLoading) return <AppLayout><div className="flex justify-center p-20"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div></AppLayout>;
+    if (!boar) return <AppLayout><div className="p-20 text-center">Verraco no encontrado.</div></AppLayout>;
 
     return (
         <AppLayout>
@@ -191,7 +151,7 @@ export default function BoarHistoryPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Historial de Eventos</CardTitle>
+                        <CardTitle>Historial de Eventos (Nube)</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -203,20 +163,18 @@ export default function BoarHistoryPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {boar.events.map(event => (
+                                {(boar.events || []).map((event: any) => (
                                     <TableRow key={event.id}>
                                         <TableCell>{format(parseISO(event.date), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {eventIcons[event.type]}
+                                                {eventIcons[event.type as BoarEventType]}
                                                 <span>{event.type}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             {event.type === 'Eyaculado'
-                                             ? `Dosis: ${event.doses || 'N/A'}, Vol: ${event.dilutedVolume || 'N/A'}ml, Conc: ${event.concentration || 'N/A'}M, Mot: ${event.motility || 'N/A'}%`
-                                             : event.type === 'Monta Natural'
-                                             ? `Cerda: ${event.sowId}, Montas: ${event.mounts || 1}`
+                                             ? `Dosis: ${event.doses || 'N/A'}, Vol: ${event.dilutedVolume || 'N/A'}ml`
                                              : event.details || 'N/A'
                                             }
                                         </TableCell>
@@ -236,71 +194,31 @@ export default function BoarHistoryPage() {
                     <form onSubmit={handleEventSubmit} id="event-form" className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="eventDate">Fecha</Label>
-                            <Input id="eventDate" name="eventDate" type="date" required />
+                            <Input id="eventDate" name="eventDate" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
                         </div>
                         {selectedEventType === 'Eyaculado' && (
-                            <>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="doses">Número de Dosis</Label>
                                     <Input id="doses" name="doses" type="number" />
                                 </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="dilutedVolume">Vol. Diluido (ml)</Label>
-                                        <Input id="dilutedVolume" name="dilutedVolume" type="number" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="concentration">Conc. (Millones/ml)</Label>
-                                        <Input id="concentration" name="concentration" type="number" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="motility">Motilidad (%)</Label>
-                                        <Input id="motility" name="motility" type="number" />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="dilutedVolume">Vol. Diluido (ml)</Label>
+                                    <Input id="dilutedVolume" name="dilutedVolume" type="number" />
                                 </div>
-                            </>
-                        )}
-                         {selectedEventType === 'Monta Natural' && (
-                            <>
-                             <div className="space-y-2">
-                                <Label htmlFor="sowId">ID de la Cerda</Label>
-                                <Input id="sowId" name="sowId" placeholder="Identificador de la hembra servida" required/>
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="mounts">Número de Montas</Label>
-                                <Input id="mounts" name="mounts" type="number" defaultValue={1} required/>
-                            </div>
-                            </>
-                        )}
-                        {['Tratamiento', 'Vacunación'].includes(selectedEventType || '') && (
-                            <>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="product">Producto</Label>
-                                    <Input id="product" name="product" placeholder="Nombre del producto" required/>
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="dose">Dosis (ml)</Label>
-                                    <Input id="dose" name="dose" type="number" step="0.1" placeholder="Ej: 2.5" required/>
-                                </div>
-                            </>
                         )}
                         <div className="space-y-2">
-                            <Label htmlFor="details">
-                                {['Venta', 'Muerte'].includes(selectedEventType || '') ? 'Causa / Motivo' : 'Notas Adicionales'}
-                            </Label>
+                            <Label htmlFor="details">Notas / Causa</Label>
                             <Textarea id="details" name="details" />
                         </div>
                     </form>
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={() => setIsEventFormOpen(false)}>Cancelar</Button>
-                        <Button type="submit" form="event-form">Guardar Evento</Button>
+                        <Button type="submit" form="event-form">Guardar en la Nube</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
         </AppLayout>
     );
 }
-
-    
-
-    
