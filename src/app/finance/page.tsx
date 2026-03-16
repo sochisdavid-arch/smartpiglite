@@ -19,9 +19,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useCollection, useUser, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 const formatCurrency = (value?: number) => {
     if (value === undefined || value === null) return '$0';
@@ -31,6 +30,7 @@ const formatCurrency = (value?: number) => {
 export default function FinancePage() {
     const { toast } = useToast();
     const { user } = useUser();
+    const firestore = useFirestore();
     const [farmId, setFarmId] = React.useState<string | null>(null);
 
     React.useEffect(() => {
@@ -39,9 +39,9 @@ export default function FinancePage() {
     }, []);
 
     const transactionsQuery = useMemoFirebase(() => {
-        if (!db || !farmId) return null;
-        return collection(db, 'farms', farmId, 'financialTransactions');
-    }, [farmId]);
+        if (!firestore || !farmId) return null;
+        return collection(firestore, 'farms', farmId, 'financialTransactions');
+    }, [firestore, farmId]);
 
     const { data: transactions, isLoading } = useCollection<any>(transactionsQuery);
 
@@ -66,7 +66,7 @@ export default function FinancePage() {
 
     const handleTransactionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!farmId || !user) return;
+        if (!farmId || !user || !firestore) return;
 
         const formData = new FormData(event.currentTarget);
         const transactionId = `MANUAL-${Date.now()}`;
@@ -82,7 +82,7 @@ export default function FinancePage() {
             members: { [user.uid]: 'owner' }
         };
 
-        setDocumentNonBlocking(doc(db, 'farms', farmId, 'financialTransactions', transactionId), data, { merge: true });
+        setDocumentNonBlocking(doc(firestore, 'farms', farmId, 'financialTransactions', transactionId), data, { merge: true });
 
         toast({ title: 'Movimiento Registrado', description: 'La transacción se ha guardado en la nube.' });
         setIsFormOpen(false);

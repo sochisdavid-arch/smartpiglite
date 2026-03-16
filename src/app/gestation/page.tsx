@@ -35,10 +35,8 @@ import { differenceInWeeks, parseISO, format, isValid, addDays } from 'date-fns'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getInventory } from '@/lib/inventory';
-import { useCollection, useUser, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 type StatusType = 'Gestante' | 'Vacia' | 'Destetada' | 'Remplazo' | 'Lactante';
 
@@ -60,8 +58,8 @@ export default function GestationPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
   
-  // Obtener farmId del usuario
   const [farmId, setFarmId] = React.useState<string | null>(null);
   
   React.useEffect(() => {
@@ -71,11 +69,10 @@ export default function GestationPage() {
       }
   }, []);
 
-  // Hook de Firebase para obtener animales en tiempo real
   const pigsQuery = useMemoFirebase(() => {
-    if (!db || !farmId) return null;
-    return collection(db, 'farms', farmId, 'pigs');
-  }, [farmId]);
+    if (!firestore || !farmId) return null;
+    return collection(firestore, 'farms', farmId, 'pigs');
+  }, [firestore, farmId]);
 
   const { data: pigs, isLoading } = useCollection<Pig>(pigsQuery);
 
@@ -97,7 +94,7 @@ export default function GestationPage() {
 
   const handleAnimalFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!farmId) return;
+    if (!farmId || !firestore || !user) return;
 
     const formData = new FormData(event.currentTarget);
     const pigId = formData.get('id') as string;
@@ -111,12 +108,12 @@ export default function GestationPage() {
       arrivalDate: formData.get('arrivalDate') as string,
       weight: Number(formData.get('weight')),
       status: editingPig?.status || 'Remplazo',
-      members: { [user!.uid]: 'owner' }, // Denormalización para seguridad
+      members: { [user.uid]: 'owner' },
       lastEvent: editingPig?.lastEvent || { type: 'Ninguno', date: '' },
       events: editingPig?.events || [],
     };
 
-    const pigRef = doc(db, 'farms', farmId, 'pigs', pigId);
+    const pigRef = doc(firestore, 'farms', farmId, 'pigs', pigId);
     setDocumentNonBlocking(pigRef, pigData, { merge: true });
 
     toast({
@@ -129,8 +126,8 @@ export default function GestationPage() {
   };
 
   const handleDeleteConfirm = () => {
-    if (pigToDelete && farmId) {
-        const pigRef = doc(db, 'farms', farmId, 'pigs', pigToDelete.id);
+    if (pigToDelete && farmId && firestore) {
+        const pigRef = doc(firestore, 'farms', farmId, 'pigs', pigToDelete.id);
         deleteDocumentNonBlocking(pigRef);
         toast({ title: "Eliminado", description: "Animal borrado de la base de datos.", variant: "destructive" });
     }

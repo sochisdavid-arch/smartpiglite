@@ -15,9 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { MultiSelect, Option } from '@/components/ui/multi-select';
-import { useCollection, useUser, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 const KpiCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactElement }) => (
     <Card>
@@ -35,6 +34,7 @@ export default function PreceboPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { user } = useUser();
+    const firestore = useFirestore();
     const [farmId, setFarmId] = React.useState<string | null>(null);
 
     React.useEffect(() => {
@@ -43,9 +43,9 @@ export default function PreceboPage() {
     }, []);
 
     const batchesQuery = useMemoFirebase(() => {
-        if (!db || !farmId) return null;
-        return collection(db, 'farms', farmId, 'batches');
-    }, [farmId]);
+        if (!firestore || !farmId) return null;
+        return collection(firestore, 'farms', farmId, 'batches');
+    }, [firestore, farmId]);
 
     const { data: batches, isLoading } = useCollection<any>(batchesQuery);
 
@@ -58,7 +58,7 @@ export default function PreceboPage() {
 
     const handleAddBatchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!farmId || !user) return;
+        if (!farmId || !user || !firestore) return;
 
         const formData = new FormData(event.currentTarget);
         const batchId = formData.get('batchId') as string;
@@ -78,7 +78,7 @@ export default function PreceboPage() {
             members: { [user.uid]: 'owner' }
         };
 
-        setDocumentNonBlocking(doc(db, 'farms', farmId, 'batches', batchId), newBatch, { merge: true });
+        setDocumentNonBlocking(doc(firestore, 'farms', farmId, 'batches', batchId), newBatch, { merge: true });
 
         toast({ title: '¡Lote Creado!', description: `El lote ${batchId} se ha guardado en la nube.` });
         setIsFormOpen(false);
@@ -118,7 +118,7 @@ export default function PreceboPage() {
                                 {preceboBatches.map(batch => (
                                     <TableRow key={batch.id} onClick={() => router.push(`/precebo/${batch.id}`)} className="cursor-pointer hover:bg-muted/50">
                                         <TableCell className="font-medium">{batch.id}</TableCell>
-                                        <TableCell>{format(parseISO(batch.creationDate), 'dd/MM/yyyy')}</TableCell>
+                                        <TableCell>{isValid(parseISO(batch.creationDate)) ? format(parseISO(batch.creationDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                         <TableCell>{batch.pigletCount}</TableCell>
                                         <TableCell>{Number(batch.avgWeight).toFixed(2)}</TableCell>
                                         <TableCell><Badge variant={batch.status === 'Activo' ? 'default' : 'secondary'}>{batch.status}</Badge></TableCell>
