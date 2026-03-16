@@ -1,8 +1,8 @@
 {
-  "name": "SmartPig",
+  "name": "SmartPig Lite",
   "short_name": "SmartPig",
   "description": "Gestión porcina inteligente para optimizar la producción y la salud.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
@@ -19,7 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "orientation": "portrait",
-  "scope": "/"
+  ]
 }

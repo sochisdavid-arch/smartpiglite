@@ -1,4 +1,3 @@
-
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -8,7 +7,7 @@ import { AuthProvider } from '@/context/AuthContext';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'SmartPig',
+  title: 'SmartPig Lite - Gestión Porcina',
   description: 'Gestión porcina inteligente para optimizar la producción y la salud.',
   manifest: '/manifest.json',
   appleWebApp: {
