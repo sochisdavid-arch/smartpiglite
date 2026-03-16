@@ -233,9 +233,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            variant={isGestationAnalysisActive ? "default" : "ghost"}
+                            variant={isGestationAnalysisActive ? "default" : "outline"}
                             isActive={isGestationAnalysisActive}
-                            >
+                        >
                             <div className="flex items-center gap-2">
                                 <GitCommitHorizontal />
                                 <span>Análisis Gestación</span>
@@ -261,9 +261,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            variant={isLactationAnalysisActive ? "default" : "ghost"}
+                            variant={isLactationAnalysisActive ? "default" : "outline"}
                             isActive={isLactationAnalysisActive}
-                            >
+                        >
                             <div className="flex items-center gap-2">
                                 <Activity />
                                 <span>Análisis Lactancia</span>
@@ -289,9 +289,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            variant={isProductionAnalysisActive ? "default" : "ghost"}
+                            variant={isProductionAnalysisActive ? "default" : "outline"}
                             isActive={isProductionAnalysisActive}
-                            >
+                        >
                             <div className="flex items-center gap-2">
                                 <LineChart />
                                 <span>Análisis de Precebo y Ceba</span>
@@ -317,7 +317,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            >
+                            variant="outline"
+                        >
                             <div className="flex items-center gap-2">
                                 <KeyRound />
                                 <span>Licencia</span>
