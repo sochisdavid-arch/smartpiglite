@@ -11,7 +11,7 @@ import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { Globe, Building, Phone, Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 
 const FARM_INFO_KEY = 'farmInformation';
 
@@ -35,25 +35,38 @@ export default function FarmSetupPage() {
 
         setIsSubmitting(true);
         const formData = new FormData(event.currentTarget);
-        const farmInfo = {
-            farmName: formData.get('farmName') as string,
+        
+        // Generamos un ID único para la granja
+        const farmId = `farm_${Date.now()}_${user.uid.substring(0, 5)}`;
+        
+        const farmData = {
+            id: farmId,
+            name: formData.get('farmName') as string,
             location: formData.get('location') as string,
             country: formData.get('country') as string,
             phone: formData.get('phone') as string,
-            setupCompleted: true,
-            setupDate: new Date().toISOString(),
+            ownerId: user.uid,
+            members: {
+                [user.uid]: 'owner'
+            },
+            createdAt: new Date().toISOString(),
         };
 
         try {
-            // Guardar en Firestore para persistencia segura y controlada por reglas
-            await setDoc(doc(db, 'users', user.uid), { farmInfo }, { merge: true });
+            // 1. Crear el documento de la granja
+            await setDoc(doc(db, 'farms', farmId), farmData);
             
-            // Guardar en localStorage para acceso rápido sin red
-            localStorage.setItem(FARM_INFO_KEY, JSON.stringify(farmInfo));
+            // 2. Vincular la granja al usuario
+            await setDoc(doc(db, 'users', user.uid), { 
+                farmId: farmId,
+                farmInfo: farmData 
+            }, { merge: true });
+            
+            localStorage.setItem(FARM_INFO_KEY, JSON.stringify(farmData));
 
             toast({
                 title: '¡Granja Configurada!',
-                description: 'La información de tu granja ha sido guardada correctamente.',
+                description: 'Tu granja ha sido creada en la nube de forma segura.',
             });
             
             router.push('/dashboard');
@@ -62,7 +75,7 @@ export default function FarmSetupPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error al guardar',
-                description: 'No pudimos guardar la información. Verifica tu conexión e inténtalo de nuevo.',
+                description: 'No pudimos crear la granja en la base de datos.',
             });
         } finally {
             setIsSubmitting(false);
@@ -77,7 +90,7 @@ export default function FarmSetupPage() {
                         <Logo className="h-12 w-12" />
                     </div>
                     <CardTitle className="text-2xl font-bold">¡Bienvenido a SmartPig!</CardTitle>
-                    <CardDescription>Solo un paso más. Cuéntanos sobre tu granja para personalizar tu experiencia.</CardDescription>
+                    <CardDescription>Configura tu granja para empezar a guardar datos en la nube.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -89,10 +102,10 @@ export default function FarmSetupPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="location">Ubicación (Ciudad/Municipio)</Label>
+                            <Label htmlFor="location">Ubicación</Label>
                              <div className="relative">
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input id="location" name="location" placeholder="Ej: Anolaima" required className="pl-10" />
+                                <Input id="location" name="location" placeholder="Ciudad o Municipio" required className="pl-10" />
                             </div>
                         </div>
                          <div className="space-y-2">
@@ -100,7 +113,7 @@ export default function FarmSetupPage() {
                             <Input id="country" name="country" placeholder="Ej: Colombia" required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phone">Teléfono de Contacto</Label>
+                            <Label htmlFor="phone">Teléfono</Label>
                              <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <Input id="phone" name="phone" type="tel" placeholder="Ej: 3101234567" required className="pl-10" />
@@ -110,7 +123,7 @@ export default function FarmSetupPage() {
                             {isSubmitting ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             ) : (
-                                'Guardar y Empezar a Usar SmartPig'
+                                'Crear Granja y Empezar'
                             )}
                         </Button>
                     </form>
