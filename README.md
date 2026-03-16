@@ -19,7 +19,7 @@ git init
 git add .
 
 # 3. Crear el registro de los archivos
-git commit -m "Versión 1.0: SmartPig Lite Completa"
+git commit -m "Versión 1.0: SmartPig Lite Completa (Sin IA)"
 
 # 4. Definir la rama principal como 'main'
 git branch -M main
@@ -63,4 +63,4 @@ Abre el link que te dio Firebase en tu celular:
 ## ✨ Beneficios de esta Versión
 - **Sincronización:** Los datos se guardan en Firestore (Nube) y se ven en todos tus dispositivos.
 - **Seguridad:** Acceso protegido por contraseña y granja privada.
-- **IA PigDoctor:** Diagnósticos asistidos por inteligencia artificial.
+- **Eficiencia:** Gestión completa de gestación, lactancia, precebo, ceba e inventario.

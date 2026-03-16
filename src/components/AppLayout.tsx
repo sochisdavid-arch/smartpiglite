@@ -29,27 +29,22 @@ import {
   Settings,
   LogOut,
   User,
-  HeartPulse,
   Beef,
   Boxes,
   Users,
   Landmark,
-  Stethoscope,
   LineChart,
   ChevronDown,
   Activity,
   GitCommitHorizontal,
   ClipboardList,
   TestTube,
-  Warehouse,
   Baby,
   KeyRound,
-  Building,
   Loader2,
 } from 'lucide-react';
 import { SpermIcon } from '@/components/icons/sperm-icon';
 import { BabyBottleIcon } from '@/components/icons/baby-bottle-icon';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,10 +81,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           return;
       }
 
-      // 1. Verificar configuración de granja
       let farmInfo = localStorage.getItem('farmInformation');
       
-      // Si no está en localStorage, intentar recuperarlo de Firestore
       if (!farmInfo) {
           try {
               const docRef = doc(db, 'users', user.uid);
@@ -111,7 +104,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // 2. Verificar Licencia
       const pigsFromStorage = localStorage.getItem('pigs');
       const allPigs = pigsFromStorage ? JSON.parse(pigsFromStorage) : [];
       const sowCount = allPigs.filter((p: any) => p.gender === 'Hembra').length;
@@ -162,10 +154,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/lactation', label: 'Lactancia', icon: BabyBottleIcon },
     { href: '/verracos', label: 'Verracos', icon: TestTube },
     { href: '/precebo', label: 'Precebo', icon: Baby },
-    { href: '/ceba', label: 'Ceba', icon: Warehouse },
+    { href: '/ceba', label: 'Ceba', icon: LayoutDashboard },
     { href: '/inventory', label: 'Inventario', icon: Boxes },
     { href: '/personnel', label: 'Personal', icon: Users },
-    { href: '/pig-doctor', label: 'PigDoctor AI', icon: Stethoscope },
     { href: '/finance', label: 'Análisis Financiero', icon: Landmark },
     { href: '/forms', label: 'Formularios', icon: ClipboardList },
   ];
@@ -200,7 +191,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isGestationAnalysisActive = gestationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isLactationAnalysisActive = lactationAnalysisMenuItems.some(item => pathname.startsWith(item.href));
   const isProductionAnalysisActive = productionAnalysisMenuItems.some(item => pathname.startsWith(item.href));
-  const isLicenseMenuActive = licenseMenuItems.some(item => pathname.startsWith(item.href));
 
   if (isCheckingSetup && !['/licensing', '/payment-confirmation', '/farm-setup', '/signup', '/'].includes(pathname)) {
       return (
@@ -327,8 +317,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                             className="justify-between"
-                            variant={isLicenseMenuActive ? "default" : "ghost"}
-                            isActive={isLicenseMenuActive}
                             >
                             <div className="flex items-center gap-2">
                                 <KeyRound />

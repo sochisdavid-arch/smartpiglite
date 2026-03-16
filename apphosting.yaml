@@ -4,8 +4,6 @@ run:
   serviceId: smartpig-lite
   region: us-central1
   ingress: public
-  environmentVariables:
-    GEMINI_API_KEY: "AIzaSyD3TdAFwymZzevFIIKopTd4FMQ4ZXcjDiU"
 build:
   run: npm run build
 nextjs: {}
